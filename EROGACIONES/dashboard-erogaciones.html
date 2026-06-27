@@ -377,34 +377,31 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         </div>
       </div>
 
-      <!-- Charts row 1: Donut + Top Beneficiarios -->
-      <div class="erog-charts mb-3">
-        <div class="erog-chart-card">
-          <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo</div>
-          <div class="erog-chart-sub">% del gasto por categoría</div>
-          <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
-        </div>
-        <div class="erog-chart-card">
-          <div class="erog-chart-title"><i class="bi bi-people-fill" style="color:var(--erog-2)"></i>Top 10 Beneficiarios</div>
-          <div class="erog-chart-sub">Por monto total pagado</div>
-          <div id="erogTopBen" style="max-height:280px;overflow-y:auto"></div>
+      <!-- Charts row 1: Top Beneficiarios (ancho completo) -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="erog-chart-card">
+            <div class="erog-chart-title"><i class="bi bi-people-fill" style="color:var(--erog-2)"></i>Top 10 Beneficiarios</div>
+            <div class="erog-chart-sub">Por monto total pagado</div>
+            <div id="erogTopBen" style="max-height:260px;overflow-y:auto"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Charts row 2: Barras + Tendencia -->
+      <!-- Charts row 2: Distribución por Tipo + Tendencia Mensual -->
       <div class="row g-3 mb-3">
         <div class="col-md-6">
           <div class="erog-chart-card">
-            <div class="erog-chart-title"><i class="bi bi-bar-chart-fill" style="color:var(--erog-3)"></i>Gasto por Categoría</div>
-            <div class="erog-chart-sub">Monto total por tipo de erogación</div>
-            <div class="erog-ch-h220"><canvas id="erogBar"></canvas></div>
+            <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo</div>
+            <div class="erog-chart-sub">Monto total agrupado por tipo de erogación</div>
+            <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="erog-chart-card">
             <div class="erog-chart-title"><i class="bi bi-graph-up-arrow" style="color:var(--erog-4)"></i>Tendencia Mensual</div>
             <div class="erog-chart-sub">Evolución de salidas de efectivo</div>
-            <div class="erog-ch-h220"><canvas id="erogLine"></canvas></div>
+            <div class="erog-ch-h240"><canvas id="erogLine"></canvas></div>
           </div>
         </div>
       </div>
@@ -724,16 +721,6 @@ function renderErogCharts(data, byTipo, sortedTipos){
     options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
       plugins:{ legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:10.5}}},
         tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)} (${total?Math.round(c.parsed/total*100):0}%)`}} } }
-  });
-
-  // Bar — categorías
-  E.charts.bar = new Chart(document.getElementById('erogBar'),{
-    type:'bar',
-    data:{ labels:tipoLabels.slice(0,8).map(l=>l.length>15?l.slice(0,14)+'…':l),
-           datasets:[{ data:tipoData.slice(0,8), backgroundColor:EROG_PALETTE.slice(0,8), borderRadius:7, borderSkipped:false }] },
-    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed)}`}}},
-      scales:{ x:{beginAtZero:true, ticks:{callback:v=>'RD$'+(v>=1000?(v/1000).toFixed(0)+'K':v)}, grid:{color:grid}}, y:{grid:{display:false}} } }
   });
 
   // Line — tendencia mensual
