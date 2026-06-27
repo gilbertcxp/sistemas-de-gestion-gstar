@@ -186,6 +186,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .ben-bar-wrap{width:90px;height:6px;background:var(--border-color);border-radius:3px;flex-shrink:0}
 .ben-bar-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--erog-1),var(--erog-2));transition:width .8s cubic-bezier(.4,0,.2,1)}
 .ben-amt{font-size:11.5px;font-weight:700;color:var(--text-primary);font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;flex-shrink:0}
+.ben-row-clickable{cursor:pointer;border-radius:7px;transition:background .15s,transform .15s;margin:0 -6px;padding-left:6px;padding-right:6px}
+.ben-row-clickable:hover{background:var(--erog-1-lt);transform:translateX(4px)}
+.ben-row-clickable:active{transform:scale(.99)}
 
 /* Erog filters */
 .erog-filter-bar{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -392,8 +395,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <div class="row g-3 mb-3">
         <div class="col-md-6">
           <div class="erog-chart-card">
-            <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo</div>
-            <div class="erog-chart-sub">Monto total agrupado por tipo de erogación</div>
+            <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo de Gasto</div>
+            <div class="erog-chart-sub">Monto total agrupado por tipo de gasto</div>
             <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
           </div>
         </div>
@@ -440,6 +443,75 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       </div>
     </div>
   </div>
+
+  <!-- BENEFICIARY DETAIL PANEL -->
+  <div id="erogBenDetailPanel" style="display:none">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0B1437 0%,#1a1060 100%);border-radius:var(--radius);padding:18px 22px;margin-top:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(99,102,241,.2) 0%,transparent 70%);pointer-events:none"></div>
+      <button class="xbtn" style="color:#fff;border-color:rgba(255,255,255,.35);flex-shrink:0" onclick="closeBenDetail()">
+        <i class="bi bi-arrow-left"></i>Regresar al Dashboard
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45);margin-bottom:3px">Análisis de Beneficiario</div>
+        <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="benDetName">—</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.5);margin-top:2px" id="benDetSub">—</div>
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+      <div class="ekpi">
+        <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-1),var(--erog-2))"></div>
+        <div class="ekpi-icon" style="background:var(--erog-1-lt);color:var(--erog-1)"><i class="bi bi-cash-stack"></i></div>
+        <div class="ekpi-val" id="benDetTotal">RD$ 0</div>
+        <div class="ekpi-label">Total Erogado</div>
+      </div>
+      <div class="ekpi">
+        <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-2),var(--erog-3))"></div>
+        <div class="ekpi-icon" style="background:var(--erog-2-lt);color:var(--erog-2)"><i class="bi bi-receipt"></i></div>
+        <div class="ekpi-val" id="benDetCount">0</div>
+        <div class="ekpi-label">Transacciones</div>
+      </div>
+      <div class="ekpi">
+        <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-3),var(--erog-4))"></div>
+        <div class="ekpi-icon" style="background:var(--erog-3-lt);color:var(--erog-3)"><i class="bi bi-graph-up"></i></div>
+        <div class="ekpi-val" id="benDetAvg">RD$ 0</div>
+        <div class="ekpi-label">Promedio por Pago</div>
+      </div>
+    </div>
+    <!-- Chart + Summary table -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-5">
+        <div class="erog-chart-card" style="height:100%">
+          <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo de Erogación</div>
+          <div class="erog-chart-sub">Monto por cada tipo de erogación</div>
+          <div class="erog-ch-h280"><canvas id="benDetDonut"></canvas></div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="erog-chart-card" style="height:100%">
+          <div class="erog-chart-title"><i class="bi bi-table" style="color:var(--erog-2)"></i>Resumen por Tipo de Erogación</div>
+          <div class="erog-chart-sub">Monto total y cantidad de transacciones por tipo</div>
+          <div id="benDetSummaryTbl" style="overflow-y:auto;max-height:310px"></div>
+        </div>
+      </div>
+    </div>
+    <!-- All transactions -->
+    <div class="erog-tbl-card mb-3">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border-color)">
+        <div style="font-size:13.5px;font-weight:700">Todas las Transacciones</div>
+        <div style="font-size:11.5px;color:var(--text-secondary)" id="benDetTxSub">—</div>
+      </div>
+      <div class="tbl-wrap" style="max-height:320px;overflow-y:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Fecha</th><th>Concepto</th><th>Vía de Pago</th><th>Tipo de Gasto</th><th>Tipo de Erogación</th><th>Monto</th>
+          </tr></thead>
+          <tbody id="benDetTxBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </main>
 
 <!-- EROG COLUMN MAP MODAL -->
@@ -454,8 +526,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         <div class="map-row"><div class="map-lbl">Vía de Pago</div><select class="fi map-sel" id="emVia"></select></div>
         <div class="map-row"><div class="map-lbl">Concepto</div><select class="fi map-sel" id="emConc"></select></div>
         <div class="map-row"><div class="map-lbl">Tipo de Gasto</div><select class="fi map-sel" id="emTipo"></select></div>
+        <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px 162px"><i class="bi bi-info-circle me-1"></i>Alimenta el gráfico "Distribución por Tipo de Gasto"</div>
         <div class="map-row"><div class="map-lbl" style="color:var(--erog-1);font-weight:700">Tipo de Erogación <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emTipoErog" style="border-color:var(--erog-1)"></select></div>
-        <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px 162px"><i class="bi bi-info-circle me-1"></i>Usado para el gráfico "Distribución por Tipo"</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px 162px"><i class="bi bi-info-circle me-1"></i>Usado en el análisis detallado al hacer doble clic en un beneficiario</div>
         <div class="map-row"><div class="map-lbl">Monto <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emMonto"></select></div>
       </div>
       <div class="modal-footer">
@@ -666,6 +739,7 @@ function applyErogFilters(){
 }
 
 function clearErogFilters(){
+  closeBenDetail();
   ['efBen','efD1','efD2','efAmin','efAmax'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('efTipo').value='';
   document.getElementById('efVia').value='';
@@ -683,9 +757,9 @@ function renderErogDash(){
   const count = data.length;
   const avg   = count>0?total/count:0;
 
-  // Top category — usa tipoErog para distribución
+  // Top category — usa tipo (Tipo de Gasto) para distribución
   const byTipo = {};
-  data.forEach(r=>{ byTipo[r.tipoErog]=(byTipo[r.tipoErog]||0)+r.monto; });
+  data.forEach(r=>{ byTipo[r.tipo]=(byTipo[r.tipo]||0)+r.monto; });
   const sortedTipos = Object.entries(byTipo).sort((a,b)=>b[1]-a[1]);
   const topCat = sortedTipos[0]||['—',0];
 
@@ -778,14 +852,115 @@ function renderErogTopBen(data){
   const maxAmt = sorted[0]?sorted[0][1]:1;
   const el = document.getElementById('erogTopBen');
   if(!sorted.length){ el.innerHTML='<div class="empty-s" style="padding:20px"><p>Sin datos</p></div>'; return; }
-  el.innerHTML = sorted.map(([name,amt],i)=>`
-    <div class="ben-row">
+  el.innerHTML =
+    '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;display:flex;align-items:center;gap:5px"><i class="bi bi-mouse2"></i>Doble clic en un beneficiario para ver su análisis detallado por Tipo de Erogación</div>' +
+    sorted.map(([name,amt],i)=>{
+      const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const esc  = name.replace(/"/g,'&quot;');
+      return `<div class="ben-row ben-row-clickable" ondblclick="openBenDetail('${safe}')" title="Doble clic — Ver detalle: ${esc}">
       <div class="ben-rank ${i<3?'top3':''}">${i+1}</div>
       <div class="ben-name" title="${name}">${name}</div>
       <div class="ben-bar-wrap"><div class="ben-bar-fill" style="width:${Math.round(amt/maxAmt*100)}%"></div></div>
       <div class="ben-amt">${fmtZ(amt)}</div>
-    </div>
-  `).join('');
+      <i class="bi bi-zoom-in" style="font-size:11px;color:var(--text-secondary);margin-left:8px;flex-shrink:0"></i>
+    </div>`;
+    }).join('');
+}
+
+// ── Beneficiary Detail ────────────────────────────────────────
+function openBenDetail(benName){
+  const recs = E.filtered.filter(r=>r.ben===benName);
+  if(!recs.length) return;
+
+  const total = recs.reduce((a,r)=>a+r.monto,0);
+  const count = recs.length;
+  const avg   = count>0?total/count:0;
+
+  // Group by tipoErog
+  const byTE = {};
+  recs.forEach(r=>{
+    if(!byTE[r.tipoErog]) byTE[r.tipoErog]={monto:0,count:0};
+    byTE[r.tipoErog].monto+=r.monto;
+    byTE[r.tipoErog].count+=1;
+  });
+  const sortedTE = Object.entries(byTE).sort((a,b)=>b[1].monto-a[1].monto);
+
+  // Header
+  document.getElementById('benDetName').textContent = benName;
+  document.getElementById('benDetSub').textContent  =
+    count+' transacciones · '+fmtZ(total)+' · '+sortedTE.length+' tipo(s) de erogación';
+
+  // KPIs
+  document.getElementById('benDetTotal').textContent = fmtZ(total);
+  document.getElementById('benDetCount').textContent = count.toLocaleString();
+  document.getElementById('benDetAvg').textContent   = fmtZ(avg);
+
+  // Donut chart
+  const dark = S.theme==='dark';
+  if(E.charts.benDetDonut){try{E.charts.benDetDonut.destroy();}catch(e){}}
+  E.charts.benDetDonut = new Chart(document.getElementById('benDetDonut'),{
+    type:'doughnut',
+    data:{labels:sortedTE.map(t=>t[0]),datasets:[{
+      data:sortedTE.map(t=>t[1].monto),
+      backgroundColor:EROG_PALETTE,borderWidth:2,
+      borderColor:dark?'#0F1E3A':'#fff',borderRadius:3
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:10.5}}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)} (${total?Math.round(c.parsed/total*100):0}%)`}}}}
+  });
+
+  // Summary table
+  document.getElementById('benDetSummaryTbl').innerHTML =
+    `<table class="tbl"><thead><tr>
+      <th>Tipo de Erogación</th><th>Monto Total</th><th>Transacciones</th><th>% del Total</th>
+    </tr></thead><tbody>`+
+    sortedTE.map(([te,v],i)=>{
+      const col=EROG_PALETTE[i%EROG_PALETTE.length];
+      const pct=total>0?Math.round(v.monto/total*100):0;
+      return `<tr>
+        <td><span style="background:${col}20;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${te}</span></td>
+        <td class="mono" style="font-weight:700;color:var(--erog-1)">${fmtZ(v.monto)}</td>
+        <td style="font-weight:600;text-align:center">${v.count}</td>
+        <td><div style="display:flex;align-items:center;gap:7px">
+          <div style="flex:1;height:5px;background:var(--border-color);border-radius:3px">
+            <div style="width:${pct}%;height:5px;border-radius:3px;background:${col}"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;min-width:32px;text-align:right">${pct}%</span>
+        </div></td>
+      </tr>`;
+    }).join('')+`</tbody></table>`;
+
+  // Transactions table
+  document.getElementById('benDetTxSub').textContent = count+' registros';
+  document.getElementById('benDetTxBody').innerHTML = recs.map(r=>{
+    const teIdx = sortedTE.findIndex(t=>t[0]===r.tipoErog);
+    const col   = EROG_PALETTE[teIdx>=0?teIdx%EROG_PALETTE.length:0];
+    return `<tr>
+      <td style="white-space:nowrap">${r.date||'—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc}">${r.conc||'—'}</td>
+      <td><span style="background:#6366F118;color:#6366F1;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.via}</span></td>
+      <td><span style="background:#F59E0B18;color:#F59E0B;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipo}</span></td>
+      <td><span style="background:${col}20;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipoErog}</span></td>
+      <td class="mono" style="font-weight:700;color:var(--erog-1)">${fmtZ(r.monto)}</td>
+    </tr>`;
+  }).join('');
+
+  // Show panel
+  document.getElementById('erogDashContent').style.display='none';
+  const panel=document.getElementById('erogBenDetailPanel');
+  panel.style.display='block';
+  panel.classList.add('fi-in');
+  setTimeout(()=>panel.classList.remove('fi-in'),300);
+  (window.top||window).scrollTo({top:0,behavior:'smooth'});
+}
+
+function closeBenDetail(){
+  const panel=document.getElementById('erogBenDetailPanel');
+  if(!panel||panel.style.display==='none') return;
+  panel.style.display='none';
+  if(E.charts.benDetDonut){try{E.charts.benDetDonut.destroy();}catch(e){} delete E.charts.benDetDonut;}
+  document.getElementById('erogDashContent').style.display='block';
 }
 
 // ── Table ─────────────────────────────────────────────────────
