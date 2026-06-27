@@ -585,10 +585,52 @@ function hideSp(){ document.getElementById('spOv').style.display='none'; }
 function clean(v){
   if(v===null||v===undefined||v==='') return 0;
   if(typeof v==='number') return v;
-  let s=String(v).replace(/[RD$\s,]/g,'').replace(/[^0-9.\-]/g,'');
-  const n=parseFloat(s); return isNaN(n)?0:n;
+  let s = String(v).replace(/[RD$\s€£¥ ]/g,'');
+  const lastDot   = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  if(lastDot>-1 && lastComma>-1){
+    // Both separators present — the last one is the decimal separator
+    if(lastDot>lastComma){
+      s = s.replace(/,/g,'');                     // 4,250,000.00 → remove commas
+    } else {
+      s = s.replace(/\./g,'').replace(',','.');    // 4.250.000,00 → remove dots, comma→dot
+    }
+  } else if(lastComma>-1){
+    const dec = s.substring(lastComma+1);
+    s = dec.length<=2 ? s.replace(',','.') : s.replace(/,/g,'');
+  } else if((s.match(/\./g)||[]).length>1){
+    s = s.replace(/\./g,'');                       // 4.250.000 → remove all dots (thousands)
+  }
+  s = s.replace(/[^0-9.\-]/g,'');
+  const n = parseFloat(s); return isNaN(n)?0:n;
 }
+
+// Normalize any date string to ISO YYYY-MM-DD for reliable comparison and grouping
+function parseDate(raw){
+  if(!raw) return '';
+  const s = String(raw).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  let m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if(m){
+    const [,p1,p2,y] = m;
+    const n1=parseInt(p1), n2=parseInt(p2);
+    // If first part > 12 → DD/MM/YYYY; if second > 12 → MM/DD/YYYY; default → DD/MM (Dominican)
+    if(n1>12) return `${y}-${p2.padStart(2,'0')}-${p1.padStart(2,'0')}`;
+    if(n2>12) return `${y}-${p1.padStart(2,'0')}-${p2.padStart(2,'0')}`;
+    return `${y}-${p2.padStart(2,'0')}-${p1.padStart(2,'0')}`;
+  }
+  const dt = new Date(s);
+  if(!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
+  return s;
+}
+
 function fmtZ(v){ return 'RD$ '+(parseFloat(v)||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtAbbr(v){
+  if(v>=1e9) return 'RD$'+(v/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  if(v>=1e6) return 'RD$'+(v/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(v>=1e3) return 'RD$'+(v/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return 'RD$'+Math.round(v);
+}
 
 // ══════════════════════════════════════════════════════════════
 // ─── EROGACIONES MODULE ───────────────────────────────────────
@@ -688,7 +730,7 @@ function processErog(){
     try {
       E.mapped = E.raw.map((row,i)=>({
         _i: i,
-        date:     row[E.eMap.date]     || '',
+        date:     parseDate(row[E.eMap.date] || ''),
         ben:      row[E.eMap.ben]      || 'Sin beneficiario',
         via:      row[E.eMap.via]      || 'Sin especificar',
         conc:     row[E.eMap.conc]     || '',
@@ -803,19 +845,11 @@ function renderErogCharts(data, byTipo, sortedTipos){
         tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)} (${total?Math.round(c.parsed/total*100):0}%)`}} } }
   });
 
-  // Line — tendencia mensual
+  // Line — tendencia mensual (dates are already ISO from parseDate)
   const byMonth = {};
   data.forEach(r=>{
-    const raw = r.date||'';
-    let m = '';
-    // Try to parse date
-    const d = new Date(raw);
-    if(!isNaN(d.getTime())) m = d.toISOString().slice(0,7);
-    else if(raw.match(/\d{2}[\/\-]\d{2}[\/\-]\d{4}/)){
-      const parts = raw.split(/[\/\-]/);
-      m = parts[2]+'-'+parts[1];
-    } else m = raw.slice(0,7)||'Sin fecha';
-    byMonth[m] = (byMonth[m]||0)+r.monto;
+    const m = r.date ? r.date.slice(0,7) : 'Sin fecha';
+    byMonth[m]=(byMonth[m]||0)+r.monto;
   });
   const months = Object.keys(byMonth).sort();
   E.charts.line = new Chart(document.getElementById('erogLine'),{
@@ -826,7 +860,7 @@ function renderErogCharts(data, byTipo, sortedTipos){
              fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'#6366F1', borderWidth:2 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed)}`}}},
-      scales:{ y:{beginAtZero:true, ticks:{callback:v=>'RD$'+(v>=1000?(v/1000).toFixed(0)+'K':v)}, grid:{color:grid}}, x:{grid:{display:false}} } }
+      scales:{ y:{beginAtZero:true, ticks:{callback:v=>fmtAbbr(v)}, grid:{color:grid}}, x:{grid:{display:false}} } }
   });
 
   // Vía de pago doughnut
