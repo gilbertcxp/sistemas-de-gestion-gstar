@@ -391,45 +391,58 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         </div>
       </div>
 
-      <!-- Charts row 2: Distribución por Tipo + Tendencia Mensual -->
+      <!-- Charts row 2: Distribución + Tendencia + Vía de Pago (3 columns) -->
       <div class="row g-3 mb-3">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="erog-chart-card">
             <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo de Gasto</div>
             <div class="erog-chart-sub">Monto total agrupado por tipo de gasto</div>
             <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
           </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="erog-chart-card">
             <div class="erog-chart-title"><i class="bi bi-graph-up-arrow" style="color:var(--erog-4)"></i>Tendencia Mensual</div>
             <div class="erog-chart-sub">Evolución de salidas de efectivo</div>
             <div class="erog-ch-h240"><canvas id="erogLine"></canvas></div>
           </div>
         </div>
-      </div>
-
-      <!-- Vía de pago chart + Detail table -->
-      <div class="row g-3 mb-3">
         <div class="col-md-4">
-          <div class="erog-chart-card" style="height:100%">
+          <div class="erog-chart-card">
             <div class="erog-chart-title"><i class="bi bi-credit-card-fill" style="color:var(--amber)"></i>Por Vía de Pago</div>
-            <div class="erog-chart-sub">Distribución por método de pago</div>
-            <div class="erog-ch-h220"><canvas id="erogVia"></canvas></div>
+            <div class="erog-chart-sub">Monto por método de pago</div>
+            <div class="erog-ch-h240"><canvas id="erogVia"></canvas></div>
           </div>
         </div>
-        <div class="col-md-8">
+      </div>
+
+      <!-- Row 3: Tabla full-width con filtros por columna -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
           <div class="erog-tbl-card">
-            <div style="padding:14px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div style="font-size:13.5px;font-weight:700">Detalle de Erogaciones</div>
-                <div style="font-size:11.5px;color:var(--text-secondary)">Mostrando <strong id="erogShowN">0</strong> de <strong id="erogTotN">0</strong> registros</div>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border-color)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div>
+                  <div style="font-size:13.5px;font-weight:700">Detalle de Erogaciones</div>
+                  <div style="font-size:11.5px;color:var(--text-secondary)">Mostrando <strong id="erogShowN">0</strong> de <strong id="erogTotN">0</strong> registros</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><i class="bi bi-funnel"></i>Filtros de tabla (independientes de los filtros globales)</div>
+              </div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+                <div style="position:relative">
+                  <i class="bi bi-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:11px;pointer-events:none"></i>
+                  <input class="fi" style="padding-left:26px;height:32px;font-size:12px;width:170px" placeholder="Buscar beneficiario/concepto..." id="tfQ" oninput="applyTblFilter()">
+                </div>
+                <select class="fi" style="height:32px;font-size:12px" id="tfVia" onchange="applyTblFilter()"><option value="">Todas las vías</option></select>
+                <select class="fi" style="height:32px;font-size:12px" id="tfTipo" onchange="applyTblFilter()"><option value="">Todos los tipos gasto</option></select>
+                <select class="fi" style="height:32px;font-size:12px" id="tfTipoErog" onchange="applyTblFilter()"><option value="">Todos los tipos erog.</option></select>
+                <button class="btn-s" style="padding:4px 11px;font-size:11.5px;height:32px" onclick="clearTblFilter()"><i class="bi bi-x-circle"></i>Limpiar</button>
               </div>
             </div>
-            <div class="tbl-wrap" style="max-height:260px;overflow-y:auto">
+            <div class="tbl-wrap" style="max-height:340px;overflow-y:auto">
               <table class="tbl">
                 <thead><tr>
-                  <th>Fecha</th><th>Beneficiario</th><th>Vía de Pago</th><th>Concepto</th><th>Tipo</th><th>Monto</th>
+                  <th>Fecha</th><th>Beneficiario</th><th>Vía de Pago</th><th>Concepto</th><th>Tipo de Gasto</th><th>Tipo de Erogación</th><th>Monto</th>
                 </tr></thead>
                 <tbody id="erogTblBody"></tbody>
               </table>
@@ -636,8 +649,9 @@ function fmtAbbr(v){
 // ─── EROGACIONES MODULE ───────────────────────────────────────
 // ══════════════════════════════════════════════════════════════
 const E = {
-  raw:[], headers:[], mapped:[], filtered:[],
-  eMap:{}, page:1, perPage:15, charts:{}
+  raw:[], headers:[], mapped:[], filtered:[], tblFiltered:[],
+  eMap:{}, tblFilter:{q:'',via:'',tipo:'',tipoErog:''},
+  page:1, perPage:15, charts:{}
 };
 
 const EROG_PALETTE = [
@@ -820,9 +834,10 @@ function renderErogDash(){
   document.getElementById('ekTopCatSub').textContent = fmtZ(topCat[1])+' ('+
     (total>0?Math.round(topCat[1]/total*100):0)+'% del total)';
 
+  initTblFilters();
   renderErogCharts(data, byTipo, sortedTipos);
   renderErogTopBen(data);
-  renderErogTable(data);
+  renderErogTable(E.tblFiltered);
 }
 
 // ── Charts ────────────────────────────────────────────────────
@@ -863,18 +878,27 @@ function renderErogCharts(data, byTipo, sortedTipos){
       scales:{ y:{beginAtZero:true, ticks:{callback:v=>fmtAbbr(v)}, grid:{color:grid}}, x:{grid:{display:false}} } }
   });
 
-  // Vía de pago doughnut
+  // Vía de pago — barra horizontal
   const byVia = {};
   data.forEach(r=>{ byVia[r.via]=(byVia[r.via]||0)+r.monto; });
   const viaEntries = Object.entries(byVia).sort((a,b)=>b[1]-a[1]);
+  const VIA_COLORS = ['#F59E0B','#14B8A6','#EC4899','#6366F1','#10B981','#F97316','#8B5CF6','#3B82F6','#EF4444','#84CC16'];
+  const viaBg  = viaEntries.map((_,i)=>VIA_COLORS[i%VIA_COLORS.length]+'BB');
+  const viaBdr = viaEntries.map((_,i)=>VIA_COLORS[i%VIA_COLORS.length]);
   E.charts.via = new Chart(document.getElementById('erogVia'),{
-    type:'doughnut',
-    data:{ labels:viaEntries.map(v=>v[0]), datasets:[{ data:viaEntries.map(v=>v[1]),
-      backgroundColor:['#F59E0B','#14B8A6','#EC4899','#6366F1','#10B981','#F97316'],
-      borderWidth:2, borderColor:dark?'#0F1E3A':'#fff', borderRadius:3 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'60%',
-      plugins:{ legend:{position:'bottom',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:9.5}}},
-        tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)}`}} } }
+    type:'bar',
+    data:{ labels:viaEntries.map(v=>v[0]), datasets:[{
+      label:'Monto', data:viaEntries.map(v=>v[1]),
+      backgroundColor:viaBg, borderColor:viaBdr, borderWidth:1.5, borderRadius:5
+    }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed.x)}`}} },
+      scales:{
+        x:{beginAtZero:true, ticks:{callback:v=>fmtAbbr(v)}, grid:{color:grid}},
+        y:{grid:{display:false}, ticks:{font:{size:10}, color:txt}}
+      }
+    }
   });
 }
 
@@ -997,6 +1021,52 @@ function closeBenDetail(){
   document.getElementById('erogDashContent').style.display='block';
 }
 
+// ── Table filters ────────────────────────────────────────────
+function initTblFilters(){
+  E.tblFilter = {q:'',via:'',tipo:'',tipoErog:''};
+  E.tblFiltered = [...E.filtered];
+  const qEl = document.getElementById('tfQ'); if(qEl) qEl.value='';
+  const popSel = (id, vals, lbl) => {
+    const el = document.getElementById(id); if(!el) return;
+    el.innerHTML = `<option value="">${lbl}</option>`;
+    vals.forEach(v=>{ el.innerHTML += `<option value="${v}">${v}</option>`; });
+  };
+  popSel('tfVia',     [...new Set(E.filtered.map(r=>r.via))].sort(),      'Todas las vías');
+  popSel('tfTipo',    [...new Set(E.filtered.map(r=>r.tipo))].sort(),     'Todos los tipos gasto');
+  popSel('tfTipoErog',[...new Set(E.filtered.map(r=>r.tipoErog))].sort(),'Todos los tipos erog.');
+}
+
+function applyTblFilter(){
+  E.tblFilter.q        = (document.getElementById('tfQ').value||'').toLowerCase();
+  E.tblFilter.via      = document.getElementById('tfVia').value;
+  E.tblFilter.tipo     = document.getElementById('tfTipo').value;
+  E.tblFilter.tipoErog = document.getElementById('tfTipoErog').value;
+  E.tblFiltered = E.filtered.filter(r=>{
+    const q = E.tblFilter.q;
+    if(q && !(
+      (r.ben||'').toLowerCase().includes(q)||
+      (r.conc||'').toLowerCase().includes(q)||
+      (r.date||'').includes(q)
+    )) return false;
+    if(E.tblFilter.via      && r.via!==E.tblFilter.via)           return false;
+    if(E.tblFilter.tipo     && r.tipo!==E.tblFilter.tipo)         return false;
+    if(E.tblFilter.tipoErog && r.tipoErog!==E.tblFilter.tipoErog) return false;
+    return true;
+  });
+  E.page=1;
+  renderErogTable(E.tblFiltered);
+}
+
+function clearTblFilter(){
+  ['tfQ','tfVia','tfTipo','tfTipoErog'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  E.tblFilter={q:'',via:'',tipo:'',tipoErog:''};
+  E.tblFiltered=[...E.filtered];
+  E.page=1;
+  renderErogTable(E.tblFiltered);
+}
+
 // ── Table ─────────────────────────────────────────────────────
 function renderErogTable(data){
   const tot   = data.length;
@@ -1013,16 +1083,19 @@ function renderErogTable(data){
 
   const tb = document.getElementById('erogTblBody');
   if(!sl.length){
-    tb.innerHTML='<tr><td colspan="6"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
+    tb.innerHTML='<tr><td colspan="7"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
   } else {
     tb.innerHTML = sl.map(r=>{
-      const col = catColors[r.tipo]||'#6366F1';
+      const col  = catColors[r.tipo]||'#6366F1';
+      const teIdx = [...new Set(data.map(x=>x.tipoErog))].indexOf(r.tipoErog);
+      const teCol = EROG_PALETTE[teIdx>=0?teIdx%EROG_PALETTE.length:0];
       return `<tr>
         <td style="white-space:nowrap">${r.date||'—'}</td>
-        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben}">${r.ben}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben}">${r.ben}</td>
         <td><span style="background:${col}18;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap">${r.via}</span></td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc}">${r.conc||'—'}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc}">${r.conc||'—'}</td>
         <td><span style="background:${col}20;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipo}</span></td>
+        <td><span style="background:${teCol}20;color:${teCol};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipoErog}</span></td>
         <td class="mono" style="font-weight:700;color:var(--erog-1)">${fmtZ(r.monto)}</td>
       </tr>`;
     }).join('');
@@ -1042,7 +1115,7 @@ function renderErogPag(pages){
   if(E.page<pages) h+=`<button class="pag-btn" onclick="egp(${E.page+1})"><i class="bi bi-chevron-right"></i></button>`;
   el.innerHTML=h;
 }
-function egp(p){ E.page=p; renderErogTable(E.filtered); }
+function egp(p){ E.page=p; renderErogTable(E.tblFiltered); }
 
 // ── Drag & drop for erogaciones ───────────────────────────────
 function setupErogDnD(){
