@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carta de Retención · CXP · Gstar</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 <script src="../auth/auth.js"></script>
 <script>if(window.Auth) Auth.requireAuth();</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -244,6 +246,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
   </div>
   <div class="tb-actions">
     <button class="btn btn-outline" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    <button class="btn btn-outline" id="btnGuardar" onclick="guardarReporte(this)"><i class="bi bi-cloud-upload"></i> Guardar</button>
     <button class="btn btn-primary" id="btnPDF" onclick="exportPDF(this)"><i class="bi bi-file-pdf"></i> Descargar PDF</button>
   </div>
 </div>
@@ -592,6 +595,76 @@ function exportPDF(btn){
     console.error('PDF error:',e);
     btn.disabled=false; btn.innerHTML='<i class="bi bi-file-pdf"></i> Descargar PDF';
   });
+}
+
+/* ======================== GUARDAR EN SUPABASE ======================== */
+async function guardarReporte(btn){
+  if(!window.db){ alert('Sin conexión a la base de datos.'); return; }
+
+  var nombre  = document.getElementById('f-nombre').value.trim();
+  var rnc     = document.getElementById('f-rnc').value.trim();
+  var mes     = document.getElementById('f-mes').value;
+  var anio    = document.getElementById('f-anio').value;
+  var emision = document.getElementById('f-emision').value;
+  var trato   = document.getElementById('f-trato').value;
+
+  if(!nombre){ alert('Ingresa el nombre del proveedor antes de guardar.'); return; }
+  if(facts.length === 0){ alert('Agrega al menos una factura antes de guardar.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Guardando...';
+
+  try {
+    var session = window.Auth ? window.Auth.getSession() : null;
+    var userId  = session && session.user ? session.user.id : null;
+
+    // Guardar cada factura en tabla facturas
+    var facturasPayload = facts.map(function(f){
+      return {
+        proveedor_nombre : nombre,
+        proveedor_rnc    : rnc,
+        tratamiento      : trato,
+        periodo_mes      : mes,
+        periodo_anio     : parseInt(anio) || null,
+        fecha_emision    : emision || null,
+        fecha_factura    : f.fd   || null,
+        no_factura       : f.no   || null,
+        ncf              : f.ncf  || null,
+        monto            : parseFloat(f.monto)  || 0,
+        itbis            : parseFloat(f.itbis)  || 0,
+        retencion_isr    : parseFloat(f.isr)    || 0,
+        retencion_itbis  : parseFloat(f.ritbis) || 0,
+        neto_pagado      : parseFloat(f.neto)   || 0,
+        fecha_pago       : f.fp   || null,
+        created_by       : userId
+      };
+    });
+
+    var { data: factsData, error: factsErr } = await window.db.from('facturas').insert(facturasPayload).select('id');
+    if(factsErr) throw factsErr;
+
+    // Guardar reporte con referencia a las facturas
+    var facturasIds = factsData.map(function(r){ return r.id; });
+    var { error: repErr } = await window.db.from('reportes').insert({
+      tipo             : 'carta_retencion',
+      proveedor_nombre : nombre,
+      proveedor_rnc    : rnc,
+      periodo_mes      : mes,
+      periodo_anio     : parseInt(anio) || null,
+      fecha_emision    : emision || null,
+      facturas_ids     : facturasIds,
+      created_by       : userId
+    });
+    if(repErr) throw repErr;
+
+    btn.innerHTML = '<i class="bi bi-check-circle"></i> Guardado';
+    setTimeout(function(){ btn.disabled=false; btn.innerHTML='<i class="bi bi-cloud-upload"></i> Guardar'; }, 2500);
+
+  } catch(e) {
+    console.error('Error al guardar:', e);
+    alert('Error al guardar: ' + (e.message || 'intenta de nuevo.'));
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-cloud-upload"></i> Guardar';
+  }
 }
 
 /* ======================== THEME SYNC ======================== */
