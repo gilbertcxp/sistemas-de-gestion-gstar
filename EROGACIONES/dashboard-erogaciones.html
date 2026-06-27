@@ -55,13 +55,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;color:#2D4070;text-align:center}
 
 /* MAIN */
-.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
+.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column;transition:margin-left .3s}
 .topbar{background:var(--bg-card);border-bottom:1px solid var(--border-color);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
 .topbar-title{font-size:17px;font-weight:700}
 .topbar-actions{display:flex;align-items:center;gap:10px}
 .icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
 .icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
-.mobile-toggle{display:none;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:2px}
+.mobile-toggle{display:flex;align-items:center;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:4px 6px;border-radius:7px;transition:color .15s,background .15s}
+.mobile-toggle:hover{color:var(--blue);background:var(--blue-lt)}
 
 /* PAGES */
 .page{padding:24px;display:none}
@@ -128,10 +129,16 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 ::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
 
+/* SIDEBAR COLLAPSE (desktop) */
+@media(min-width:769px){
+  .sidebar.sidebar-collapsed{transform:translateX(calc(-1 * var(--sidebar)))}
+  .main-content.sidebar-collapsed{margin-left:0}
+}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
-  .main-content{margin-left:0}.mobile-toggle{display:flex!important}
+  .main-content{margin-left:0}
   .page{padding:14px}.topbar{padding:10px 14px}
 }
 
@@ -245,7 +252,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <main class="main-content">
   <div class="topbar">
     <div class="d-flex align-items-center gap-3">
-      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <button class="mobile-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Mostrar / ocultar panel lateral"><i class="bi bi-layout-sidebar" id="sidebarToggleIcon"></i></button>
       <span class="topbar-title" id="pgTitle">Cargar Erogaciones</span>
     </div>
     <div class="topbar-actions">
@@ -1203,6 +1210,35 @@ function exportErogPDF(){
     doc.save('erogaciones_'+new Date().toISOString().slice(0,10)+'.pdf');
   } catch(e){ console.error(e); alert('Error generando PDF.'); }
 }
+
+// ─── SIDEBAR TOGGLE ──────────────────────────────────────────
+function toggleSidebar(){
+  const isMobile = window.innerWidth<=768;
+  const sidebar  = document.getElementById('sidebar');
+  const main     = document.querySelector('.main-content');
+  if(isMobile){ sidebar.classList.toggle('open'); return; }
+  const collapsed = sidebar.classList.toggle('sidebar-collapsed');
+  main.classList.toggle('sidebar-collapsed', collapsed);
+  sessionStorage.setItem('erogSidebarCollapsed', collapsed?'1':'0');
+  const icon = document.getElementById('sidebarToggleIcon');
+  if(icon) icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+}
+
+(function initSidebar(){
+  if(window.innerWidth<=768) return;
+  // Collapsed by default (null = first visit → collapse)
+  const saved     = sessionStorage.getItem('erogSidebarCollapsed');
+  const collapsed = saved===null ? true : (saved==='1');
+  if(collapsed){
+    document.getElementById('sidebar').classList.add('sidebar-collapsed');
+    document.querySelector('.main-content').classList.add('sidebar-collapsed');
+    const icon = document.getElementById('sidebarToggleIcon');
+    if(icon) icon.className = 'bi bi-layout-sidebar';
+  } else {
+    const icon = document.getElementById('sidebarToggleIcon');
+    if(icon) icon.className = 'bi bi-layout-sidebar-inset';
+  }
+})();
 
 // ─── INIT ────────────────────────────────────────────────────
 nav('erog-upload');
