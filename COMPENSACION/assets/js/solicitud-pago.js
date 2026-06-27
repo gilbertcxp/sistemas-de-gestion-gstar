@@ -117,6 +117,7 @@ const SolicitudPago = (() => {
   // ------ Public: render view ------
   function render(){
     DataModule.load();
+    if(_corteSelected) _rows = DataModule.getCXPByCorte(_corteSelected);
     _populateCortes();
     // Restore saved balance values
     const saved = Storage.getBankData();

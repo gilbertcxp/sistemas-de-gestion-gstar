@@ -113,6 +113,7 @@ const EstadoCuenta = (() => {
   // ------ Public: render view ------
   function render(){
     DataModule.load();
+    if(_consorcioSelected) _rows = DataModule.getByConsorcio(_consorcioSelected);
     _populateConsorcios();
     _updatePreview();
   }
