@@ -98,8 +98,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .btn-red{background:#D6453F;color:#fff}.btn-red:hover{filter:brightness(1.08);box-shadow:0 6px 16px rgba(214,69,63,.4)}
 
 /* ============== KPI CARDS ============== */
-.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:22px}
-@media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
 @media(max-width:720px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:460px){.kpi-grid{grid-template-columns:1fr}}
 .kpi{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:17px 17px 16px;
@@ -539,18 +538,12 @@ function renderKPIs(totBancos, totCert){
   const disponible = totBancos + totCert;
 
   const cards = [
-    {hero:true, color:'', ico:'bi-wallet2', label:'Disponibilidad Total', val:disponible,
-      foot:'<i class="bi bi-check-circle-fill"></i> Efectivo disponible neto'},
-    {color:'c-blue', ico:'bi-bank2', label:'Total en Bancos', val:totBancos,
-      foot:b.length+' cuentas operativas'},
-    {color:'c-gold', ico:'bi-graph-up-arrow', label:'Certificados e Inversiones', val:totCert,
-      foot:c.length+' instrumentos a plazo'},
-    {color:'c-green', ico:'bi-cash-stack', label:'Intereses Ganados', val:intereses,
-      foot:'Rendimiento del período'},
     {color:'c-red', ico:'bi-arrow-down-up', label:'Cheques y Transf. en Tránsito', val:transito,
       foot:'Pendiente de aplicar'},
     {color:'c-slate', ico:'bi-arrow-up-right-circle', label:'Pagos de la Semana y Provisión', val:pagos,
-      foot:'Compromisos de la semana'}
+      foot:'Compromisos de la semana'},
+    {color:'c-blue', ico:'bi-bank2', label:'Total en Bancos', val:totBancos,
+      foot:b.length+' cuentas operativas'}
   ];
 
   document.getElementById('kpiGrid').innerHTML = cards.map((k,i)=>{
