@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facturas de Compensación — Gstar Services</title>
+<link rel="icon" href="assets/img/sello.png">
+<!-- Guard de autenticación -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+
+<!-- Librerías empaquetadas localmente: la app funciona 100% sin internet -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<script src="assets/vendor/html2canvas.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+<script src="assets/vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="assets/vendor/jszip.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="sidebar-scrim" id="scrim" onclick="UI.closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">FC</div>
+      <div class="txt">
+        <b>Facturas Compensación</b>
+        <span>GSTAR SERVICES S.A.</span>
+      </div>
+    </div>
+
+    <div class="balance-pulse" id="balancePulse"></div>
+    <div class="balance-pulse-label">
+      <span><b id="pulseNeg">0</b> a facturar</span>
+      <span><b id="pulsePos">0</b> sin facturar</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Panel de control
+      </button>
+      <button class="nav-item" data-view="cargar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        Cargar Excel
+      </button>
+      <button class="nav-item" data-view="facturas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+        Facturas
+        <span class="badge-count" id="navInvCount" style="margin-left:auto;">0</span>
+      </button>
+      <button class="nav-item" data-view="clientes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c.7-3.4 3.3-5.5 6.5-5.5s5.8 2.1 6.5 5.5"/><path d="M16.5 4.8c1.6.4 2.8 1.9 2.8 3.6 0 1.7-1.2 3.2-2.8 3.6M21 20c-.5-2.4-1.9-4.1-3.8-4.9"/></svg>
+        Clientes
+      </button>
+      <button class="nav-item" data-view="reportes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7"/><path d="M3 19h18"/></svg>
+        Reportes
+      </button>
+      <div class="nav-section">Sistema</div>
+      <button class="nav-item" data-view="config">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V20a2.06 2.06 0 1 1-4.12 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H4a2.06 2.06 0 1 1 0-4.12h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1.03-1.55V4a2.06 2.06 0 1 1 4.12 0v.1a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1.03H20a2.06 2.06 0 1 1 0 4.12h-.1a1.7 1.7 0 0 0-1.55 1.03Z"/></svg>
+        Configuración
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <b>Gstar Services S.A.</b><br>RNC 131751016
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Panel de control</h1>
+          <p class="sub">Resumen ejecutivo de facturación de compensación</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" data-view="cargar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Cargar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-kpi">
+        <div class="kpi red">
+          <div class="lbl">Facturas generadas</div>
+          <div class="val" id="kpiTotalFacturas">0</div>
+          <div class="delta">Numeración FC-000001…</div>
+        </div>
+        <div class="kpi indigo">
+          <div class="lbl">Monto total facturado</div>
+          <div class="val" id="kpiMontoTotal">RD$ 0.00</div>
+          <div class="delta">Original + 2%</div>
+        </div>
+        <div class="kpi blue">
+          <div class="lbl">Total 2% generado</div>
+          <div class="val" id="kpiTotal2">RD$ 0.00</div>
+          <div class="delta">Cargo administrativo</div>
+        </div>
+        <div class="kpi ok">
+          <div class="lbl">Clientes facturados</div>
+          <div class="val" id="kpiClientes">0</div>
+          <div class="delta" id="kpiClientesTotal">de 0 registrados</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Última generación</div>
+          <div class="val" id="kpiUltimaFecha" style="font-size:17px;">—</div>
+          <div class="delta" id="kpiUltimaHora">Sin actividad</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Facturas recientes</h3>
+              <p class="sub">Últimos movimientos generados</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-view="facturas">Ver todas</button>
+          </div>
+          <div class="card-body pad-0">
+            <div class="table-wrap">
+              <table class="t" id="tblRecientes">
+                <thead><tr><th>No.</th><th>Cliente</th><th>Fecha</th><th class="r">Monto orig.</th><th class="r">2%</th><th class="r">Total</th><th>Estado</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Top consorcios facturados</h3>
+              <p class="sub">Por monto total acumulado</p>
+            </div>
+          </div>
+          <div class="card-body" id="topClientesChart">
+            <div class="t-empty">Aún no hay facturas generadas.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CARGAR EXCEL ===================== -->
+    <section class="view" id="view-cargar">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Cargar archivo de compensación</h1>
+          <p class="sub">Sube el consolidado de ventas/premios (.xls, .xlsx) para generar las facturas automáticamente</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="dropzone" id="dropzone">
+            <div class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            </div>
+            <h4>Arrastra el archivo aquí o haz clic para seleccionarlo</h4>
+            <p>Formatos compatibles: .xls (consolidado HTML), .xlsx, .xls binario</p>
+            <input type="file" id="fileInput" accept=".xls,.xlsx">
+          </div>
+          <div id="fileInfo" class="flex gap10" style="margin-top:14px;display:none;">
+            <span class="pill blue" id="fileInfoName">archivo.xls</span>
+            <span class="muted" style="font-size:12.5px;" id="fileInfoMeta"></span>
+            <button class="btn btn-ghost btn-sm" id="btnClearFile">Quitar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="cardPreview" style="display:none;">
+        <div class="card-head">
+          <div>
+            <h3>Vista previa del periodo</h3>
+            <p class="sub" id="previewMeta">—</p>
+          </div>
+          <div class="flex gap8">
+            <span class="pill red"><span class="pill-dot"></span><b id="cntNeg">0</b>&nbsp;a facturar</span>
+            <span class="pill blue"><span class="pill-dot"></span><b id="cntPos">0</b>&nbsp;sin facturar</span>
+            <span class="pill gray"><b id="cntZero">0</b>&nbsp;en cero</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding-bottom:8px;">
+          <div class="field-row3">
+            <div class="field">
+              <label class="f-label">Periodo — Desde</label>
+              <input type="date" class="input" id="periodoDesde">
+            </div>
+            <div class="field">
+              <label class="f-label">Periodo — Hasta</label>
+              <input type="date" class="input" id="periodoHasta">
+            </div>
+            <div class="field">
+              <label class="f-label">Vendedor</label>
+              <input type="text" class="input" id="campoVendedor" value="8- ELUIN P.">
+            </div>
+          </div>
+          <p class="hint">Concepto generado: <span id="conceptoPreview" class="mono">—</span></p>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap" style="max-height:420px;">
+            <table class="t" id="tblPreview">
+              <thead><tr>
+                <th style="width:30px;"><input type="checkbox" class="chk" id="chkAll"></th>
+                <th>Consorcio (Excel)</th>
+                <th>Cliente vinculado</th>
+                <th class="r">Balance</th>
+                <th class="r">Monto a facturar</th>
+                <th class="r">2%</th>
+                <th class="r">Total</th>
+                <th>Estado</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);">
+          <span class="muted" style="font-size:12.5px;margin-right:auto;" id="genSummary"></span>
+          <button class="btn btn-ghost" id="btnCancelPreview">Cancelar</button>
+          <button class="btn btn-accent" id="btnGenerar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg>
+            Generar facturas seleccionadas
+          </button>
+        </div>
+      </div>
+
+      <div class="card" id="cardUD" style="display:none;">
+        <div class="card-head">
+          <div>
+            <h3>Factura consolidada — Grupo UD</h3>
+            <p class="sub">Los consorcios UD no generan factura individual: se consolidan en una sola factura por carga</p>
+          </div>
+          <label class="flex gap8" style="cursor:pointer;font-size:13px;font-weight:600;">
+            <input type="checkbox" class="chk" id="chkIncludeUD" checked>
+            Incluir factura UD
+          </label>
+        </div>
+        <div class="card-body">
+          <div class="grid-kpi" style="grid-template-columns:repeat(4,1fr);">
+            <div class="kpi red">
+              <div class="lbl">Cuentas por cobrar</div>
+              <div class="val" id="udCxcCount">0</div>
+              <div class="delta" id="udCxcTotal">RD$ 0.00</div>
+            </div>
+            <div class="kpi blue">
+              <div class="lbl">Cuentas por pagar</div>
+              <div class="val" id="udCxpCount">0</div>
+              <div class="delta" id="udCxpTotal">RD$ 0.00</div>
+            </div>
+            <div class="kpi indigo" style="grid-column:span 2;">
+              <div class="lbl">Resultado neto</div>
+              <div class="val" id="udResultado">—</div>
+              <div class="delta">Cuentas por cobrar − Cuentas por pagar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FACTURAS / HISTORIAL ===================== -->
+    <section class="view" id="view-facturas">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Historial de facturas</h1>
+          <p class="sub">Consulta, filtra y exporta las facturas generadas</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="btnExportExcelGeneral">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Excel
+          </button>
+          <button class="btn btn-ghost" id="btnExportPdfGeneral">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            PDF reporte
+          </button>
+          <button class="btn btn-soft" id="btnExportPdfBatch" disabled title="Un solo PDF con todas las facturas seleccionadas, una por página">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/></svg>
+            PDF combinado (<span id="selCount">0</span>)
+          </button>
+          <button class="btn btn-accent" id="btnExportZipTodas" title="Un archivo PDF por cada factura, comprimidos en una carpeta ZIP">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8m18 0L12 3 3 8m18 0H3m7 4h4"/></svg>
+            Descargar todas en ZIP
+          </button>
+        </div>
+      </div>
+      <p class="sub" id="zipHint" style="margin-top:-14px;"></p>
+
+      <div class="card">
+        <div class="card-body" style="padding-bottom:14px;">
+          <div class="filters-bar">
+            <div class="field">
+              <label class="f-label">Cliente</label>
+              <select class="input" id="filtroCliente"><option value="">Todos</option></select>
+            </div>
+            <div class="field">
+              <label class="f-label">Número de factura</label>
+              <input type="text" class="input" id="filtroNumero" placeholder="FC-000001">
+            </div>
+            <div class="field">
+              <label class="f-label">Desde</label>
+              <input type="date" class="input" id="filtroFechaDesde">
+            </div>
+            <div class="field">
+              <label class="f-label">Hasta</label>
+              <input type="date" class="input" id="filtroFechaHasta">
+            </div>
+            <div class="field">
+              <label class="f-label">Monto mín.</label>
+              <input type="number" class="input" id="filtroMontoMin" placeholder="0">
+            </div>
+            <div class="field">
+              <label class="f-label">Monto máx.</label>
+              <input type="number" class="input" id="filtroMontoMax" placeholder="999999">
+            </div>
+            <div class="field">
+              <label class="f-label">Estado</label>
+              <select class="input" id="filtroEstado">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagada">Pagada</option>
+                <option value="Anulada">Anulada</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btnLimpiarFiltros">Limpiar</button>
+          </div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblFacturas">
+              <thead><tr>
+                <th style="width:30px;"><input type="checkbox" class="chk" id="chkAllFacturas"></th>
+                <th>Número</th><th>Cliente</th><th>Fecha</th>
+                <th class="r">Monto original</th><th class="r">2%</th><th class="r">Total</th>
+                <th>Estado</th><th></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CLIENTES ===================== -->
+    <section class="view" id="view-clientes">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Clientes / Consorcios</h1>
+          <p class="sub">Base de datos usada para autocompletar las facturas</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" id="btnNuevoCliente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Nuevo cliente
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding-bottom:12px;">
+          <div class="search-wrap" style="max-width:340px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input class="input" id="buscarCliente" placeholder="Buscar consorcio…">
+          </div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblClientes">
+              <thead><tr>
+                <th>Consorcio</th><th>RNC</th><th>Teléfono</th><th>Correo</th><th>Contacto</th><th>Dirección</th><th></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REPORTES ===================== -->
+    <section class="view" id="view-reportes">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Reportes</h1>
+          <p class="sub">Exporta reportes generales de toda la facturación</p>
+        </div>
+      </div>
+      <div class="grid-kpi" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi red"><div class="lbl">Facturas</div><div class="val" id="repTotalFacturas">0</div></div>
+        <div class="kpi indigo"><div class="lbl">Monto facturado</div><div class="val" id="repMontoTotal">RD$ 0.00</div></div>
+        <div class="kpi blue"><div class="lbl">2% acumulado</div><div class="val" id="repTotal2">RD$ 0.00</div></div>
+        <div class="kpi ok"><div class="lbl">Consorcios</div><div class="val" id="repClientes">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>Exportar</h3><p class="sub">Reporte consolidado de todas las facturas en el historial</p></div></div>
+        <div class="card-body flex gap10 wrap">
+          <button class="btn btn-primary" id="btnRepExcel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Reporte general en Excel
+          </button>
+          <button class="btn btn-primary" id="btnRepPdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Reporte general en PDF
+          </button>
+          <button class="btn btn-ghost" id="btnRepClientesExcel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Listado de clientes en Excel
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>Por consorcio</h3><p class="sub">Acumulado histórico facturado por cliente</p></div></div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblRepClientes">
+              <thead><tr><th>Consorcio</th><th class="c">Facturas</th><th class="r">Monto original</th><th class="r">2%</th><th class="r">Total</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CONFIGURACIÓN ===================== -->
+    <section class="view" id="view-config">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Configuración</h1>
+          <p class="sub">Parámetros generales del sistema</p>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><div><h3>Parámetros de facturación</h3></div></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field">
+                <label class="f-label">Porcentaje de compensación</label>
+                <input type="number" class="input" id="cfgPorcentaje" step="0.1" value="2">
+                <p class="hint">% aplicado sobre el monto original (por defecto 2%)</p>
+              </div>
+              <div class="field">
+                <label class="f-label">Días para vencimiento</label>
+                <input type="number" class="input" id="cfgDiasVenc" value="30">
+              </div>
+            </div>
+            <div class="field">
+              <label class="f-label">Vendedor por defecto</label>
+              <input type="text" class="input" id="cfgVendedor" value="8- ELUIN P.">
+            </div>
+            <div class="field">
+              <label class="f-label">Firma "Entregado por"</label>
+              <input type="text" class="input" id="cfgEntregadoPor" value="Eluin Polanco">
+            </div>
+            <div class="field">
+              <label class="f-label">Próximo número de factura</label>
+              <input type="text" class="input mono" id="cfgProximoNumero" value="FC-000001">
+            </div>
+            <button class="btn btn-primary" id="btnGuardarConfig">Guardar configuración</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h3>Datos de la empresa</h3><p class="sub">Tal como aparecen en la plantilla oficial</p></div></div>
+          <div class="card-body stack" style="gap:10px;font-size:13px;">
+            <div><b>Razón social:</b> Gstar Services S.A.</div>
+            <div><b>RNC:</b> 131751016</div>
+            <div><b>Dirección:</b> AV. WINSTON CHURCHILL NO. 1099, CITI TOWER, ACROPOLIS CENTER, PISO 16-AB</div>
+            <div><b>Teléfono:</b> (809) 262-1001</div>
+            <div><b>Cuenta bancaria:</b> 9605078497 — Banco de Reservas</div>
+            <p class="hint">Estos datos forman parte de la plantilla oficial y no deben modificarse en este panel.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Datos del sistema</h3><p class="sub">Respaldo y mantenimiento</p></div></div>
+        <div class="card-body flex gap10 wrap">
+          <button class="btn btn-soft" id="btnBackup">Descargar respaldo (JSON)</button>
+          <button class="btn btn-soft" id="btnRestoreBtn">Restaurar respaldo</button>
+          <input type="file" id="btnRestore" accept=".json" style="display:none;">
+          <button class="btn btn-danger" id="btnReset">Borrar todos los datos</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== MODAL: VISTA / IMPRESIÓN DE FACTURA ===================== -->
+<div class="modal-overlay" id="modalFactura">
+  <div class="modal xwide">
+    <div class="modal-head">
+      <h3>Factura <span id="mfNumero" class="tag-inv"></span></h3>
+      <button class="modal-close" onclick="UI.closeModal('modalFactura')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="invoice-stage" id="print-area">
+        <div class="invoice-paper" id="invoicePaper"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <select class="input" id="mfEstadoSelect" style="max-width:160px;">
+        <option value="Pendiente">Pendiente</option>
+        <option value="Pagada">Pagada</option>
+        <option value="Anulada">Anulada</option>
+      </select>
+      <button class="btn btn-ghost" id="btnImprimir">Imprimir</button>
+      <button class="btn btn-primary" id="btnDescargarPdf">Descargar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CLIENTE ===================== -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="clienteModalTitle">Nuevo cliente</h3>
+      <button class="modal-close" onclick="UI.closeModal('modalCliente')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clienteId">
+      <div class="field">
+        <label class="f-label">Nombre del consorcio *</label>
+        <input class="input" id="clienteNombre" placeholder="Ej. CONSORCIO CANDELIER">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">RNC</label>
+          <input class="input" id="clienteRnc" placeholder="000-00000-0">
+        </div>
+        <div class="field">
+          <label class="f-label">Teléfono</label>
+          <input class="input" id="clienteTelefono" placeholder="(809) 000-0000">
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Dirección</label>
+        <input class="input" id="clienteDireccion" placeholder="Ej. Santo Domingo">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Correo electrónico</label>
+          <input class="input" id="clienteCorreo" placeholder="correo@dominio.com">
+        </div>
+        <div class="field">
+          <label class="f-label">Contacto principal</label>
+          <input class="input" id="clienteContacto" placeholder="Nombre del contacto">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalCliente')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarCliente">Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: VINCULAR CLIENTE (desde preview) ===================== -->
+<div class="modal-overlay" id="modalVincular">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Vincular consorcio</h3>
+      <button class="modal-close" onclick="UI.closeModal('modalVincular')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" style="margin-bottom:14px;">Nombre en el archivo: <b id="vincularNombreExcel" class="mono"></b></p>
+      <div class="field">
+        <label class="f-label">Cliente existente</label>
+        <select class="input" id="vincularSelect"><option value="">— Seleccionar —</option></select>
+      </div>
+      <div class="divider"></div>
+      <p class="hint" style="margin-bottom:10px;">…o crea un cliente nuevo con este nombre:</p>
+      <button class="btn btn-soft" id="btnCrearDesdeVincular">Crear cliente nuevo</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalVincular')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarVinculo">Vincular</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR ===================== -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<script src="assets/js/seed.js"></script>
+<script src="assets/js/ud_seed.js"></script>
+<script src="assets/js/assets.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/parser.js"></script>
+<script src="assets/js/clients.js"></script>
+<script src="assets/js/invoices.js"></script>
+<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/exporters.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -398,16 +398,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
-  <!-- ======= COMPENSACIÓN (placeholder) ======= -->
+  <!-- ======= COMPENSACIÓN (app integrada) ======= -->
   <section class="page" id="page-compensacion">
-    <div class="empty-state">
-      <div class="empty-card">
-        <div class="empty-ico"><i class="bi bi-arrow-left-right"></i></div>
-        <div class="empty-title">Compensación</div>
-        <div class="empty-msg">Este campo está siendo trabajado por tu programador <b>Gilbert</b>. Próximamente estará disponible.</div>
-        <div class="empty-sign"><i class="bi bi-person-gear"></i> Trabajado por <b>Gilbert</b></div>
-      </div>
-    </div>
+    <iframe class="embed-frame" id="frame-compensacion"
+            data-src="COMPENSACION/index.html"
+            title="Facturas de Compensación"></iframe>
   </section>
 
   <!-- ======= CUENTAS POR COBRAR (placeholder) ======= -->
@@ -465,7 +460,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 ==================================================================== */
 const APPS = {
   preconciliacion : "CONCILIAR/conciliadorav2.0.html",          // ✅ integrada
-  erogaciones     : "EROGACIONES/dashboard-erogaciones.html"    // ✅ integrada
+  erogaciones     : "EROGACIONES/dashboard-erogaciones.html",   // ✅ integrada
+  compensacion    : "COMPENSACION/index.html"                   // ✅ integrada
 };
 
 /* ===================================================================
@@ -528,6 +524,11 @@ function lazyLoadFrame(page){
   // CXP · Carta de Retención
   if(page==='cxp-carta'){
     const f=document.getElementById('frame-cxp-carta');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Compensación
+  if(page==='compensacion'){
+    const f=document.getElementById('frame-compensacion');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Erogaciones (pendiente de adjuntar)
