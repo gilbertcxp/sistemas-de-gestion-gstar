@@ -402,7 +402,6 @@ function renderBancos(){
   const cfg = DATA.bancos;
   const cols = [
     {key:'cuenta',  label:'Cuentas Bancarias e Inversiones', note:'', txt:true},
-    {key:'tasa',    label:'Tasa'},
     {key:'balance', label:cfg.balanceLabel},
     {key:'transito',label:'Cheque y Transf.', note:'en tránsito (−)'},
     {key:'transfer',label:'Transferencias', note:'entre cuenta / devol. (+)'},
@@ -425,7 +424,6 @@ function renderBancos(){
             <div><div class="acct-name">${r.cuenta}</div><div class="acct-meta">${r.ref}</div></div>
           </div>
         </td>
-        <td>${tasaCell(r.tasa)}</td>
         <td>${moneyCell(r.balance,{neutral:true})}</td>
         <td>${moneyCell(r.transito)}</td>
         <td>${moneyCell(r.transfer)}</td>
@@ -434,7 +432,6 @@ function renderBancos(){
       </tr>`).join('') + '</tbody>' +
     `<tfoot><tr>
         <td><div class="tot-label"><i class="bi bi-bank2"></i> Total Cuentas Bancarias</div></td>
-        <td></td>
         <td>${moneyCell(t.balance,{neutral:true})}</td>
         <td>${moneyCell(t.transito)}</td>
         <td>${moneyCell(t.transfer)}</td>
@@ -630,9 +627,9 @@ function exportExcel(){
     ['Al corte de: '+DATA.reportDateLabel],
     ['Generado: '+new Date().toLocaleString('es-DO')],
     [],
-    ['CUENTAS BANCARIAS E INVERSIONES','Tasa',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Balance Actualizado'],
-    ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.tasa?(r.tasa*100).toFixed(2)+'%':'', r.balance, r.transito, r.transfer, r.pagos, bancoUpd(r)]),
-    ['TOTAL CUENTAS BANCARIAS','',
+    ['CUENTAS BANCARIAS E INVERSIONES',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Balance Actualizado'],
+    ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.balance, r.transito, r.transfer, r.pagos, bancoUpd(r)]),
+    ['TOTAL CUENTAS BANCARIAS',
       DATA.bancos.rows.reduce((s,r)=>s+r.balance,0),
       DATA.bancos.rows.reduce((s,r)=>s+r.transito,0),
       DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0),
@@ -678,17 +675,18 @@ function exportPDF(){
     const tc = DATA.certificados.rows.reduce((s,r)=>s+certUpd(r),0);
 
     const moneyCol={2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'},1:{halign:'center'}};
+    const bancoCol={1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'}};
 
     doc.autoTable({
       startY:31,
-      head:[['Cuentas Bancarias e Inversiones','Tasa',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Balance Actualizado']],
+      head:[['Cuentas Bancarias e Inversiones',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Balance Actualizado']],
       body:[
-        ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, r.tasa?(r.tasa*100).toFixed(2)+'%':'-', money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(bancoUpd(r))]),
-        ['TOTAL CUENTAS BANCARIAS','',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(tb)]
+        ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(bancoUpd(r))]),
+        ['TOTAL CUENTAS BANCARIAS',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(tb)]
       ],
       theme:'grid', styles:{fontSize:7.5,cellPadding:2.4,lineColor:[229,234,241],textColor:[40,50,70]},
       headStyles:{fillColor:[37,99,235],textColor:255,fontSize:7,fontStyle:'bold',halign:'right'},
-      columnStyles:moneyCol,
+      columnStyles:bancoCol,
       didParseCell:d=>{ if(d.row.raw[0]&&String(d.row.raw[0]).startsWith('TOTAL')){ d.cell.styles.fillColor=[234,241,254]; d.cell.styles.fontStyle='bold'; } if(d.section==='body'&&typeof d.cell.text[0]==='string'&&d.cell.text[0].startsWith('(')) d.cell.styles.textColor=[220,38,38]; }
     });
 
