@@ -242,7 +242,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
   </div>
   <nav class="sidebar-nav">
     <div class="nav-group-label">Erogaciones</div>
-    <button class="nav-btn active" onclick="nav('erog-upload')"><i class="bi bi-cash-coin"></i>Cargar Erogaciones</button>
+    <button class="nav-btn active" id="navUploadBtn" onclick="nav('erog-upload')"><i class="bi bi-cash-coin"></i>Cargar Erogaciones</button>
     <button class="nav-btn" onclick="nav('erogaciones')"><i class="bi bi-pie-chart-fill"></i>Dashboard Erogaciones</button>
   </nav>
   <div class="sidebar-footer">v1.0.0 · Gstar</div>
@@ -256,6 +256,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <span class="topbar-title" id="pgTitle">Cargar Erogaciones</span>
     </div>
     <div class="topbar-actions">
+      <button id="btnPublicarErog" class="btn-p" style="display:none;font-size:13px;padding:7px 16px;background:linear-gradient(135deg,var(--erog-1),var(--erog-2));border:none" onclick="publicarErogaciones()"><i class="bi bi-cloud-upload-fill me-1"></i>Publicar</button>
       <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="bi bi-moon-stars" id="thIcon"></i></button>
     </div>
   </div>
@@ -266,6 +267,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <div class="erog-upload-title"><i class="bi bi-cash-coin me-2"></i>Erogaciones — Salida de Efectivo</div>
       <div class="erog-upload-sub">Carga el archivo Excel con el detalle de pagos y salidas de efectivo de la empresa.</div>
     </div>
+    <div id="dbUploadedInfo" class="col-md-8 mx-auto mb-2" style="display:none"></div>
     <div class="row g-3 mb-3">
       <div class="col-md-8 mx-auto">
         <div class="card"><div class="card-body">
@@ -565,6 +567,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 
 <script>
 // ─── STATE & SHARED HELPERS (extraídos de CONCILIADORA) ──────
@@ -775,6 +779,10 @@ function processErog(){
       hideSp();
       renderErogDash();
       nav('erogaciones');
+      if(isAdminUser()){
+        const btn = document.getElementById('btnPublicarErog');
+        if(btn){ btn.style.display=''; btn.style.background=''; btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+      }
     } catch(err){ hideSp(); console.error(err); alert('Error procesando: '+err.message); }
   }, 80);
 }
@@ -1211,6 +1219,84 @@ function exportErogPDF(){
   } catch(e){ console.error(e); alert('Error generando PDF.'); }
 }
 
+// ─── SUPABASE PERSISTENCE ────────────────────────────────────
+function isAdminUser(){
+  try{
+    const s = Auth.getSession();
+    const label = (s&&s.user&&s.user.role&&s.user.role.label)||'';
+    return label.toLowerCase().includes('administrador');
+  }catch(e){ return false; }
+}
+
+async function loadErogacionesFromDB(){
+  if(!window.db) return false;
+  try{
+    const {data,error} = await window.db
+      .from('erogaciones_data')
+      .select('rows,column_map,file_name,updated_at,total_rows')
+      .eq('id','current')
+      .single();
+    if(error||!data||!data.rows||!data.rows.length) return false;
+    E.mapped   = data.rows;
+    E.filtered = [...E.mapped];
+    if(data.column_map) E.eMap = data.column_map;
+    // Populate global filter dropdowns
+    const tipos = [...new Set(E.mapped.map(r=>r.tipo))].sort();
+    const vias  = [...new Set(E.mapped.map(r=>r.via))].sort();
+    const tEl = document.getElementById('efTipo');
+    if(tEl){ tEl.innerHTML='<option value="">Todos los tipos</option>'; tipos.forEach(t=>{ tEl.innerHTML+=`<option value="${t}">${t}</option>`; }); }
+    const vEl = document.getElementById('efVia');
+    if(vEl){ vEl.innerHTML='<option value="">Todas las vías</option>'; vias.forEach(v=>{ vEl.innerHTML+=`<option value="${v}">${v}</option>`; }); }
+    // Show status banner to admin on upload page
+    if(isAdminUser()){
+      const info = document.getElementById('dbUploadedInfo');
+      if(info){
+        const d = new Date(data.updated_at);
+        const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+        info.innerHTML = `<div class="alert alert-success d-flex align-items-center gap-2 mb-0" style="font-size:13px;border-radius:10px">
+          <i class="bi bi-cloud-check-fill fs-5 flex-shrink-0"></i>
+          <div>Datos activos: <strong>${data.total_rows||E.mapped.length} registros</strong> publicados el <strong>${fmt}</strong>. Carga un nuevo archivo para reemplazarlos.</div>
+        </div>`;
+        info.style.display='block';
+      }
+    }
+    return true;
+  }catch(e){ console.error('loadErogacionesFromDB:',e); return false; }
+}
+
+async function saveErogacionesToDB(){
+  if(!window.db) throw new Error('Sin conexión a base de datos.');
+  const session = Auth.getSession();
+  const fileName = (document.getElementById('erogName')||{}).textContent||'';
+  const {error} = await window.db
+    .from('erogaciones_data')
+    .upsert({
+      id:'current',
+      rows: E.mapped,
+      column_map: E.eMap,
+      uploaded_by: session&&session.user ? session.user.id : null,
+      file_name: fileName,
+      total_rows: E.mapped.length,
+      updated_at: new Date().toISOString()
+    });
+  if(error) throw new Error(error.message);
+}
+
+async function publicarErogaciones(){
+  const btn = document.getElementById('btnPublicarErog');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="bi bi-hourglass-split me-1"></i>Publicando...'; }
+  try{
+    await saveErogacionesToDB();
+    if(btn){ btn.innerHTML='<i class="bi bi-cloud-check-fill me-1"></i>¡Publicado!'; btn.style.background='var(--emerald,#10B981)'; }
+    setTimeout(()=>{
+      if(btn){ btn.style.background=''; btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+    },3000);
+  }catch(e){
+    alert('Error al publicar: '+e.message);
+    if(btn){ btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+  }
+}
+
 // ─── SIDEBAR TOGGLE ──────────────────────────────────────────
 function toggleSidebar(){
   const isMobile = window.innerWidth<=768;
@@ -1241,7 +1327,21 @@ function toggleSidebar(){
 })();
 
 // ─── INIT ────────────────────────────────────────────────────
-nav('erog-upload');
+(async function initApp(){
+  const isAdmin = isAdminUser();
+  // Show upload nav only to admins
+  const navUpBtn = document.getElementById('navUploadBtn');
+  if(navUpBtn) navUpBtn.style.display = isAdmin ? '' : 'none';
+  // Try loading persisted data from Supabase
+  const loaded = await loadErogacionesFromDB();
+  if(loaded){
+    renderErogDash();
+    nav('erogaciones');
+  } else {
+    // No data yet: admin uploads, others see empty dashboard
+    nav(isAdmin ? 'erog-upload' : 'erogaciones');
+  }
+})();
 </script>
 </body>
 </html>
