@@ -859,7 +859,7 @@ function renderErogCharts(data, byTipo, sortedTipos){
              borderColor:'#6366F1', backgroundColor:'rgba(99,102,241,.12)',
              fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'#6366F1', borderWidth:2 }] },
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed)}`}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed.y)}`}}},
       scales:{ y:{beginAtZero:true, ticks:{callback:v=>fmtAbbr(v)}, grid:{color:grid}}, x:{grid:{display:false}} } }
   });
 
