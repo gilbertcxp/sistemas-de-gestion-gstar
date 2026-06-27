@@ -65,6 +65,7 @@
           return window.db.from('usuarios').select('*').eq('id', sbUser.id).single()
             .then(function (profileResult) {
               var profile = profileResult.data;
+              var posicion = (profile && profile.rol) ? profile.rol : 'Usuario';
               var session = {
                 token: sbSession.access_token,
                 issuedAt: Date.now(),
@@ -72,10 +73,10 @@
                 user: {
                   id: sbUser.id,
                   username: sbUser.email,
-                  name: profile ? profile.nombre : sbUser.email,
+                  name: (profile && profile.nombre) ? profile.nombre : sbUser.email,
                   email: sbUser.email,
-                  roleId: profile ? profile.rol : 'admin',
-                  role: { id: 'administrador', label: 'Administrador General', permissions: ['*'] }
+                  roleId: 'administrador',
+                  role: { id: 'administrador', label: posicion, permissions: ['*'] }
                 }
               };
               saveSession(session);
