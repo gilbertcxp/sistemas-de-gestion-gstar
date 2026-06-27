@@ -289,9 +289,6 @@ table.rep tfoot td:first-child{text-align:left}
     </div>
   </header>
 
-  <!-- ============ RESUMEN EJECUTIVO (KPI) ============ -->
-  <div class="kpi-grid" id="kpiGrid"></div>
-
   <!-- ============ TABLA 1: CUENTAS BANCARIAS ============ -->
   <section class="report-sec" style="animation-delay:.18s">
     <div class="sec-head">
@@ -575,7 +572,6 @@ function renderGrand(totBancos,totCert){
 function buildReport(){
   const tb = renderBancos();
   const tc = renderCert();
-  renderKPIs(tb,tc);
   renderGrand(tb,tc);
   document.getElementById('reportDate').textContent = DATA.reportDateLabel;
 }
