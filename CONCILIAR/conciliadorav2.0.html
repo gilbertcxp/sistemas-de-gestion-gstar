@@ -290,7 +290,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
   </div>
   <nav class="sidebar-nav">
     <div class="nav-group-label">Principal</div>
-    <button class="nav-btn active" onclick="nav('upload')"><i class="bi bi-cloud-upload"></i>Cargar Archivos</button>
+    <button class="nav-btn active" id="navUploadBtn" onclick="nav('upload')"><i class="bi bi-cloud-upload"></i>Cargar Archivos</button>
     <button class="nav-btn" onclick="nav('dashboard')"><i class="bi bi-grid-1x2"></i>Dashboard</button>
     <div class="nav-group-label" style="margin-top:6px">Análisis</div>
     <button class="nav-btn" onclick="nav('conciliacion')"><i class="bi bi-arrow-left-right"></i>Conciliación</button>
@@ -312,6 +312,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
     <div class="topbar-actions">
       <div id="stPill" style="display:none" class="info-pill"><i class="bi bi-check-circle-fill"></i><span id="stText">Listo</span></div>
+      <button id="btnPublicarConcil" class="btn-p" style="display:none;font-size:13px;padding:7px 16px;background:linear-gradient(135deg,var(--blue),var(--purple,#8B5CF6));border:none" onclick="publicarConcil()"><i class="bi bi-cloud-upload-fill me-1"></i>Publicar</button>
       <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="bi bi-moon-stars" id="thIcon"></i></button>
     </div>
   </div>
@@ -321,6 +322,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
       <div><h2 class="sec-title">Cargar Archivos Excel</h2><p class="sec-sub">Sube ambos archivos para iniciar la conciliación automática.</p></div>
     </div>
+    <div id="dbUploadedInfo" style="display:none" class="mb-3"></div>
     <div class="row g-3 mb-3">
       <div class="col-md-6">
         <div class="card"><div class="card-body">
@@ -548,6 +550,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 
 <script>
 // ─── STATE ───────────────────────────────────────────────────
@@ -751,6 +755,10 @@ function doReconcile(){
       document.getElementById('stPill').style.display='flex';
       document.getElementById('stText').textContent=nc+' conciliados';
       nav('dashboard');
+      if(isAdminUser()){
+        const btn = document.getElementById('btnPublicarConcil');
+        if(btn){ btn.style.display=''; btn.style.background=''; btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+      }
     } catch(err){ hideSp(); console.error(err); alert('Error: '+err.message); }
   },80);
 }
@@ -1107,8 +1115,103 @@ function setupDnD(zoneId,type){
 setupDnD('bzn','bank');
 setupDnD('szn','system');
 
+// ─── SUPABASE PERSISTENCE ────────────────────────────────────
+function isAdminUser(){
+  try{
+    const s = Auth.getSession();
+    const label = (s&&s.user&&s.user.role&&s.user.role.label)||'';
+    return label.toLowerCase().includes('administrador');
+  }catch(e){ return false; }
+}
+
+async function loadConcilFromDB(){
+  if(!window.db) return false;
+  try{
+    const {data,error} = await window.db
+      .from('conciliaciones_data')
+      .select('bank_rows,sys_rows,results,bank_map,sys_map,bank_file,sys_file,updated_at')
+      .eq('id','current')
+      .single();
+    if(error||!data||!data.results||!data.results.length) return false;
+    S.bankM   = data.bank_rows || [];
+    S.sysM    = data.sys_rows  || [];
+    S.results = data.results;
+    S.filtered= [...data.results];
+    S.bMap    = data.bank_map  || {};
+    S.sMap    = data.sys_map   || {};
+    S.bothLoaded = true;
+    // Restore status pill
+    const nc = S.results.filter(r=>r.type==='Conciliado').length;
+    document.getElementById('stPill').style.display='flex';
+    document.getElementById('stText').textContent=nc+' conciliados';
+    // Show info banner to admin
+    if(isAdminUser()){
+      const info = document.getElementById('dbUploadedInfo');
+      if(info){
+        const d = new Date(data.updated_at);
+        const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+        const bankF = data.bank_file||'Banco'; const sysF = data.sys_file||'Sistema';
+        info.innerHTML = `<div class="alert alert-success d-flex align-items-center gap-2 mb-0" style="font-size:13px;border-radius:10px">
+          <i class="bi bi-cloud-check-fill fs-5 flex-shrink-0"></i>
+          <div>Datos activos: <strong>${S.bankM.length} mov. banco</strong> · <strong>${S.sysM.length} mov. sistema</strong> · <strong>${S.results.length} registros</strong> publicados el <strong>${fmt}</strong>. Sube nuevos archivos para reemplazarlos.</div>
+        </div>`;
+        info.style.display='block';
+      }
+    }
+    return true;
+  }catch(e){ console.error('loadConcilFromDB:',e); return false; }
+}
+
+async function saveConcilToDB(){
+  if(!window.db) throw new Error('Sin conexión a base de datos.');
+  const session = Auth.getSession();
+  const bankF = (document.getElementById('bName')||{}).textContent||'';
+  const sysF  = (document.getElementById('sName')||{}).textContent||'';
+  const {error} = await window.db
+    .from('conciliaciones_data')
+    .upsert({
+      id:'current',
+      bank_rows: S.bankM,
+      sys_rows:  S.sysM,
+      results:   S.results,
+      bank_map:  S.bMap,
+      sys_map:   S.sMap,
+      bank_file: bankF,
+      sys_file:  sysF,
+      uploaded_by: session&&session.user ? session.user.id : null,
+      updated_at: new Date().toISOString()
+    });
+  if(error) throw new Error(error.message);
+}
+
+async function publicarConcil(){
+  const btn = document.getElementById('btnPublicarConcil');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="bi bi-hourglass-split me-1"></i>Publicando...'; }
+  try{
+    await saveConcilToDB();
+    if(btn){ btn.innerHTML='<i class="bi bi-cloud-check-fill me-1"></i>¡Publicado!'; btn.style.background='var(--emerald,#10B981)'; }
+    setTimeout(()=>{
+      if(btn){ btn.style.background=''; btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+    },3000);
+  }catch(e){
+    alert('Error al publicar: '+e.message);
+    if(btn){ btn.innerHTML='<i class="bi bi-cloud-upload-fill me-1"></i>Publicar'; btn.disabled=false; }
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────
-nav('upload');
+(async function initApp(){
+  const isAdmin = isAdminUser();
+  const navUpBtn = document.getElementById('navUploadBtn');
+  if(navUpBtn) navUpBtn.style.display = isAdmin ? '' : 'none';
+  const loaded = await loadConcilFromDB();
+  if(loaded){
+    updateDash(); renderRT(); renderBankT(); renderSysT();
+    nav('dashboard');
+  } else {
+    nav(isAdmin ? 'upload' : 'dashboard');
+  }
+})();
 </script>
 </body>
 </html>
