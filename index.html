@@ -8,6 +8,8 @@
 <!-- ===== AUTENTICACIÓN: guard de acceso =====
      Carga el módulo y exige sesión activa ANTES de pintar la plataforma.
      Sin sesión -> redirige al login recordando el destino. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <script src="auth/auth.js"></script>
 <script>if (window.Auth) Auth.requireAuth();</script>
 
