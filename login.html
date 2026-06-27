@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · Sistema de Gestión y Reportes Gstar</title>
+
+<!-- ===================================================================
+     PANTALLA DE INICIO DE SESIÓN
+     - Solo interfaz + orquestación. Toda la lógica de autenticación vive
+       en auth/auth.js (separación interfaz / autenticación / negocio).
+     - Si ya existe una sesión activa, NO se permite ver el login:
+       redirectIfAuthenticated() envía al destino o al Dashboard.
+==================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<!-- Módulo de autenticación (debe cargar antes de usar Auth) -->
+<script src="auth/auth.js"></script>
+<script>/* Guard del login: con sesión activa no se muestra esta pantalla. */ if (window.Auth) Auth.redirectIfAuthenticated();</script>
+<style>
+:root{
+  --navy:#0B1437;--navy-2:#152452;--blue:#2563EB;--blue-2:#1E40AF;
+  --ink:#0F172A;--ink-2:#64748B;--ink-3:#94A3B8;
+  --line:#E2E8F0;--bg-field:#F8FAFC;--card:#FFFFFF;
+  --red:#DC2626;--red-lt:#FEF2F2;--green:#0E9F6E;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;
+  display:flex;min-height:100vh;background:var(--navy)}
+
+/* ============ PANEL IZQUIERDO (marca) ============ */
+.brand-panel{flex:1.1;position:relative;overflow:hidden;color:#fff;
+  background:linear-gradient(150deg,#0B1437 0%,#152452 55%,#1E3A8A 120%);
+  padding:54px 52px;display:flex;flex-direction:column;justify-content:space-between}
+.brand-panel::before{content:'';position:absolute;top:-120px;right:-120px;width:420px;height:420px;
+  background:radial-gradient(circle,rgba(96,165,250,.28),transparent 65%);pointer-events:none}
+.brand-panel::after{content:'';position:absolute;bottom:-140px;left:-60px;width:360px;height:360px;
+  background:radial-gradient(circle,rgba(37,99,235,.22),transparent 68%);pointer-events:none}
+.bp-grid{position:absolute;inset:0;background-image:
+  linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:42px 42px;mask-image:radial-gradient(circle at 30% 30%,#000,transparent 75%);pointer-events:none}
+.bp-top{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.logo-plate{display:inline-flex;align-items:center;gap:11px;background:#fff;border-radius:15px;
+  padding:13px 20px 13px 16px;box-shadow:0 12px 30px rgba(0,0,0,.34)}
+.logo-plate .emblem{width:48px;height:auto;flex-shrink:0;display:block}
+.logo-word{font-weight:800;font-style:italic;font-size:27px;line-height:1;letter-spacing:-.6px;white-space:nowrap}
+.logo-word .lw-g{color:#ED1C24}
+.logo-word .lw-s{color:#1B4DA1}
+.brand-tagline{font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:#7E96CF;font-weight:600;padding-left:6px}
+.bp-mid{position:relative;z-index:1;max-width:430px}
+.bp-kicker{font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#60A5FA}
+.bp-title{font-size:38px;font-weight:900;letter-spacing:-1px;line-height:1.08;margin-top:14px}
+.bp-desc{font-size:15px;color:#AEC0E6;line-height:1.65;margin-top:16px}
+.bp-feats{margin-top:30px;display:flex;flex-direction:column;gap:14px}
+.bp-feat{display:flex;align-items:center;gap:13px;font-size:14px;color:#D7E2F7;font-weight:500}
+.bp-feat i{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;color:#7FB0FF;font-size:15px;flex-shrink:0}
+.bp-foot{position:relative;z-index:1;font-size:12px;color:#56689B}
+
+/* ============ PANEL DERECHO (formulario) ============ */
+.form-panel{flex:.9;background:#EEF2F8;display:flex;align-items:center;justify-content:center;padding:40px 28px}
+.login-card{width:100%;max-width:410px;background:var(--card);border-radius:20px;
+  box-shadow:0 24px 60px rgba(11,20,55,.18),0 6px 16px rgba(11,20,55,.08);padding:40px 38px 34px;
+  opacity:0;transform:translateY(16px);animation:cardIn .55s cubic-bezier(.22,1,.36,1) forwards}
+.lc-badge{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,#2563EB,#1E40AF);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin:0 auto 18px;
+  box-shadow:0 12px 26px rgba(37,99,235,.4)}
+.lc-title{font-size:22px;font-weight:800;text-align:center;letter-spacing:-.4px}
+.lc-sub{font-size:13.5px;color:var(--ink-2);text-align:center;margin-top:6px;line-height:1.5}
+
+form{margin-top:26px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:7px;letter-spacing:.2px}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap .lead{position:absolute;left:13px;color:var(--ink-3);font-size:16px;pointer-events:none;transition:color .15s}
+.input-wrap input{width:100%;border:1.5px solid var(--line);background:var(--bg-field);border-radius:11px;
+  padding:13px 14px 13px 42px;font-size:14.5px;font-family:inherit;color:var(--ink);outline:none;
+  transition:border-color .15s,box-shadow .15s,background .15s}
+.input-wrap input::placeholder{color:var(--ink-3)}
+.input-wrap input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+.input-wrap input:focus ~ .lead{color:var(--blue)}
+.input-wrap.has-toggle input{padding-right:44px}
+.toggle-eye{position:absolute;right:6px;width:34px;height:34px;border:none;background:none;cursor:pointer;
+  color:var(--ink-3);font-size:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
+.toggle-eye:hover{color:var(--blue);background:rgba(37,99,235,.08)}
+.field.invalid input{border-color:var(--red);background:var(--red-lt)}
+.field.invalid .lead{color:var(--red)}
+.field-err{font-size:11.5px;color:var(--red);margin-top:6px;display:none;align-items:center;gap:5px;font-weight:600}
+.field.invalid .field-err{display:flex}
+
+/* Mensaje de error global (credenciales) */
+.alert{display:none;align-items:center;gap:9px;background:var(--red-lt);border:1px solid #FCA5A5;
+  color:#B91C1C;font-size:13px;font-weight:600;padding:11px 14px;border-radius:11px;margin-bottom:18px;
+  animation:shake .4s}
+.alert.show{display:flex}
+.alert i{font-size:16px;flex-shrink:0}
+
+.btn-login{width:100%;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,#2563EB,#1E40AF);border-radius:11px;padding:14px;margin-top:6px;
+  display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .12s,box-shadow .2s,filter .2s}
+.btn-login:hover{filter:brightness(1.06);box-shadow:0 10px 24px rgba(37,99,235,.4)}
+.btn-login:active{transform:translateY(1px)}
+.btn-login:disabled{opacity:.7;cursor:not-allowed;filter:none}
+.btn-login .spin{animation:spin .7s linear infinite}
+
+.lc-extra{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:12.5px}
+.lc-extra a{color:var(--blue);text-decoration:none;font-weight:600}
+.lc-extra a:hover{text-decoration:underline}
+.lc-extra .muted{color:var(--ink-3)}
+
+.lc-foot{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);text-align:center;
+  font-size:11.5px;color:var(--ink-3);line-height:1.6}
+.hint-chip{display:inline-flex;align-items:center;gap:6px;background:#EFF4FF;border:1px solid #DBE6FF;color:#3B5BBF;
+  font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;margin-top:8px}
+
+/* ============ ANIMACIONES ============ */
+@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:880px){
+  body{flex-direction:column}
+  .brand-panel{flex:none;padding:30px 26px 22px}
+  .brand-panel .bp-mid{display:none}
+  .brand-panel .bp-foot{display:none}
+  .bp-top{justify-content:center}
+  .form-panel{flex:1;padding:26px 16px 40px;align-items:flex-start}
+  .login-card{margin-top:6px}
+}
+@media(max-width:420px){
+  .login-card{padding:30px 22px 26px;border-radius:16px}
+  .bp-brand .bn{font-size:17px}
+}
+</style>
+</head>
+<body>
+
+  <!-- ============ MARCA ============ -->
+  <aside class="brand-panel">
+    <div class="bp-grid"></div>
+    <div class="bp-top">
+      <div class="logo-plate">
+        <svg class="emblem" viewBox="0 0 82 60" xmlns="http://www.w3.org/2000/svg" aria-label="GSTAR Services">
+          <path d="M48 26 C 60 19 70 14 79 7 C 70 20 60 28 50 36 C 46 38 45 30 48 26 Z" fill="#ED1C24"/>
+          <polygon points="38,4 44.47,23.10 64.63,23.35 48.46,35.40 54.46,54.65 38,43 21.54,54.65 27.54,35.40 11.37,23.35 31.53,23.10" fill="#ED1C24"/>
+        </svg>
+        <div class="logo-word"><span class="lw-g">GSTAR</span><span class="lw-s">SERVICES</span></div>
+      </div>
+      <div class="brand-tagline">Gestión &amp; Reportes</div>
+    </div>
+
+    <div class="bp-mid">
+      <div class="bp-kicker">Plataforma Corporativa</div>
+      <h1 class="bp-title">Sistema de Gestión y Reportes Gstar</h1>
+      <p class="bp-desc">Centraliza tus herramientas y reportes financieros en un solo lugar, con acceso seguro y controlado.</p>
+      <div class="bp-feats">
+        <div class="bp-feat"><i class="bi bi-bank2"></i> Banco, Compensación y Cuentas</div>
+        <div class="bp-feat"><i class="bi bi-shield-lock"></i> Acceso seguro por usuario y rol</div>
+        <div class="bp-feat"><i class="bi bi-graph-up-arrow"></i> Reportes ejecutivos en tiempo real</div>
+      </div>
+    </div>
+
+    <div class="bp-foot">© <span id="year"></span> Gstar Services · Todos los derechos reservados</div>
+  </aside>
+
+  <!-- ============ FORMULARIO ============ -->
+  <main class="form-panel">
+    <div class="login-card">
+      <div class="lc-badge"><i class="bi bi-person-lock"></i></div>
+      <h2 class="lc-title">Bienvenido</h2>
+      <p class="lc-sub">Inicia sesión para acceder al sistema</p>
+
+      <form id="loginForm" novalidate autocomplete="on">
+        <!-- Alerta de credenciales -->
+        <div class="alert" id="loginAlert"><i class="bi bi-exclamation-triangle-fill"></i> <span id="loginAlertMsg"></span></div>
+
+        <!-- Usuario -->
+        <div class="field" id="fUser">
+          <label for="username">Usuario</label>
+          <div class="input-wrap">
+            <i class="bi bi-person lead"></i>
+            <input type="text" id="username" name="username" placeholder="Ingresa tu usuario"
+                   autocomplete="username" autofocus spellcheck="false">
+          </div>
+          <div class="field-err"><i class="bi bi-info-circle"></i> El usuario es obligatorio.</div>
+        </div>
+
+        <!-- Contraseña -->
+        <div class="field" id="fPass">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap has-toggle">
+            <i class="bi bi-lock lead"></i>
+            <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña"
+                   autocomplete="current-password">
+            <button type="button" class="toggle-eye" id="togglePass" aria-label="Mostrar contraseña" title="Mostrar/ocultar contraseña">
+              <i class="bi bi-eye" id="eyeIco"></i>
+            </button>
+          </div>
+          <div class="field-err"><i class="bi bi-info-circle"></i> La contraseña es obligatoria.</div>
+        </div>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          <i class="bi bi-box-arrow-in-right"></i> <span id="btnLabel">Iniciar sesión</span>
+        </button>
+
+        <div class="lc-extra">
+          <span class="muted"><i class="bi bi-shield-check"></i> Conexión segura</span>
+          <a href="#" id="forgotLink">¿Olvidaste tu contraseña?</a>
+        </div>
+      </form>
+
+      <div class="lc-foot">
+        Acceso exclusivo para personal autorizado de Gstar Services.
+        <div class="hint-chip"><i class="bi bi-info-circle-fill"></i> Acceso inicial: administrador / 1234</div>
+      </div>
+    </div>
+  </main>
+
+<script>
+/* ====================================================================
+   ORQUESTACIÓN DE LA UI DE LOGIN  (sin lógica de autenticación aquí)
+==================================================================== */
+document.getElementById('year').textContent = new Date().getFullYear();
+
+var form   = document.getElementById('loginForm');
+var userEl = document.getElementById('username');
+var passEl = document.getElementById('password');
+var alertBox = document.getElementById('loginAlert');
+var alertMsg = document.getElementById('loginAlertMsg');
+var btn    = document.getElementById('btnLogin');
+
+/* Mostrar / ocultar contraseña */
+document.getElementById('togglePass').addEventListener('click', function () {
+  var show = passEl.type === 'password';
+  passEl.type = show ? 'text' : 'password';
+  document.getElementById('eyeIco').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+  this.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  passEl.focus();
+});
+
+/* Limpiar estados de error al escribir */
+[userEl, passEl].forEach(function (el) {
+  el.addEventListener('input', function () {
+    el.closest('.field').classList.remove('invalid');
+    hideAlert();
+  });
+});
+
+function hideAlert(){ alertBox.classList.remove('show'); }
+function showAlert(msg){ alertMsg.textContent = msg; alertBox.classList.add('show'); }
+
+/* Validación de campos obligatorios (UI) */
+function validate(){
+  var ok = true;
+  if (!userEl.value.trim()) { document.getElementById('fUser').classList.add('invalid'); ok = false; }
+  if (!passEl.value)        { document.getElementById('fPass').classList.add('invalid'); ok = false; }
+  return ok;
+}
+
+function setLoading(on){
+  btn.disabled = on;
+  document.getElementById('btnLabel').textContent = on ? 'Verificando...' : 'Iniciar sesión';
+  btn.querySelector('i').className = on ? 'bi bi-arrow-repeat spin' : 'bi bi-box-arrow-in-right';
+}
+
+/* Envío del formulario */
+form.addEventListener('submit', function (e) {
+  e.preventDefault();
+  hideAlert();
+  document.getElementById('fUser').classList.remove('invalid');
+  document.getElementById('fPass').classList.remove('invalid');
+
+  if (!validate()) { showAlert('Completa los campos obligatorios.'); return; }
+  if (!window.Auth) { showAlert('No se pudo cargar el módulo de autenticación.'); return; }
+
+  setLoading(true);
+  Auth.login(userEl.value, passEl.value).then(function (res) {
+    if (res.ok) {
+      // Éxito -> ir al destino solicitado o al Dashboard
+      var params = new URLSearchParams(location.search);
+      var target = params.get('redirect');
+      location.replace(target ? decodeURIComponent(target) : Auth.config.appUrl);
+    } else {
+      setLoading(false);
+      showAlert(res.message || 'No se pudo iniciar sesión.');
+      if (res.code === 'INVALID_CREDENTIALS') {
+        document.getElementById('fPass').classList.add('invalid');
+        passEl.select();
+      }
+    }
+  });
+});
+
+/* Placeholder de "recuperación de contraseña" (arquitectura preparada) */
+document.getElementById('forgotLink').addEventListener('click', function (e) {
+  e.preventDefault();
+  showAlert('La recuperación de contraseña estará disponible próximamente. Contacta al administrador.');
+});
+</script>
+</body>
+</html>

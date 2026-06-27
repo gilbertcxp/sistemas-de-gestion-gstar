@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disponibilidad Bancaria — Gstar</title>
+<!-- Guard de autenticación: sin sesión activa redirige al login -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<!-- =====================================================================
+     DISPONIBILIDAD BANCARIA (app independiente)
+     Reporte ejecutivo del módulo Banco › Disponibilidad Bancaria de la
+     plataforma Gstar. Evolución moderna del formato Excel original:
+     misma estructura y lógica, apariencia premium tipo ERP.
+
+     LÓGICA (idéntica al Excel de referencia):
+       Cuentas Bancarias:  Actualizado = Balance - Tránsito + Transfer. - Pagos
+       Certificados/Inv.:  Actualizado = Balance + Intereses + Int./Tasa - Ret.1%
+       Total Disponible  = Σ Actualizado (bancos) + Σ Actualizado (certificados)
+====================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --bg-app:#F1F5F9;--bg-card:#FFFFFF;--bg-soft:#F8FAFC;
+  --ink:#0F1E3A;--ink-2:#475569;--ink-3:#94A3B8;
+  --line:#E5EAF1;--line-2:#EEF2F7;
+  --navy:#0B1437;--navy-2:#152452;
+  --blue:#2563EB;--blue-lt:#EAF1FE;
+  --green:#0E9F6E;--green-lt:#E6F6EF;
+  --red:#DC2626;--red-lt:#FCEBEB;
+  --gold:#C8902B;--gold-lt:#FBF3E3;
+  --slate-lt:#F1F5F9;
+  --shadow-sm:0 1px 2px rgba(15,30,58,.06),0 1px 3px rgba(15,30,58,.04);
+  --shadow:0 2px 8px rgba(15,30,58,.06),0 8px 24px rgba(15,30,58,.05);
+  --shadow-lg:0 10px 30px rgba(11,20,55,.12),0 4px 8px rgba(11,20,55,.06);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0E1A33;--bg-soft:#101E3C;
+  --ink:#E8F0FE;--ink-2:#9FB3D1;--ink-3:#5E7299;
+  --line:#1C2E52;--line-2:#172545;
+  --navy:#050B1A;--navy-2:#0E1A33;
+  --blue-lt:#16264F;--green-lt:#0A2E22;--red-lt:#3A1414;--gold-lt:#33260C;
+  --slate-lt:#13213F;
+  --shadow:0 2px 10px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--ink);
+  -webkit-font-smoothing:antialiased;line-height:1.4}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+
+.wrap{max-width:1320px;margin:0 auto;padding:22px 26px 60px}
+
+/* ============== HEADER EJECUTIVO ============== */
+.exec-head{background:linear-gradient(125deg,var(--navy) 0%,var(--navy-2) 60%,#1b2f6b 100%);
+  border-radius:18px;padding:26px 30px;color:#fff;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-lg);opacity:0;transform:translateY(-8px);animation:dropIn .55s .02s cubic-bezier(.22,1,.36,1) forwards}
+.exec-head::before{content:'';position:absolute;top:-60px;right:-30px;width:280px;height:280px;
+  background:radial-gradient(circle,rgba(89,124,224,.28),transparent 68%);pointer-events:none}
+.exec-head::after{content:'';position:absolute;bottom:-80px;left:32%;width:240px;height:240px;
+  background:radial-gradient(circle,rgba(200,144,43,.14),transparent 70%);pointer-events:none}
+.eh-top{display:flex;align-items:flex-start;justify-content:space-between;gap:22px;flex-wrap:wrap;position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-logo{width:52px;height:52px;flex-shrink:0}
+.brand-txt .b1{font-size:22px;font-weight:900;letter-spacing:-.5px;line-height:1}
+.brand-txt .b1 .svc{color:#F4B642;font-weight:700;margin-left:2px}
+.brand-txt .b2{font-size:10.5px;letter-spacing:3px;color:#9DB0DA;text-transform:uppercase;margin-top:3px;font-weight:600}
+.eh-titleblock{margin-top:20px;position:relative;z-index:1}
+.eh-kicker{font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:#7E96CF}
+.eh-title{font-size:30px;font-weight:800;letter-spacing:-.7px;margin-top:5px;line-height:1.05}
+.eh-sub{font-size:13.5px;color:#AEC0E6;margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.eh-sub .sep{width:4px;height:4px;border-radius:50%;background:#56689B}
+.eh-sub b{color:#E7EEFC;font-weight:600}
+
+/* meta + acciones */
+.eh-side{display:flex;flex-direction:column;align-items:flex-end;gap:14px;position:relative;z-index:1}
+.meta-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.meta-pill{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:11px;
+  padding:8px 13px;min-width:128px;backdrop-filter:blur(4px)}
+.meta-pill .ml{font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#8EA2CE;font-weight:600;display:flex;align-items:center;gap:5px}
+.meta-pill .mv{font-size:13.5px;font-weight:700;color:#fff;margin-top:3px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;border-radius:10px;
+  padding:9px 15px;display:inline-flex;align-items:center;gap:7px;transition:transform .12s,box-shadow .2s,background .2s,filter .2s}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn i{font-size:14px}
+.btn-light{background:rgba(255,255,255,.95);color:var(--navy)}
+.btn-light:hover{background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.btn-ghost:hover{background:rgba(255,255,255,.16)}
+.btn-green{background:#1E9E6A;color:#fff}.btn-green:hover{filter:brightness(1.08);box-shadow:0 6px 16px rgba(30,158,106,.4)}
+.btn-red{background:#D6453F;color:#fff}.btn-red:hover{filter:brightness(1.08);box-shadow:0 6px 16px rgba(214,69,63,.4)}
+
+/* ============== KPI CARDS ============== */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:22px}
+@media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.kpi-grid{grid-template-columns:1fr}}
+.kpi{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:17px 17px 16px;
+  position:relative;overflow:hidden;box-shadow:var(--shadow-sm);opacity:0;transform:translateY(14px);
+  animation:riseIn .5s cubic-bezier(.22,1,.36,1) forwards;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--blue))}
+.kpi-ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  background:var(--cl,var(--blue-lt));color:var(--c,var(--blue));margin-bottom:11px}
+.kpi-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-2);min-height:26px}
+.kpi-val{font-size:20px;font-weight:800;margin-top:7px;color:var(--ink)}
+.kpi-val .cur{font-size:11px;font-weight:600;color:var(--ink-3);margin-right:3px;vertical-align:1px}
+.kpi-foot{font-size:10.5px;color:var(--ink-3);margin-top:6px;font-weight:500;display:flex;align-items:center;gap:5px}
+.kpi.hero{background:linear-gradient(135deg,#0E9F6E,#0B8A5E);border:none;color:#fff;grid-column:span 1}
+.kpi.hero::before{display:none}
+.kpi.hero .kpi-ico{background:rgba(255,255,255,.18);color:#fff}
+.kpi.hero .kpi-label{color:rgba(255,255,255,.85)}
+.kpi.hero .kpi-val{color:#fff;font-size:21px}
+.kpi.hero .kpi-val .cur{color:rgba(255,255,255,.8)}
+.kpi.hero .kpi-foot{color:rgba(255,255,255,.82)}
+.c-blue{--c:var(--blue);--cl:var(--blue-lt)}
+.c-green{--c:var(--green);--cl:var(--green-lt)}
+.c-red{--c:var(--red);--cl:var(--red-lt)}
+.c-gold{--c:var(--gold);--cl:var(--gold-lt)}
+.c-slate{--c:#64748B;--cl:var(--slate-lt)}
+
+/* ============== TABLE CARD ============== */
+.report-sec{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);margin-top:22px;overflow:hidden;
+  opacity:0;transform:translateY(16px);animation:riseIn .55s cubic-bezier(.22,1,.36,1) forwards}
+.sec-head{display:flex;align-items:center;gap:13px;padding:17px 22px;border-bottom:1px solid var(--line)}
+.sec-head .sh-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;background:var(--cl,var(--blue-lt));color:var(--c,var(--blue));flex-shrink:0}
+.sec-head .sh-title{font-size:15.5px;font-weight:800;letter-spacing:-.2px}
+.sec-head .sh-sub{font-size:11.5px;color:var(--ink-2);margin-top:1px}
+.sec-head .sh-tag{margin-left:auto;font-size:11px;font-weight:700;color:var(--ink-2);background:var(--bg-soft);
+  border:1px solid var(--line);padding:6px 12px;border-radius:20px;white-space:nowrap}
+.sec-head .sh-tag .mono{color:var(--ink);margin-left:5px}
+
+.table-scroll{overflow-x:auto}
+table.rep{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:760px}
+table.rep thead th{position:sticky;top:0;z-index:5;background:var(--bg-soft);color:var(--ink-2);
+  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:12px 16px;text-align:right;border-bottom:2px solid var(--line);white-space:nowrap;cursor:pointer;
+  transition:color .15s,background .15s;user-select:none;vertical-align:middle}
+table.rep thead th:first-child{text-align:left}
+table.rep thead th:hover{color:var(--blue);background:var(--blue-lt)}
+table.rep thead th .th-in{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+table.rep thead th:first-child .th-in{justify-content:flex-start}
+table.rep thead th .sort-i{font-size:10px;opacity:.4;transition:opacity .15s,transform .2s}
+table.rep thead th.sorted .sort-i{opacity:1;color:var(--blue)}
+table.rep thead th.desc .sort-i{transform:rotate(180deg)}
+.col-note{display:block;font-size:8.5px;font-weight:600;color:var(--ink-3);letter-spacing:.3px;margin-top:2px;text-transform:none}
+
+table.rep tbody td{padding:13px 16px;text-align:right;border-bottom:1px solid var(--line-2);white-space:nowrap}
+table.rep tbody td:first-child{text-align:left}
+table.rep tbody tr{transition:background .14s}
+table.rep tbody tr:nth-child(even){background:var(--bg-soft)}
+table.rep tbody tr:hover{background:var(--blue-lt)}
+table.rep tbody tr:hover td:first-child .acct{color:var(--blue)}
+.acct{display:flex;align-items:center;gap:11px}
+.acct .acct-dot{width:9px;height:9px;border-radius:3px;background:var(--c,var(--blue));flex-shrink:0;box-shadow:0 0 0 3px var(--cl,var(--blue-lt))}
+.acct .acct-name{font-weight:600;font-size:13px;transition:color .14s}
+.acct .acct-meta{font-size:10.5px;color:var(--ink-3);margin-top:1px;font-weight:500}
+.tasa-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  padding:3px 9px;border-radius:7px;background:var(--gold-lt);color:var(--gold)}
+.tasa-none{color:var(--ink-3);font-size:12px}
+.val{font-weight:600;color:var(--ink)}
+.val.balance{color:var(--ink);font-weight:600}
+.pos{color:var(--green);font-weight:600}
+.neg{color:var(--red);font-weight:600}
+.zero{color:var(--ink-3);font-weight:500}
+.val.result{font-weight:800;font-size:13.5px}
+.val.result.pos{color:var(--green)}
+.val.result.neg{color:var(--red)}
+
+/* total row */
+table.rep tfoot td{padding:15px 16px;text-align:right;background:linear-gradient(var(--bg-soft),var(--bg-soft));
+  border-top:2px solid var(--line);font-weight:800;white-space:nowrap}
+table.rep tfoot td:first-child{text-align:left}
+.tot-label{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--ink)}
+.tot-label i{color:var(--blue)}
+
+/* ============== BANDA TOTAL DISPONIBLE ============== */
+.grand{margin-top:22px;border-radius:18px;padding:26px 30px;color:#fff;position:relative;overflow:hidden;
+  background:linear-gradient(120deg,#0B1437,#16275e 70%,#0E9F6E 190%);box-shadow:var(--shadow-lg);
+  opacity:0;transform:translateY(16px);animation:riseIn .6s cubic-bezier(.22,1,.36,1) forwards}
+.grand::before{content:'';position:absolute;right:-40px;top:-50px;width:260px;height:260px;
+  background:radial-gradient(circle,rgba(14,159,110,.4),transparent 65%)}
+.grand-row{display:flex;align-items:center;justify-content:space-between;gap:26px;flex-wrap:wrap;position:relative;z-index:1}
+.grand-main .gl{font-size:11.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9DEAC9}
+.grand-main .gv{font-size:40px;font-weight:900;letter-spacing:-1.2px;margin-top:4px}
+.grand-main .gv .cur{font-size:18px;font-weight:600;color:#9DEAC9;margin-right:6px;vertical-align:6px}
+.grand-main .gsub{font-size:12.5px;color:#AEC0E6;margin-top:6px}
+.grand-break{display:flex;gap:14px;flex-wrap:wrap}
+.gbreak{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);border-radius:12px;padding:13px 18px;min-width:150px}
+.gbreak .gbl{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#9DB0DA;font-weight:600}
+.gbreak .gbv{font-size:18px;font-weight:800;margin-top:4px}
+.gbreak.bank .gbl{color:#A9C2F2}
+.gbreak.cert .gbl{color:#F2D9A6}
+
+.foot-note{margin-top:18px;font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:7px;justify-content:center;text-align:center;flex-wrap:wrap}
+
+/* ============== ANIMACIONES ============== */
+@keyframes dropIn{to{opacity:1;transform:translateY(0)}}
+@keyframes riseIn{to{opacity:1;transform:translateY(0)}}
+.spin{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;
+  background:var(--navy);color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-lg);z-index:999;display:flex;align-items:center;gap:9px;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{color:#4ADE80}
+
+/* ============== RESPONSIVE ============== */
+@media(max-width:780px){
+  .wrap{padding:14px 12px 50px}
+  .exec-head{padding:20px 18px;border-radius:15px}
+  .eh-top{flex-direction:column}
+  .eh-side{align-items:flex-start}
+  .meta-grid,.actions{justify-content:flex-start}
+  .eh-title{font-size:23px}
+  .grand-main .gv{font-size:30px}
+}
+
+/* ============== IMPRESIÓN ============== */
+@media print{
+  @page{size:landscape;margin:10mm}
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  .no-print{display:none!important}
+  .exec-head,.grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none;animation:none;opacity:1;transform:none}
+  .kpi,.report-sec{box-shadow:none;break-inside:avoid;animation:none;opacity:1;transform:none}
+  table.rep thead th{position:static}
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HEADER EJECUTIVO ============ -->
+  <header class="exec-head">
+    <div class="eh-top">
+      <div>
+        <div class="brand">
+          <svg class="brand-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="GSTAR">
+            <path d="M32 3 L39.5 23 L60 23 L43.5 36 L50 57 L32 44 L14 57 L20.5 36 L4 23 L24.5 23 Z"
+                  fill="#E11D2A" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="32" cy="30" r="4.4" fill="#fff"/>
+          </svg>
+          <div class="brand-txt">
+            <div class="b1">GSTAR<span class="svc">SERVICES</span></div>
+            <div class="b2">Gestión &amp; Reportes Financieros</div>
+          </div>
+        </div>
+        <div class="eh-titleblock">
+          <div class="eh-kicker">Reporte de Tesorería</div>
+          <h1 class="eh-title">Disponibilidad Bancaria</h1>
+          <div class="eh-sub">
+            <i class="bi bi-calendar3"></i> <span>Al corte de</span> <b id="reportDate">—</b>
+            <span class="sep"></span>
+            <i class="bi bi-shield-check"></i> <span>Reporte conciliado</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="eh-side">
+        <div class="meta-grid no-print">
+          <div class="meta-pill">
+            <div class="ml"><i class="bi bi-clock-history"></i> Actualizado</div>
+            <div class="mv" id="updTime">—</div>
+          </div>
+          <div class="meta-pill">
+            <div class="ml"><i class="bi bi-person-badge"></i> Generado por</div>
+            <div class="mv" id="genUser">Invitado</div>
+          </div>
+        </div>
+        <div class="actions no-print">
+          <button class="btn btn-light" id="btnRefresh" onclick="refreshReport()"><i class="bi bi-arrow-clockwise" id="refreshIco"></i> Actualizar</button>
+          <button class="btn btn-green" onclick="exportExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+          <button class="btn btn-red" onclick="exportPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+          <button class="btn btn-ghost" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ RESUMEN EJECUTIVO (KPI) ============ -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- ============ TABLA 1: CUENTAS BANCARIAS ============ -->
+  <section class="report-sec" style="animation-delay:.18s">
+    <div class="sec-head">
+      <div class="sh-ico c-blue" style="--cl:var(--blue-lt);--c:var(--blue)"><i class="bi bi-bank2"></i></div>
+      <div>
+        <div class="sh-title">Cuentas Bancarias e Inversiones</div>
+        <div class="sh-sub">Saldos operativos y de compensación</div>
+      </div>
+      <div class="sh-tag" id="tagBancos">Disponible <span class="mono">—</span></div>
+    </div>
+    <div class="table-scroll">
+      <table class="rep" id="tblBancos"></table>
+    </div>
+  </section>
+
+  <!-- ============ TABLA 2: CERTIFICADOS ============ -->
+  <section class="report-sec" style="animation-delay:.26s">
+    <div class="sec-head">
+      <div class="sh-ico" style="--cl:var(--gold-lt);--c:var(--gold)"><i class="bi bi-graph-up-arrow"></i></div>
+      <div>
+        <div class="sh-title">Certificados Financieros e Inversiones</div>
+        <div class="sh-sub">Certificados a plazo y fondos de inversión</div>
+      </div>
+      <div class="sh-tag" id="tagCert">Disponible <span class="mono">—</span></div>
+    </div>
+    <div class="table-scroll">
+      <table class="rep" id="tblCert"></table>
+    </div>
+  </section>
+
+  <!-- ============ BANDA TOTAL DISPONIBLE ============ -->
+  <section class="grand" style="animation-delay:.34s">
+    <div class="grand-row">
+      <div class="grand-main">
+        <div class="gl">Balance General Disponible</div>
+        <div class="gv"><span class="cur">RD$</span><span id="grandTotal">0.00</span></div>
+        <div class="gsub" id="grandSub">—</div>
+      </div>
+      <div class="grand-break">
+        <div class="gbreak bank">
+          <div class="gbl"><i class="bi bi-bank2"></i> Total en Bancos</div>
+          <div class="gbv mono">RD$ <span id="gbBancos">0.00</span></div>
+        </div>
+        <div class="gbreak cert">
+          <div class="gbl"><i class="bi bi-graph-up-arrow"></i> Certificados e Inv.</div>
+          <div class="gbv mono">RD$ <span id="gbCert">0.00</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot-note">
+    <i class="bi bi-info-circle"></i>
+    Los valores en <span style="color:var(--red);font-weight:700">rojo</span> reducen la disponibilidad ·
+    Reporte generado por el Sistema de Gestión y Reportes Gstar
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
+
+<script>
+/* ====================================================================
+   DATOS DEL REPORTE  (idénticos al Excel de referencia)
+   Signo = efecto sobre el balance:  (-) salidas negativas, (+) entradas.
+==================================================================== */
+const DATA = {
+  reportDateISO  : '2026-06-25',
+  reportDateLabel: 'jueves, 25 de junio de 2026',
+  bancos:{
+    balanceLabel:'Balance al 10 Junio 2026',
+    rows:[
+      {cuenta:'Cuenta Operativa',     ref:'BR No. 9600882715', tasa:null,  balance:8617233.89, transito:-109196.59, transfer: 25000.00, pagos:-7187958.88},
+      {cuenta:'Cuenta de Compensación',ref:'BR No. 9605078497', tasa:null,  balance:1836947.23, transito:0,         transfer:-25000.00, pagos:0}
+    ]
+  },
+  certificados:{
+    balanceLabel:'Balance al 26 Mayo 2026',
+    rows:[
+      {cuenta:'Certificado No. 9606708226', ref:'Act. 26 Julio 2026', tasa:0.0810, balance:3751951.71, intGan:0,        intTasa:25325.67, ret:-253.26},
+      {cuenta:'Certificado No. 9605150293', ref:'Act. 14 Junio 2026', tasa:0.0810, balance:8497085.72, intGan:0,        intTasa:56647.24, ret:-566.47},
+      {cuenta:'Certificado No. 9609347339', ref:'Act. 08 Julio 2026', tasa:0.0810, balance:8000000.00, intGan:0,        intTasa:54000.00, ret:-540.00},
+      {cuenta:'Fondos Inv. Quisqueya',      ref:'No. 113973',         tasa:0.0677, balance:2100000.00, intGan:69624.01, intTasa:0,        ret:0}
+    ]
+  }
+};
+
+/* ===== LÓGICA (no se altera) ===== */
+const bancoUpd = r => r.balance + r.transito + r.transfer + r.pagos;
+const certUpd  = r => r.balance + r.intGan + r.intTasa + r.ret;
+
+/* ===== FORMATO ===== */
+function fnum(v){ return Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function moneyCell(v,{neutral=false,result=false}={}){
+  if(v===0||v===null||v===undefined) return '<span class="zero">—</span>';
+  const cls = v<0 ? 'neg' : (neutral ? 'val balance' : 'pos');
+  const txt = v<0 ? '('+fnum(v)+')' : fnum(v);
+  return '<span class="'+cls+(result?' result':'')+' mono">'+txt+'</span>';
+}
+function tasaCell(t){ return t==null ? '<span class="tasa-none">—</span>' : '<span class="tasa-chip">'+(t*100).toFixed(2)+'%</span>'; }
+
+/* ===== ESTADO DE ORDEN ===== */
+const sortState = { bancos:{key:null,dir:1}, cert:{key:null,dir:1} };
+
+/* ====================================================================
+   RENDER TABLA BANCOS
+==================================================================== */
+function renderBancos(){
+  const cfg = DATA.bancos;
+  const cols = [
+    {key:'cuenta',  label:'Cuentas Bancarias e Inversiones', note:'', txt:true},
+    {key:'tasa',    label:'Tasa'},
+    {key:'balance', label:cfg.balanceLabel},
+    {key:'transito',label:'Cheque y Transf.', note:'en tránsito (−)'},
+    {key:'transfer',label:'Transferencias', note:'entre cuenta / devol. (+)'},
+    {key:'pagos',   label:'Pagos de la semana', note:'y provisión (−)'},
+    {key:'upd',     label:'Balance Actualizado'}
+  ];
+  let rows = cfg.rows.map(r=>({...r, upd:bancoUpd(r)}));
+  rows = applySort(rows,'bancos');
+
+  const t = {balance:0,transito:0,transfer:0,pagos:0,upd:0};
+  cfg.rows.forEach(r=>{ t.balance+=r.balance; t.transito+=r.transito; t.transfer+=r.transfer; t.pagos+=r.pagos; t.upd+=bancoUpd(r); });
+
+  document.getElementById('tblBancos').innerHTML =
+    thead(cols,'bancos') +
+    '<tbody>' + rows.map(r=>`
+      <tr>
+        <td>
+          <div class="acct">
+            <span class="acct-dot" style="--c:var(--blue);--cl:var(--blue-lt)"></span>
+            <div><div class="acct-name">${r.cuenta}</div><div class="acct-meta">${r.ref}</div></div>
+          </div>
+        </td>
+        <td>${tasaCell(r.tasa)}</td>
+        <td>${moneyCell(r.balance,{neutral:true})}</td>
+        <td>${moneyCell(r.transito)}</td>
+        <td>${moneyCell(r.transfer)}</td>
+        <td>${moneyCell(r.pagos)}</td>
+        <td>${moneyCell(r.upd,{result:true})}</td>
+      </tr>`).join('') + '</tbody>' +
+    `<tfoot><tr>
+        <td><div class="tot-label"><i class="bi bi-bank2"></i> Total Cuentas Bancarias</div></td>
+        <td></td>
+        <td>${moneyCell(t.balance,{neutral:true})}</td>
+        <td>${moneyCell(t.transito)}</td>
+        <td>${moneyCell(t.transfer)}</td>
+        <td>${moneyCell(t.pagos)}</td>
+        <td>${moneyCell(t.upd,{result:true})}</td>
+     </tr></tfoot>`;
+
+  document.querySelector('#tagBancos .mono').textContent = 'RD$ '+fnum(t.upd);
+  return t.upd;
+}
+
+/* ====================================================================
+   RENDER TABLA CERTIFICADOS
+==================================================================== */
+function renderCert(){
+  const cfg = DATA.certificados;
+  const cols = [
+    {key:'cuenta', label:'Certificados Financieros e Inversiones', txt:true},
+    {key:'tasa',   label:'Tasa'},
+    {key:'balance',label:cfg.balanceLabel},
+    {key:'intGan', label:'Intereses', note:'ganados'},
+    {key:'intTasa',label:'Intereses ganados', note:'/ tasa anual'},
+    {key:'ret',    label:'Ret. intereses', note:'1% (−)'},
+    {key:'upd',    label:'Balance Actualizado'}
+  ];
+  let rows = cfg.rows.map(r=>({...r, upd:certUpd(r)}));
+  rows = applySort(rows,'cert');
+
+  const t = {balance:0,intGan:0,intTasa:0,ret:0,upd:0};
+  cfg.rows.forEach(r=>{ t.balance+=r.balance; t.intGan+=r.intGan; t.intTasa+=r.intTasa; t.ret+=r.ret; t.upd+=certUpd(r); });
+
+  document.getElementById('tblCert').innerHTML =
+    thead(cols,'cert') +
+    '<tbody>' + rows.map(r=>`
+      <tr>
+        <td>
+          <div class="acct">
+            <span class="acct-dot" style="--c:var(--gold);--cl:var(--gold-lt)"></span>
+            <div><div class="acct-name">${r.cuenta}</div><div class="acct-meta">${r.ref}</div></div>
+          </div>
+        </td>
+        <td>${tasaCell(r.tasa)}</td>
+        <td>${moneyCell(r.balance,{neutral:true})}</td>
+        <td>${moneyCell(r.intGan)}</td>
+        <td>${moneyCell(r.intTasa)}</td>
+        <td>${moneyCell(r.ret)}</td>
+        <td>${moneyCell(r.upd,{result:true})}</td>
+      </tr>`).join('') + '</tbody>' +
+    `<tfoot><tr>
+        <td><div class="tot-label"><i class="bi bi-graph-up-arrow"></i> Total Certificados e Inversiones</div></td>
+        <td></td>
+        <td>${moneyCell(t.balance,{neutral:true})}</td>
+        <td>${moneyCell(t.intGan)}</td>
+        <td>${moneyCell(t.intTasa)}</td>
+        <td>${moneyCell(t.ret)}</td>
+        <td>${moneyCell(t.upd,{result:true})}</td>
+     </tr></tfoot>`;
+
+  document.querySelector('#tagCert .mono').textContent = 'RD$ '+fnum(t.upd);
+  return t.upd;
+}
+
+/* ===== thead helper con orden ===== */
+function thead(cols,tableKey){
+  const st = sortState[tableKey];
+  return '<thead><tr>' + cols.map(c=>{
+    const sorted = st.key===c.key;
+    const cls = sorted ? ('sorted '+(st.dir<0?'desc':'')) : '';
+    const note = c.note ? `<span class="col-note">${c.note}</span>` : '';
+    return `<th class="${cls}" onclick="sortBy('${tableKey}','${c.key}')">
+      <span class="th-in">${c.label}<i class="bi bi-caret-up-fill sort-i"></i></span>${note}
+    </th>`;
+  }).join('') + '</tr></thead>';
+}
+
+function applySort(rows,tableKey){
+  const st = sortState[tableKey];
+  if(!st.key) return rows;
+  const k = st.key;
+  return rows.slice().sort((a,b)=>{
+    let va=a[k], vb=b[k];
+    if(typeof va==='string'){ return va.localeCompare(vb)*st.dir; }
+    va = va==null?-Infinity:va; vb = vb==null?-Infinity:vb;
+    return (va-vb)*st.dir;
+  });
+}
+function sortBy(tableKey,key){
+  const st = sortState[tableKey];
+  if(st.key===key){ st.dir*=-1; } else { st.key=key; st.dir = (key==='cuenta')?1:-1; }
+  tableKey==='bancos'?renderBancos():renderCert();
+}
+
+/* ====================================================================
+   KPIs / RESUMEN EJECUTIVO
+==================================================================== */
+function renderKPIs(totBancos, totCert){
+  const b = DATA.bancos.rows, c = DATA.certificados.rows;
+  const transito   = b.reduce((s,r)=>s+r.transito,0);            // cheques/transf en tránsito (−)
+  const pagos      = b.reduce((s,r)=>s+r.pagos,0);               // pagos de la semana (−)
+  const intereses  = c.reduce((s,r)=>s+r.intGan+r.intTasa,0);    // intereses ganados (+)
+  const disponible = totBancos + totCert;
+
+  const cards = [
+    {hero:true, color:'', ico:'bi-wallet2', label:'Disponibilidad Total', val:disponible,
+      foot:'<i class="bi bi-check-circle-fill"></i> Efectivo disponible neto'},
+    {color:'c-blue', ico:'bi-bank2', label:'Total en Bancos', val:totBancos,
+      foot:b.length+' cuentas operativas'},
+    {color:'c-gold', ico:'bi-graph-up-arrow', label:'Certificados e Inversiones', val:totCert,
+      foot:c.length+' instrumentos a plazo'},
+    {color:'c-green', ico:'bi-cash-stack', label:'Intereses Ganados', val:intereses,
+      foot:'Rendimiento del período'},
+    {color:'c-red', ico:'bi-arrow-down-up', label:'Cheques y Transf. en Tránsito', val:transito,
+      foot:'Pendiente de aplicar'},
+    {color:'c-slate', ico:'bi-arrow-up-right-circle', label:'Pagos de la Semana y Provisión', val:pagos,
+      foot:'Compromisos de la semana'}
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map((k,i)=>{
+    const neg = k.val<0;
+    const valTxt = (neg?'(':'')+fnum(k.val)+(neg?')':'');
+    const valCls = k.hero ? '' : (neg?'neg':'');
+    return `<div class="kpi ${k.hero?'hero':k.color}" style="animation-delay:${0.05+i*0.06}s">
+      <div class="kpi-ico"><i class="bi ${k.ico}"></i></div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val ${valCls}"><span class="cur">RD$</span><span class="mono">${valTxt}</span></div>
+      <div class="kpi-foot">${k.foot}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ====================================================================
+   BANDA TOTAL
+==================================================================== */
+function renderGrand(totBancos,totCert){
+  const disponible = totBancos+totCert;
+  const balInicial = DATA.bancos.rows.reduce((s,r)=>s+r.balance,0) + DATA.certificados.rows.reduce((s,r)=>s+r.balance,0);
+  document.getElementById('grandTotal').textContent = fnum(disponible);
+  document.getElementById('gbBancos').textContent   = fnum(totBancos);
+  document.getElementById('gbCert').textContent     = fnum(totCert);
+  document.getElementById('grandSub').innerHTML =
+    `Balance inicial consolidado <b class="mono" style="color:#E7EEFC">RD$ ${fnum(balInicial)}</b> · Disponibilidad neta al corte`;
+}
+
+/* ====================================================================
+   ORQUESTACIÓN
+==================================================================== */
+function buildReport(){
+  const tb = renderBancos();
+  const tc = renderCert();
+  renderKPIs(tb,tc);
+  renderGrand(tb,tc);
+  document.getElementById('reportDate').textContent = DATA.reportDateLabel;
+}
+
+function stampTime(){
+  const now = new Date();
+  document.getElementById('updTime').textContent =
+    now.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}) + ' · ' +
+    now.toLocaleDateString('es-DO',{day:'2-digit',month:'short'});
+}
+
+function refreshReport(){
+  const ico = document.getElementById('refreshIco');
+  ico.classList.add('spin');
+  buildReport(); stampTime();
+  setTimeout(()=>{ ico.classList.remove('spin'); toast('Reporte actualizado'); }, 650);
+}
+
+/* ===== usuario que generó (lee la sesión del shell si está disponible) ===== */
+function detectUser(){
+  let name='Invitado';
+  try{ const u = window.parent && window.parent!==window ? window.parent.document.getElementById('userName') : null;
+       if(u && u.textContent.trim()) name=u.textContent.trim(); }catch(e){}
+  document.getElementById('genUser').textContent = name;
+}
+
+/* ===== sincroniza tema con el shell ===== */
+function syncTheme(){
+  try{ const t=localStorage.getItem('gstar-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }catch(e){}
+}
+
+/* ===== toast ===== */
+let toastT;
+function toast(msg){
+  const el=document.getElementById('toast'); document.getElementById('toastMsg').textContent=msg;
+  el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+/* ====================================================================
+   EXPORTAR A EXCEL
+==================================================================== */
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  const tb = DATA.bancos.rows.reduce((s,r)=>s+bancoUpd(r),0);
+  const tc = DATA.certificados.rows.reduce((s,r)=>s+certUpd(r),0);
+
+  const aoa = [
+    ['GSTAR SERVICES — DISPONIBILIDAD BANCARIA'],
+    ['Al corte de: '+DATA.reportDateLabel],
+    ['Generado: '+new Date().toLocaleString('es-DO')],
+    [],
+    ['CUENTAS BANCARIAS E INVERSIONES','Tasa',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Balance Actualizado'],
+    ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.tasa?(r.tasa*100).toFixed(2)+'%':'', r.balance, r.transito, r.transfer, r.pagos, bancoUpd(r)]),
+    ['TOTAL CUENTAS BANCARIAS','',
+      DATA.bancos.rows.reduce((s,r)=>s+r.balance,0),
+      DATA.bancos.rows.reduce((s,r)=>s+r.transito,0),
+      DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0),
+      DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0), tb],
+    [],
+    ['CERTIFICADOS FINANCIEROS E INVERSIONES','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Intereses Ganados / Tasa Anual','Ret. Intereses 1% (-)','Balance Actualizado'],
+    ...DATA.certificados.rows.map(r=>[r.cuenta+' '+r.ref,(r.tasa*100).toFixed(2)+'%', r.balance, r.intGan, r.intTasa, r.ret, certUpd(r)]),
+    ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',
+      DATA.certificados.rows.reduce((s,r)=>s+r.balance,0),
+      DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0),
+      DATA.certificados.rows.reduce((s,r)=>s+r.intTasa,0),
+      DATA.certificados.rows.reduce((s,r)=>s+r.ret,0), tc],
+    [],
+    ['TOTAL DISPONIBLE','','','','','', tb+tc]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:42},{wch:9},{wch:20},{wch:20},{wch:22},{wch:20},{wch:20}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}},{s:{r:2,c:0},e:{r:2,c:6}}];
+  XLSX.utils.book_append_sheet(wb,ws,'Disponibilidad');
+  XLSX.writeFile(wb,'disponibilidad_bancaria_'+DATA.reportDateISO+'.xlsx');
+  toast('Excel exportado');
+}
+
+/* ====================================================================
+   EXPORTAR A PDF
+==================================================================== */
+function exportPDF(){
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const W=297;
+    const money=v=> v<0 ? '('+fnum(v)+')' : (v===0?'-':fnum(v));
+    // Header
+    doc.setFillColor(11,20,55); doc.rect(0,0,W,24,'F');
+    doc.setFillColor(14,159,110); doc.rect(0,24,W,2.4,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.text('DISPONIBILIDAD BANCARIA',14,12);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(180,195,225);
+    doc.text('GSTAR SERVICES  ·  Al corte de '+DATA.reportDateLabel,14,18.5);
+    doc.setFontSize(8); doc.text('Generado: '+new Date().toLocaleString('es-DO'),W-14,12,{align:'right'});
+
+    const tb = DATA.bancos.rows.reduce((s,r)=>s+bancoUpd(r),0);
+    const tc = DATA.certificados.rows.reduce((s,r)=>s+certUpd(r),0);
+
+    const moneyCol={2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'},1:{halign:'center'}};
+
+    doc.autoTable({
+      startY:31,
+      head:[['Cuentas Bancarias e Inversiones','Tasa',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Balance Actualizado']],
+      body:[
+        ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, r.tasa?(r.tasa*100).toFixed(2)+'%':'-', money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(bancoUpd(r))]),
+        ['TOTAL CUENTAS BANCARIAS','',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(tb)]
+      ],
+      theme:'grid', styles:{fontSize:7.5,cellPadding:2.4,lineColor:[229,234,241],textColor:[40,50,70]},
+      headStyles:{fillColor:[37,99,235],textColor:255,fontSize:7,fontStyle:'bold',halign:'right'},
+      columnStyles:moneyCol,
+      didParseCell:d=>{ if(d.row.raw[0]&&String(d.row.raw[0]).startsWith('TOTAL')){ d.cell.styles.fillColor=[234,241,254]; d.cell.styles.fontStyle='bold'; } if(d.section==='body'&&typeof d.cell.text[0]==='string'&&d.cell.text[0].startsWith('(')) d.cell.styles.textColor=[220,38,38]; }
+    });
+
+    doc.autoTable({
+      startY:doc.lastAutoTable.finalY+6,
+      head:[['Certificados Financieros e Inversiones','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Int. Ganados / Tasa Anual','Ret. Intereses 1% (-)','Balance Actualizado']],
+      body:[
+        ...DATA.certificados.rows.map(r=>[r.cuenta+'  '+r.ref,(r.tasa*100).toFixed(2)+'%', money(r.balance), money(r.intGan), money(r.intTasa), money(r.ret), money(certUpd(r))]),
+        ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',money(DATA.certificados.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.intTasa,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.ret,0)),money(tc)]
+      ],
+      theme:'grid', styles:{fontSize:7.5,cellPadding:2.4,lineColor:[229,234,241],textColor:[40,50,70]},
+      headStyles:{fillColor:[200,144,43],textColor:255,fontSize:7,fontStyle:'bold',halign:'right'},
+      columnStyles:moneyCol,
+      didParseCell:d=>{ if(d.row.raw[0]&&String(d.row.raw[0]).startsWith('TOTAL')){ d.cell.styles.fillColor=[251,243,227]; d.cell.styles.fontStyle='bold'; } if(d.section==='body'&&typeof d.cell.text[0]==='string'&&d.cell.text[0].startsWith('(')) d.cell.styles.textColor=[220,38,38]; }
+    });
+
+    // Banda total
+    let y=doc.lastAutoTable.finalY+6;
+    doc.setFillColor(11,20,55); doc.roundedRect(14,y,W-28,20,2,2,'F');
+    doc.setTextColor(157,234,201); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('BALANCE GENERAL DISPONIBLE',20,y+8);
+    doc.setTextColor(255,255,255); doc.setFontSize(17);
+    doc.text('RD$ '+fnum(tb+tc),20,y+16);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(174,192,230);
+    doc.text('Total en Bancos: RD$ '+fnum(tb),W-20,y+9,{align:'right'});
+    doc.text('Certificados e Inv.: RD$ '+fnum(tc),W-20,y+15,{align:'right'});
+
+    doc.save('disponibilidad_bancaria_'+DATA.reportDateISO+'.pdf');
+    toast('PDF exportado');
+  }catch(e){ console.error(e); alert('Error generando PDF: '+e.message); }
+}
+
+/* ====================================================================
+   INIT
+==================================================================== */
+syncTheme();
+detectUser();
+buildReport();
+stampTime();
+</script>
+</body>
+</html>

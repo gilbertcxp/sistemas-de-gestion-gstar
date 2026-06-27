@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Reembolsos y Viáticos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --surface-2: #f2f2f0;
+      --text: #1a1a18;
+      --text-2: #6b6b67;
+      --text-3: #a0a09c;
+      --border: rgba(0,0,0,0.10);
+      --border-2: rgba(0,0,0,0.18);
+      --blue: #185FA5;
+      --blue-light: #E6F1FB;
+      --blue-text: #0C447C;
+      --green-bg: #EAF3DE;
+      --green-text: #3B6D11;
+      --amber-bg: #FAEEDA;
+      --amber-text: #854F0B;
+      --red-bg: #FCEBEB;
+      --red-text: #A32D2D;
+      --info-bg: #E6F1FB;
+      --info-text: #0C447C;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── SIDEBAR ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 0.5px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 0; position: sticky; top: 0; height: 100vh;
+    }
+
+    .sidebar-logo {
+      padding: 1rem 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .logo-mark {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; background: var(--blue);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 16px;
+    }
+    .logo-name { font-size: 15px; font-weight: 500; }
+    .logo-sub { font-size: 11px; color: var(--text-2); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 2px; }
+
+    .nav-label {
+      font-size: 10px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-3);
+      padding: 0.5rem 0.5rem 0.25rem; margin-top: 0.5rem;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--radius);
+      color: var(--text-2); font-size: 13.5px; font-weight: 400;
+      cursor: pointer; transition: all 0.15s; text-decoration: none;
+      border: none; background: transparent; width: 100%; text-align: left;
+    }
+    .nav-item i { font-size: 17px; width: 20px; text-align: center; }
+    .nav-item:hover { background: var(--surface-2); color: var(--text); }
+    .nav-item.active { background: var(--blue-light); color: var(--blue-text); font-weight: 500; }
+
+    .sidebar-user {
+      padding: 1rem 1.25rem;
+      border-top: 0.5px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--blue-light); display: flex; align-items: center;
+      justify-content: center; font-size: 12px; font-weight: 500;
+      color: var(--blue-text); flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 500; }
+    .user-role { font-size: 11px; color: var(--text-2); }
+
+    /* ── MAIN CONTENT ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 0 2rem;
+      height: 56px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .topbar-title { font-size: 15px; font-weight: 500; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-badge {
+      font-size: 11px; font-weight: 500;
+      padding: 4px 12px; border-radius: 999px;
+      background: var(--green-bg); color: var(--green-text);
+      letter-spacing: 0.04em;
+    }
+    .topbar-icon-btn {
+      width: 34px; height: 34px; border: 0.5px solid var(--border);
+      border-radius: var(--radius); background: transparent;
+      color: var(--text-2); font-size: 17px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .topbar-icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+    .content-area { flex: 1; overflow-y: auto; padding: 2rem; }
+
+    /* ── STAT CARDS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+
+    .stat-card {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    }
+    .stat-label { font-size: 12px; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 500; font-family: 'DM Mono', monospace; }
+    .stat-delta { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+    .stat-delta.up { color: var(--green-text); }
+    .stat-delta.pend { color: var(--amber-text); }
+
+    /* ── SECTION TABS ── */
+    .section-tabs {
+      display: flex; gap: 4px; margin-bottom: 1.5rem;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      padding: 4px; width: fit-content;
+    }
+    .tab-btn {
+      padding: 7px 16px; border: none; border-radius: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400;
+      cursor: pointer; transition: all 0.15s;
+      background: transparent; color: var(--text-2);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .tab-btn.active {
+      background: var(--surface); color: var(--text); font-weight: 500;
+      border: 0.5px solid var(--border); box-shadow: var(--shadow);
+    }
+
+    /* ── FORMS ── */
+    .form-section { display: none; }
+    .form-section.visible { display: block; }
+
+    .form-card {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    .divider-label {
+      font-size: 11px; font-weight: 500; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 10px; margin-top: 1.5rem;
+    }
+    .divider-label:first-child { margin-top: 0; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .row.full { grid-template-columns: 1fr; }
+    .row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: 11.5px; font-weight: 500; color: var(--text-2);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .field input, .field select, .field textarea {
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      padding: 9px 12px; border-radius: var(--radius);
+      border: 0.5px solid var(--border-2);
+      background: var(--surface); color: var(--text);
+      width: 100%; outline: none; transition: border-color 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b67' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .field textarea { resize: vertical; min-height: 88px; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(24,95,165,0.1);
+    }
+
+    /* ── CATEGORY GRID ── */
+    .category-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 14px; }
+
+    .cat-card {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      padding: 12px 8px; text-align: center; cursor: pointer;
+      transition: all 0.15s; background: var(--surface);
+    }
+    .cat-card:hover { background: var(--surface-2); border-color: var(--border-2); }
+    .cat-card.selected { border: 1.5px solid var(--blue); background: var(--blue-light); }
+    .cat-card.selected .cat-label { color: var(--blue-text); }
+    .cat-icon { font-size: 20px; display: block; margin-bottom: 6px; color: var(--text-2); }
+    .cat-card.selected .cat-icon { color: var(--blue); }
+    .cat-label { font-size: 11.5px; font-weight: 500; color: var(--text-2); }
+
+    /* ── ITEMS LIST ── */
+    .items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .item-row { display: grid; grid-template-columns: 1fr 120px 36px; gap: 8px; align-items: center; }
+    .item-remove {
+      width: 36px; height: 36px; border: 0.5px solid var(--border);
+      border-radius: var(--radius); background: transparent;
+      color: var(--text-3); cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s;
+    }
+    .item-remove:hover { background: var(--red-bg); color: var(--red-text); border-color: rgba(163,45,45,0.3); }
+
+    .add-item-btn {
+      width: 100%; padding: 9px; border: 0.5px dashed var(--border-2);
+      border-radius: var(--radius); background: transparent;
+      color: var(--text-2); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; cursor: pointer; transition: all 0.15s; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .add-item-btn:hover { background: var(--surface-2); color: var(--text); }
+
+    /* ── TOTAL ── */
+    .total-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--surface-2); border-radius: var(--radius);
+      padding: 12px 16px; margin-bottom: 1.5rem;
+      border: 0.5px solid var(--border);
+    }
+    .total-label { font-size: 13px; color: var(--text-2); }
+    .total-amount { font-size: 22px; font-weight: 500; font-family: 'DM Mono', monospace; }
+
+    /* ── UPLOAD ── */
+    .upload-zone {
+      border: 0.5px dashed var(--border-2); border-radius: var(--radius-lg);
+      padding: 2rem; text-align: center; cursor: pointer; margin-bottom: 1.5rem;
+      transition: all 0.15s; background: var(--surface);
+    }
+    .upload-zone:hover { background: var(--surface-2); border-color: var(--blue); }
+    .upload-zone.dragover { background: var(--blue-light); border-color: var(--blue); }
+    .upload-icon { font-size: 32px; color: var(--text-3); display: block; margin-bottom: 8px; }
+    .upload-text { font-size: 13px; color: var(--text-2); }
+    .upload-text span { color: var(--blue); font-weight: 500; }
+    .upload-small { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+    .files-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .file-chip {
+      background: var(--green-bg); color: var(--green-text);
+      font-size: 12px; padding: 3px 10px; border-radius: 999px;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── FOOTER ── */
+    .footer-actions {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 1.5rem; border-top: 0.5px solid var(--border); margin-top: 0.5rem;
+    }
+    .btn-group { display: flex; gap: 8px; }
+
+    .btn-ghost {
+      padding: 9px 18px; border: 0.5px solid var(--border-2);
+      border-radius: var(--radius); background: transparent;
+      font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 400;
+      color: var(--text-2); cursor: pointer; transition: all 0.15s;
+    }
+    .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+    .btn-primary {
+      padding: 9px 22px; border: none; border-radius: var(--radius);
+      background: var(--blue); color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { background: var(--blue-text); }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* ── HISTORY ── */
+    .history-card {
+      border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem; background: var(--surface);
+      display: flex; align-items: center; gap: 16px; margin-bottom: 8px;
+      transition: box-shadow 0.15s;
+    }
+    .history-card:hover { box-shadow: var(--shadow); }
+    .hist-icon {
+      width: 42px; height: 42px; border-radius: var(--radius);
+      background: var(--surface-2); display: flex; align-items: center;
+      justify-content: center; font-size: 19px; color: var(--text-2); flex-shrink: 0;
+    }
+    .hist-info { flex: 1; min-width: 0; }
+    .hist-title { font-size: 14px; font-weight: 500; }
+    .hist-meta { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .hist-right { text-align: right; flex-shrink: 0; }
+    .hist-amount { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
+    .hist-status {
+      font-size: 11px; padding: 3px 9px; border-radius: 999px;
+      display: inline-block; margin-top: 4px; font-weight: 500;
+    }
+    .s-approved { background: var(--green-bg); color: var(--green-text); }
+    .s-pending { background: var(--amber-bg); color: var(--amber-text); }
+    .s-review { background: var(--info-bg); color: var(--info-text); }
+    .s-rejected { background: var(--red-bg); color: var(--red-text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--blue); color: #fff;
+      padding: 12px 20px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500;
+      display: none; align-items: center; gap: 9px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.16); z-index: 999;
+      animation: none;
+    }
+    .toast.show { display: flex; animation: toastIn 0.3s cubic-bezier(.22,1,.36,1); }
+    @keyframes toastIn { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MODAL CONFIRM ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      display: none; align-items: center; justify-content: center; z-index: 500;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface); border-radius: var(--radius-lg);
+      padding: 2rem; max-width: 420px; width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+    .modal-icon { font-size: 40px; color: var(--green-text); margin-bottom: 1rem; }
+    .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+    .modal-body { font-size: 14px; color: var(--text-2); margin-bottom: 1.5rem; line-height: 1.6; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* ── LOGIN SCREEN ── */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .login-overlay.hidden { display: none; }
+
+    .login-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+      padding: 2.25rem 2rem 2rem;
+      width: 100%; max-width: 440px;
+    }
+    .login-logo { margin-bottom: 1.75rem; }
+    .login-title { font-size: 20px; font-weight: 600; margin-bottom: 3px; color: var(--text); }
+    .login-sub   { font-size: 13px; color: var(--text-2); margin-bottom: 1.5rem; line-height: 1.5; }
+
+    /* Search autocomplete wrapper */
+    .ls-search-wrap { position: relative; margin-bottom: 10px; }
+    .ls-search-row {
+      display: flex; align-items: center;
+      border: 1.5px solid var(--border-2); border-radius: var(--radius);
+      background: var(--surface); overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .ls-search-row:focus-within {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(24,95,165,0.10);
+    }
+    .ls-search-icon {
+      padding: 0 10px 0 13px; color: var(--text-3); font-size: 16px; flex-shrink: 0;
+    }
+    .ls-search-input {
+      flex: 1; border: none; outline: none; padding: 11px 4px;
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      color: var(--text); background: transparent; min-width: 0;
+    }
+    .ls-search-input::placeholder { color: var(--text-3); }
+    .ls-clear-btn {
+      width: 36px; height: 36px; display: none; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 15px;
+      flex-shrink: 0; transition: color .15s;
+    }
+    .ls-clear-btn:hover { color: var(--text); }
+    .ls-clear-btn.show { display: flex; }
+
+    /* Dropdown */
+    .ls-dropdown {
+      position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 10000;
+      background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+      max-height: 280px; overflow-y: auto; display: none;
+    }
+    .ls-dropdown.open { display: block; }
+    .ls-opt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 13px; cursor: pointer; gap: 12px;
+      border-bottom: 0.5px solid var(--border);
+      transition: background .1s;
+    }
+    .ls-opt:last-child { border-bottom: none; }
+    .ls-opt:hover, .ls-opt.kbd-active { background: var(--blue-light); }
+    .ls-opt-info { flex: 1; min-width: 0; }
+    .ls-opt-name { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .ls-opt-pos  { font-size: 11px; color: var(--text-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ls-opt-id   { font-family: 'DM Mono', monospace; font-size: 11.5px; font-weight: 600;
+                   color: var(--blue-text); background: var(--blue-light);
+                   padding: 2px 8px; border-radius: 99px; flex-shrink: 0; }
+    .ls-empty    { padding: 16px; text-align: center; font-size: 13px; color: var(--text-2); }
+
+    /* Selected employee card */
+    .ls-selected-card {
+      display: none; border: 1.5px solid var(--blue);
+      border-radius: var(--radius); background: var(--blue-light);
+      padding: 12px 14px; margin-bottom: 10px;
+      align-items: center; gap: 12px;
+    }
+    .ls-selected-card.show { display: flex; }
+    .ls-sel-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.5px;
+    }
+    .ls-sel-info { flex: 1; min-width: 0; }
+    .ls-sel-name { font-size: 14px; font-weight: 600; color: var(--blue-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ls-sel-pos  { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+    .ls-sel-id   { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--blue-text); margin-top: 3px; }
+    .ls-sel-dept { font-size: 11px; color: var(--text-2); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+    .ls-sel-change { font-size: 12px; color: var(--blue); cursor: pointer; text-decoration: underline; flex-shrink: 0; background: none; border: none; padding: 0; font-family: 'DM Sans', sans-serif; }
+
+    /* Manual entry section */
+    .ls-manual-toggle { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 5px; cursor: pointer; margin-bottom: 10px; width: fit-content; }
+    .ls-manual-toggle:hover { color: var(--blue); }
+    .ls-manual-section { display: none; gap: 8px; flex-direction: column; margin-bottom: 10px; background: var(--surface-2); border-radius: var(--radius); padding: 14px; border: 0.5px solid var(--border-2); }
+    .ls-manual-section.open { display: flex; }
+    .ls-manual-section label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+    .ls-manual-section input {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 12px;
+      border-radius: var(--radius); border: 1px solid var(--border-2);
+      background: var(--surface); color: var(--text); width: 100%; outline: none;
+      transition: border-color .15s;
+    }
+    .ls-manual-section input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,0.08); }
+
+    .login-btn {
+      width: 100%; padding: 12px; border: none;
+      border-radius: var(--radius); background: var(--blue); color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 14.5px; font-weight: 500;
+      cursor: pointer; margin-top: 4px; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .login-btn:hover { background: var(--blue-text); }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-error {
+      font-size: 12px; color: var(--red-text);
+      background: var(--red-bg); border-radius: var(--radius);
+      padding: 8px 12px; margin-bottom: 10px; display: none;
+    }
+    .login-error.show { display: block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .category-grid { grid-template-columns: repeat(3, 1fr); }
+      .row { grid-template-columns: 1fr; }
+      .row.three { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      .category-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-area { padding: 1rem; }
+    }
+
+    /* ── EMPLOYEE AUTOCOMPLETE ── */
+    .emp-field-wrap { position: relative; }
+    .emp-input-row {
+      display: flex; gap: 0; border: 1.5px solid var(--border-2);
+      border-radius: var(--radius); overflow: hidden; background: var(--surface);
+      transition: border-color .15s;
+    }
+    .emp-input-row:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,0.10); }
+    .emp-input-row input {
+      flex: 1; border: none; outline: none; padding: 10px 13px;
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      background: transparent; color: var(--text); min-width: 0;
+    }
+    .emp-clear-btn {
+      width: 34px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 16px;
+      transition: color .15s; flex-shrink: 0;
+    }
+    .emp-clear-btn:hover { color: var(--text); }
+    .emp-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 999;
+      background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      max-height: 260px; overflow-y: auto; display: none;
+    }
+    .emp-dropdown.open { display: block; }
+    .emp-opt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 13px; cursor: pointer; border-bottom: 0.5px solid var(--border);
+      gap: 10px; transition: background .1s;
+    }
+    .emp-opt:last-child { border-bottom: none; }
+    .emp-opt:hover, .emp-opt.active { background: var(--blue-light); }
+    .emp-opt-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .emp-opt-name { font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .emp-opt-pos  { font-size: 11px; color: var(--text-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .emp-opt-id   { font-family: 'DM Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--blue); flex-shrink: 0; background: var(--blue-light); padding: 2px 7px; border-radius: 99px; }
+    .emp-opt-empty { padding: 14px 13px; font-size: 13px; color: var(--text-2); text-align: center; }
+    .emp-manual-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; display: flex; align-items: center; gap: 4px; }
+    .emp-manual-hint i { font-size: 12px; }
+    .emp-id-field {
+      border: 1.5px solid var(--border-2); border-radius: var(--radius);
+      padding: 10px 13px; font-size: 14px; font-family: 'DM Mono', monospace;
+      background: var(--surface-2); color: var(--text); width: 100%;
+      transition: border-color .15s;
+    }
+    .emp-id-field.filled { background: var(--blue-light); border-color: var(--blue); color: var(--blue-text); font-weight: 500; }
+    .emp-id-field:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,0.10); background: var(--surface); }
+    .emp-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; padding: 3px 9px; border-radius: 99px; margin-top: 5px;
+    }
+    .emp-badge.found { background: var(--green-bg); color: var(--green-text); }
+    .emp-badge.manual { background: var(--amber-bg); color: var(--amber-text); }
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<!-- PANTALLA DE ACCESO -->
+<div class="login-overlay" id="login-screen">
+  <div class="login-card">
+
+    <div class="login-logo"><img src="data:image/png;base64,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" alt="GSTAR Services" style="height:44px; width:auto; max-width:220px; object-fit:contain;" /></div>
+    <div class="login-title">Bienvenido al portal</div>
+    <div class="login-sub">GSTAR Services · Busca tu nombre en el directorio o ingrésalo manualmente</div>
+
+    <div class="login-error" id="login-error"></div>
+
+    <!-- SEARCH AUTOCOMPLETE -->
+    <div id="ls-search-section">
+      <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:6px;">
+        Buscar empleado
+      </div>
+      <div class="ls-selected-card" id="ls-selected-card">
+        <div class="ls-sel-avatar" id="ls-sel-avatar">--</div>
+        <div class="ls-sel-info">
+          <div class="ls-sel-name" id="ls-sel-name"></div>
+          <div class="ls-sel-pos"  id="ls-sel-pos"></div>
+          <div class="ls-sel-id"   id="ls-sel-id"></div>
+          <div class="ls-sel-dept" id="ls-sel-dept" style="font-size:11px;color:var(--text-2);margin-top:2px;display:flex;align-items:center;gap:4px;"><i class="ti ti-building" style="font-size:12px;"></i><span></span></div>
+        </div>
+        <button class="ls-sel-change" onclick="clearLoginSelection()">Cambiar</button>
+      </div>
+      <div class="ls-search-wrap" id="ls-search-wrap">
+        <div class="ls-search-row">
+          <i class="ti ti-search ls-search-icon" aria-hidden="true"></i>
+          <input class="ls-search-input" id="ls-input" type="text"
+            placeholder="Buscar por nombre, cargo o ID…" autocomplete="off" />
+          <button class="ls-clear-btn" id="ls-clear" onclick="clearLoginSearch()" type="button">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+        <div class="ls-dropdown" id="ls-dropdown"></div>
+      </div>
+    </div>
+
+    <!-- MANUAL ENTRY -->
+    <div style="margin:12px 0 4px;">
+      <button class="ls-manual-toggle" id="ls-manual-toggle" onclick="toggleManual()">
+        <i class="ti ti-pencil"></i> El empleado no aparece en la lista, ingresar manualmente
+      </button>
+    </div>
+    <div class="ls-manual-section" id="ls-manual-section">
+      <div>
+        <label>Nombre completo</label>
+        <input type="text" id="ls-manual-name" placeholder="Ej: Juan Pérez García" />
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;">
+          <label>Número de empleado</label>
+          <input type="text" id="ls-manual-id" placeholder="Ej: SJ-099" />
+        </div>
+        <div style="flex:1;">
+          <label>Cargo / Posición</label>
+          <input type="text" id="ls-manual-pos" placeholder="Ej: Analista" />
+        </div>
+      </div>
+      <div>
+        <label>Departamento</label>
+        <input type="text" id="ls-manual-dept" placeholder="Ej: Contabilidad" />
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      <i class="ti ti-arrow-right"></i> Acceder al portal
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <img src="data:image/png;base64,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" alt="GSTAR Services" style="height:38px; width:auto; max-width:180px; object-fit:contain;" />
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="switchTab('new'); setNavActive(this)">
+        <i class="ti ti-plus"></i> Nueva solicitud
+      </button>
+      <button class="nav-item" onclick="switchTab('travel'); setNavActive(this)">
+        <i class="ti ti-plane"></i> Viáticos de viaje
+      </button>
+      <button class="nav-item" onclick="switchTab('history'); setNavActive(this)">
+        <i class="ti ti-clock-hour-4"></i> Mis solicitudes
+      </button>
+
+      <div class="nav-label">Reportes</div>
+      <button class="nav-item" onclick="alert('Módulo en construcción')">
+        <i class="ti ti-chart-bar"></i> Resumen mensual
+      </button>
+      <button class="nav-item" onclick="alert('Módulo en construcción')">
+        <i class="ti ti-file-spreadsheet"></i> Exportar datos
+      </button>
+
+      <div class="nav-label">Soporte</div>
+      <button class="nav-item" onclick="alert('Manual de usuario')">
+        <i class="ti ti-help-circle"></i> Ayuda
+      </button>
+      <button class="nav-item" onclick="alert('Políticas de gastos de la empresa')">
+        <i class="ti ti-file-text"></i> Política de gastos
+      </button>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebar-avatar">MR</div>
+      <div style="min-width:0;flex:1;">
+        <div class="user-name" id="sidebar-name">María Rodríguez</div>
+        <div class="user-role" id="sidebar-role">Analista de Marketing</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--text-3);margin-top:2px;" id="sidebar-empid">SJ-000</div>
+        <div style="font-size:10.5px;color:var(--text-3);margin-top:1px;display:flex;align-items:center;gap:3px;" id="sidebar-dept"><i class="ti ti-building" style="font-size:11px;"></i><span></span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <span class="topbar-title">Portal de Reembolsos y Viáticos — GSTAR Services</span>
+      <div class="topbar-right">
+        <span class="topbar-badge"><i class="ti ti-circle-check"></i> Sistema activo</span>
+        <button class="topbar-icon-btn" title="Notificaciones"><i class="ti ti-bell"></i></button>
+        <button class="topbar-icon-btn" title="Configuración"><i class="ti ti-settings"></i></button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- STAT CARDS -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total solicitado</div>
+          <div class="stat-value" id="stat-total">USD 0.00</div>
+          <div class="stat-delta up"><i class="ti ti-trending-up"></i> Este mes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aprobado</div>
+          <div class="stat-value" id="stat-aprobado">USD 0.00</div>
+          <div class="stat-delta up" id="stat-aprobado-delta"><i class="ti ti-circle-check"></i> 0 solicitudes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">En revisión</div>
+          <div class="stat-value" id="stat-revision">USD 0.00</div>
+          <div class="stat-delta pend" id="stat-revision-delta"><i class="ti ti-clock"></i> 0 pendientes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Solicitudes</div>
+          <div class="stat-value" id="stat-count">0</div>
+          <div class="stat-delta">Historial activo</div>
+        </div>
+      </div>
+
+      <!-- SECTION TABS -->
+      <div class="section-tabs">
+        <button class="tab-btn active" id="tab-btn-new" onclick="switchTab('new')">
+          <i class="ti ti-plus"></i> Nueva solicitud
+        </button>
+        <button class="tab-btn" id="tab-btn-travel" onclick="switchTab('travel')">
+          <i class="ti ti-plane"></i> Viáticos de viaje
+        </button>
+        <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">
+          <i class="ti ti-clock-hour-4"></i> Mis solicitudes
+        </button>
+      </div>
+
+      <!-- ── NUEVA SOLICITUD ── -->
+      <div class="form-section visible" id="tab-new">
+        <div class="form-card">
+
+          <div class="divider-label">Tipo de gasto</div>
+          <div class="category-grid">
+            <div class="cat-card selected" onclick="selectCat(this)">
+              <i class="ti ti-receipt cat-icon"></i>
+              <div class="cat-label">Reembolso</div>
+            </div>
+            <div class="cat-card" onclick="selectCat(this)">
+              <i class="ti ti-tools-kitchen-2 cat-icon"></i>
+              <div class="cat-label">Alimentación</div>
+            </div>
+            <div class="cat-card" onclick="selectCat(this)">
+              <i class="ti ti-car cat-icon"></i>
+              <div class="cat-label">Transporte</div>
+            </div>
+            <div class="cat-card" onclick="selectCat(this)">
+              <i class="ti ti-building cat-icon"></i>
+              <div class="cat-label">Hospedaje</div>
+            </div>
+            <div class="cat-card" onclick="selectCat(this)">
+              <i class="ti ti-device-laptop cat-icon"></i>
+              <div class="cat-label">Equipos / TI</div>
+            </div>
+            <div class="cat-card" onclick="selectCat(this)">
+              <i class="ti ti-dots cat-icon"></i>
+              <div class="cat-label">Otro</div>
+            </div>
+          </div>
+
+          <div class="divider-label">Información del empleado</div>
+          <div class="row">
+            <div class="field">
+              <label>Nombre del empleado</label>
+              <input type="text" placeholder="Buscar por nombre, cargo o ID..." id="emp-name" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>Número de empleado</label>
+              <input type="text" placeholder="Se autocompleta al seleccionar" id="emp-id" class="emp-id-field" autocomplete="off" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Departamento</label>
+              <input type="text" id="emp-dept" class="emp-id-field" placeholder="Se autocompleta al seleccionar" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>Centro de costos</label>
+              <input type="text" id="exp-centro-costos" placeholder="Ej: MKTG-2026-01" />
+            </div>
+          </div>
+
+          <div class="divider-label">Detalle del gasto</div>
+          <div class="row">
+            <div class="field">
+              <label>Fecha del gasto</label>
+              <input type="date" id="expense-date" />
+            </div>
+            <div class="field">
+              <label>Moneda</label>
+              <select id="currency-select">
+                <option value="USD">USD — Dólar</option>
+                <option value="DOP">DOP — Peso dominicano</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="MXN">MXN — Peso mexicano</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="items-list" id="items-list">
+            <div class="item-row">
+              <input type="text" placeholder="Descripción del gasto" oninput="updateTotal()" />
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTotal()" />
+              <button class="item-remove" onclick="removeItem(this)" title="Eliminar"><i class="ti ti-x"></i></button>
+            </div>
+          </div>
+          <button class="add-item-btn" onclick="addItem()">
+            <i class="ti ti-plus"></i> Añadir concepto
+          </button>
+
+          <div class="total-bar">
+            <span class="total-label">Total solicitado</span>
+            <span class="total-amount" id="total-display">USD 0.00</span>
+          </div>
+
+          <div class="row full">
+            <div class="field">
+              <label>Justificación</label>
+              <textarea id="exp-justificacion" placeholder="Describe el motivo del gasto y su relación con las actividades de la empresa..."></textarea>
+            </div>
+          </div>
+
+          <div class="divider-label">Comprobantes</div>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+               ondragover="event.preventDefault(); this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleDrop(event)">
+            <i class="ti ti-cloud-upload upload-icon"></i>
+            <div class="upload-text">Arrastra tus comprobantes aquí o <span>selecciona archivos</span></div>
+            <div class="upload-small">PNG, JPG, PDF — hasta 10 MB por archivo</div>
+            <div class="files-list" id="files-list"></div>
+          </div>
+          <input type="file" id="file-input" style="display:none;" multiple accept=".png,.jpg,.jpeg,.pdf" onchange="handleFiles(this)" />
+
+          <div class="footer-actions">
+            <div class="btn-group">
+              <button class="btn-ghost" onclick="clearForm()">Limpiar</button>
+              <button class="btn-ghost" onclick="showToast('Borrador guardado')">Guardar borrador</button>
+            </div>
+            <button class="btn-primary" id="btn-submit-expense" onclick="submitForm()">
+              Enviar solicitud <i class="ti ti-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── VIÁTICOS DE VIAJE ── -->
+      <div class="form-section" id="tab-travel">
+        <div class="form-card">
+
+          <div class="divider-label">Datos del empleado</div>
+          <div class="row">
+            <div class="field">
+              <label>Nombre del empleado</label>
+              <input type="text" placeholder="Buscar por nombre, cargo o ID..." id="travel-emp-name" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>Número de empleado</label>
+              <input type="text" placeholder="Se autocompleta al seleccionar" id="travel-emp-id" class="emp-id-field" autocomplete="off" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Departamento</label>
+              <input type="text" id="travel-emp-dept" class="emp-id-field" placeholder="Se autocompleta al seleccionar" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>Aprobado por (supervisor)</label>
+              <input type="text" id="travel-supervisor" placeholder="Nombre del supervisor" />
+            </div>
+          </div>
+
+          <div class="divider-label">Información del viaje</div>
+          <div class="row">
+            <div class="field">
+              <label>Destino</label>
+              <input type="text" id="travel-destino" placeholder="Ciudad, País" />
+            </div>
+            <div class="field">
+              <label>Motivo del viaje</label>
+              <select id="travel-motivo">
+                <option value="">Seleccionar...</option>
+                <option>Reunión con cliente</option>
+                <option>Conferencia / Evento</option>
+                <option>Capacitación</option>
+                <option>Proyecto en sitio</option>
+                <option>Auditoría</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Fecha de salida</label>
+              <input type="date" id="travel-fecha-salida" />
+            </div>
+            <div class="field">
+              <label>Fecha de regreso</label>
+              <input type="date" id="travel-fecha-regreso" />
+            </div>
+          </div>
+
+          <div class="divider-label">Presupuesto estimado (USD)</div>
+          <div class="row">
+            <div class="field">
+              <label>Vuelos / Transporte aéreo</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-vuelos" />
+            </div>
+            <div class="field">
+              <label>Transporte terrestre</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-tierra" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Hospedaje (total)</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-hotel" />
+            </div>
+            <div class="field">
+              <label>Alimentación diaria × días</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-food" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Visa / Gestiones</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-visa" />
+            </div>
+            <div class="field">
+              <label>Gastos varios</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTravelTotal()" id="t-misc" />
+            </div>
+          </div>
+
+          <div class="total-bar">
+            <span class="total-label">Presupuesto total estimado</span>
+            <span class="total-amount" id="travel-total">USD 0.00</span>
+          </div>
+
+          <div class="row full">
+            <div class="field">
+              <label>Agenda y objetivos del viaje</label>
+              <textarea id="travel-agenda" placeholder="Describe las actividades, reuniones y objetivos del viaje..."></textarea>
+            </div>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn-ghost" onclick="showToast('Borrador de viáticos guardado')">Guardar borrador</button>
+            <button class="btn-primary" id="btn-submit-travel" onclick="submitTravel()">
+              Solicitar viáticos <i class="ti ti-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── HISTORIAL ── -->
+      <div class="form-section" id="tab-history">
+        <div class="divider-label" style="margin-top:0">Mis solicitudes</div>
+        <div id="history-list"></div>
+        <div id="history-empty" style="text-align:center;padding:3rem 1rem;color:var(--text-2);">
+          <i class="ti ti-inbox" style="font-size:40px;display:block;margin-bottom:12px;opacity:.4;"></i>
+          <div style="font-size:15px;font-weight:500;margin-bottom:6px;">Sin solicitudes aún</div>
+          <div style="font-size:13px;">Las solicitudes que envíes aparecerán aquí automáticamente.</div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL CONFIRMACIÓN -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-icon"><i class="ti ti-circle-check"></i></div>
+    <div class="modal-title" id="modal-title">Solicitud enviada</div>
+    <div class="modal-body" id="modal-body">Tu solicitud de reembolso fue enviada correctamente. Recibirás una notificación cuando sea aprobada.</div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Cerrar</button>
+      <button class="btn-primary" onclick="closeModal(); switchTab('history')">Ver mis solicitudes</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <i class="ti ti-circle-check"></i>
+  <span id="toast-msg">Acción completada</span>
+</div>
+
+<script>
+  // ═══════════════════════════════════════════
+  //  EMPLOYEE DATA (from Excel)
+  // ═══════════════════════════════════════════
+
+  // ── LOGIN STATE ──
+  let loginSelection = null; // {nombre, id, posicion} or null
+
+  // ── NORMALIZE (accent-insensitive search) ──
+  function norm(s) {
+    return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  }
+
+  // ── AUTOCOMPLETE DROPDOWN (login screen) ──
+  const lsInput    = document.getElementById('ls-input');
+  const lsDropdown = document.getElementById('ls-dropdown');
+  const lsClear    = document.getElementById('ls-clear');
+  let lsActiveIdx  = -1;
+
+  function lsRender(query) {
+    const q = norm(query);
+    const results = q.length === 0
+      ? EMPLEADOS
+      : EMPLEADOS.filter(e => norm(e.nombre).includes(q) || norm(e.posicion).includes(q) || norm(e.id).includes(q));
+    lsDropdown.innerHTML = '';
+    lsActiveIdx = -1;
+    if (results.length === 0) {
+      lsDropdown.innerHTML = '<div class="ls-empty"><i class="ti ti-search-off"></i> Sin resultados</div>';
+    } else {
+      results.slice(0,50).forEach((emp, i) => {
+        const opt = document.createElement('div');
+        opt.className = 'ls-opt';
+        opt.dataset.i = i;
+        opt.innerHTML = `<div class="ls-opt-info"><div class="ls-opt-name">${emp.nombre}</div><div class="ls-opt-pos">${emp.posicion}</div></div><span class="ls-opt-id">${emp.id}</span>`;
+        opt.addEventListener('mousedown', e => { e.preventDefault(); lsSelect(emp); });
+        lsDropdown.appendChild(opt);
+      });
+    }
+  }
+
+  function lsSelect(emp) {
+    loginSelection = emp;
+    // Show selected card
+    const initials = emp.nombre.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    document.getElementById('ls-sel-avatar').textContent = initials;
+    document.getElementById('ls-sel-name').textContent   = emp.nombre;
+    document.getElementById('ls-sel-pos').textContent    = emp.posicion;
+    document.getElementById('ls-sel-id').textContent     = emp.id;
+    const deptEl = document.getElementById('ls-sel-dept');
+    if (deptEl) { deptEl.querySelector('span').textContent = emp.departamento || ''; deptEl.style.display = emp.departamento ? 'flex' : 'none'; }
+    document.getElementById('ls-selected-card').classList.add('show');
+    document.getElementById('ls-search-wrap').style.display = 'none';
+    lsDropdown.classList.remove('open');
+    // Close manual if open
+    document.getElementById('ls-manual-section').classList.remove('open');
+    document.getElementById('ls-manual-toggle').style.display = 'flex';
+  }
+
+  function clearLoginSelection() {
+    loginSelection = null;
+    document.getElementById('ls-selected-card').classList.remove('show');
+    document.getElementById('ls-search-wrap').style.display = '';
+    lsInput.value = '';
+    lsClear.classList.remove('show');
+    lsDropdown.classList.remove('open');
+    setTimeout(()=>lsInput.focus(), 50);
+  }
+
+  function clearLoginSearch() {
+    lsInput.value = '';
+    lsClear.classList.remove('show');
+    lsDropdown.classList.remove('open');
+    lsInput.focus();
+  }
+
+  lsInput.addEventListener('input', () => {
+    const v = lsInput.value;
+    lsClear.classList.toggle('show', v.length > 0);
+    lsRender(v);
+    lsDropdown.classList.add('open');
+  });
+
+  lsInput.addEventListener('focus', () => {
+    lsRender(lsInput.value);
+    lsDropdown.classList.add('open');
+  });
+
+  lsInput.addEventListener('keydown', e => {
+    const items = lsDropdown.querySelectorAll('.ls-opt');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault(); lsActiveIdx = Math.min(lsActiveIdx+1, items.length-1);
+      items.forEach((el,i) => el.classList.toggle('kbd-active', i===lsActiveIdx));
+      items[lsActiveIdx]?.scrollIntoView({block:'nearest'});
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); lsActiveIdx = Math.max(lsActiveIdx-1, 0);
+      items.forEach((el,i) => el.classList.toggle('kbd-active', i===lsActiveIdx));
+      items[lsActiveIdx]?.scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter' && lsActiveIdx >= 0 && items[lsActiveIdx]) {
+      e.preventDefault();
+      const q = norm(lsInput.value);
+      const results = q ? EMPLEADOS.filter(e2 => norm(e2.nombre).includes(q)||norm(e2.posicion).includes(q)||norm(e2.id).includes(q)) : EMPLEADOS;
+      if (results[lsActiveIdx]) lsSelect(results[lsActiveIdx]);
+    } else if (e.key === 'Escape') {
+      lsDropdown.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('ls-search-wrap');
+    if (wrap && !wrap.contains(e.target)) lsDropdown.classList.remove('open');
+  });
+
+  function toggleManual() {
+    const sec = document.getElementById('ls-manual-section');
+    const tog = document.getElementById('ls-manual-toggle');
+    const isOpen = sec.classList.toggle('open');
+    tog.innerHTML = isOpen
+      ? '<i class="ti ti-x"></i> Cancelar ingreso manual'
+      : '<i class="ti ti-pencil"></i> El empleado no aparece en la lista, ingresar manualmente';
+    if (isOpen) {
+      clearLoginSelection();
+      setTimeout(()=>document.getElementById('ls-manual-name').focus(), 50);
+    }
+  }
+
+  // ── MAIN LOGIN FUNCTION ──
+  function doLogin() {
+    const err = document.getElementById('login-error');
+    const manualOpen = document.getElementById('ls-manual-section').classList.contains('open');
+
+    let sessionEmp = null;
+
+    if (manualOpen) {
+      const mName = document.getElementById('ls-manual-name').value.trim();
+      const mId   = document.getElementById('ls-manual-id').value.trim();
+      const mPos  = document.getElementById('ls-manual-pos').value.trim();
+      if (!mName) {
+        err.textContent = 'Por favor ingresa el nombre del empleado.';
+        err.classList.add('show'); return;
+      }
+      const mDept = document.getElementById('ls-manual-dept') ? document.getElementById('ls-manual-dept').value.trim() : '';
+      sessionEmp = { nombre: mName, id: mId || '—', posicion: mPos || 'Sin cargo', departamento: mDept || '' };
+    } else if (loginSelection) {
+      sessionEmp = loginSelection;
+    } else {
+      err.textContent = 'Selecciona un empleado de la lista o usa el ingreso manual.';
+      err.classList.add('show'); return;
+    }
+
+    err.classList.remove('show');
+
+    // ── Avatar initials ──
+    const parts = sessionEmp.nombre.split(' ').filter(Boolean);
+    const initials = ((parts[0]?.[0]||'') + (parts[1]?.[0]||parts[0]?.[1]||'')).toUpperCase();
+
+    // ── Update sidebar ──
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent   = sessionEmp.nombre;
+    document.getElementById('sidebar-role').textContent   = sessionEmp.posicion;
+    document.getElementById('sidebar-empid').textContent  = sessionEmp.id;
+    const sdDept = document.getElementById('sidebar-dept');
+    if (sdDept) { sdDept.querySelector('span').textContent = sessionEmp.departamento || ''; sdDept.style.display = sessionEmp.departamento ? 'flex' : 'none'; }
+
+    // ── Auto-fill both forms ──
+    const filled = 'emp-id-field filled';
+    const plain  = 'emp-id-field';
+
+    const f = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+    const fc = (id, val, cls) => { const el=document.getElementById(id); if(el){el.value=val;el.className=cls;} };
+
+    f('emp-name', sessionEmp.nombre);
+    fc('emp-id',  sessionEmp.id, sessionEmp.id!=='—' ? filled : plain);
+    fc('emp-dept', sessionEmp.departamento || '', sessionEmp.departamento ? filled : plain);
+    f('travel-emp-name', sessionEmp.nombre);
+    fc('travel-emp-id',  sessionEmp.id, sessionEmp.id!=='—' ? filled : plain);
+    fc('travel-emp-dept', sessionEmp.departamento || '', sessionEmp.departamento ? filled : plain);
+
+    // ── Hide login ──
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  const dateField = document.getElementById('expense-date');
+  if (dateField) dateField.value = today;
+
+  function switchTab(tab) {
+    ['new','travel','history'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('visible', t === tab);
+      const btn = document.getElementById('tab-btn-' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
+    });
+  }
+
+  function setNavActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectCat(el) {
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function addItem() {
+    const list = document.getElementById('items-list');
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `
+      <input type="text" placeholder="Descripción del gasto" oninput="updateTotal()" />
+      <input type="number" placeholder="0.00" min="0" step="0.01" oninput="updateTotal()" />
+      <button class="item-remove" onclick="removeItem(this)" title="Eliminar"><i class="ti ti-x"></i></button>
+    `;
+    list.appendChild(row);
+    row.querySelector('input').focus();
+  }
+
+  function removeItem(btn) {
+    const rows = document.querySelectorAll('#items-list .item-row');
+    if (rows.length > 1) { btn.closest('.item-row').remove(); updateTotal(); }
+    else showToast('Debe quedar al menos un concepto');
+  }
+
+  function updateTotal() {
+    let sum = 0;
+    document.querySelectorAll('#items-list input[type=number]').forEach(i => {
+      sum += parseFloat(i.value) || 0;
+    });
+    const currency = document.getElementById('currency-select')?.value || 'USD';
+    document.getElementById('total-display').textContent = currency + ' ' + sum.toFixed(2);
+  }
+
+  function updateTravelTotal() {
+    const ids = ['t-vuelos','t-tierra','t-hotel','t-food','t-visa','t-misc'];
+    const sum = ids.reduce((acc, id) => acc + (parseFloat(document.getElementById(id)?.value) || 0), 0);
+    document.getElementById('travel-total').textContent = 'USD ' + sum.toFixed(2);
+  }
+
+  function handleFiles(input) {
+    renderFiles(Array.from(input.files));
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('dragover');
+    renderFiles(Array.from(e.dataTransfer.files));
+  }
+
+  function renderFiles(files) {
+    const list = document.getElementById('files-list');
+    files.forEach(f => {
+      const chip = document.createElement('div');
+      chip.className = 'file-chip';
+      chip.innerHTML = `<i class="ti ti-file"></i> ${f.name}`;
+      list.appendChild(chip);
+    });
+    if (files.length) showToast(files.length + ' archivo(s) adjuntado(s)');
+  }
+
+  function clearForm() {
+    document.querySelectorAll('#tab-new input, #tab-new textarea').forEach(i => i.value = '');
+    document.querySelectorAll('#tab-new select').forEach(s => s.selectedIndex = 0);
+    document.getElementById('total-display').textContent = 'USD 0.00';
+    document.getElementById('files-list').innerHTML = '';
+    const list = document.getElementById('items-list');
+    while (list.children.length > 1) list.removeChild(list.lastChild);
+    if (dateField) dateField.value = today;
+  }
+
+  // ═══════════════════════════════════════════════
+  //  EMAILJS CONFIG
+  // ═══════════════════════════════════════════════
+  var EJS_PUBLIC   = 'hhpKpwRgDuZcyDWmP';
+  var EJS_SERVICE  = 'service_yxmmoyw';
+  var EJS_TEMPLATE = 'template_4l7dekb';
+  emailjs.init({ publicKey: EJS_PUBLIC });
+
+  // ═══════════════════════════════════════════════
+  //  SOLICITUDES EN SESION
+  // ═══════════════════════════════════════════════
+  var solicitudes = [];
+
+  var CAT_ICONS = {
+    'Alimentacion':  'ti-tools-kitchen-2',
+    'Transporte':    'ti-car',
+    'Hospedaje':     'ti-bed',
+    'Equipos':       'ti-device-laptop',
+    'Oficina':       'ti-building',
+    'Capacitacion':  'ti-school',
+    'Reembolso':     'ti-receipt',
+    'Viaticos':      'ti-plane',
+    'Otro':          'ti-file-text'
+  };
+
+  function fmtMoney(n) {
+    return 'USD ' + parseFloat(n || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function fmtDate(d) {
+    if (!d) return new Date().toLocaleDateString('es-DO', {day:'numeric',month:'short',year:'numeric'});
+    return new Date(d + 'T12:00:00').toLocaleDateString('es-DO', {day:'numeric',month:'short',year:'numeric'});
+  }
+
+  function gv(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function iconForCat(cat) {
+    cat = (cat || '').replace(/[^a-zA-Z]/g,'');
+    for (var k in CAT_ICONS) {
+      if (cat.toLowerCase().indexOf(k.toLowerCase()) >= 0) return CAT_ICONS[k];
+    }
+    return 'ti-file-text';
+  }
+
+  function renderHistory() {
+    var list  = document.getElementById('history-list');
+    var empty = document.getElementById('history-empty');
+    if (!list) return;
+    if (!solicitudes.length) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    list.innerHTML = solicitudes.slice().reverse().map(function(r) {
+      var icon = iconForCat(r.categoria);
+      return '<div class="history-card">' +
+        '<div class="hist-icon"><i class="ti ' + icon + '"></i></div>' +
+        '<div class="hist-info">' +
+          '<div class="hist-title">' + r.titulo + '</div>' +
+          '<div class="hist-meta">' + r.categoria + ' \xB7 ' + r.fecha + (r.centro ? ' \xB7 ' + r.centro : '') + '</div>' +
+        '</div>' +
+        '<div class="hist-right">' +
+          '<div class="hist-amount">' + fmtMoney(r.monto) + '</div>' +
+          '<span class="hist-status s-pending">En revisi\xF3n</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function updateStats() {
+    var total = 0;
+    solicitudes.forEach(function(r) { total += parseFloat(r.monto || 0); });
+    var count = solicitudes.length;
+    var statTotal    = document.getElementById('stat-total');
+    var statRevision = document.getElementById('stat-revision');
+    var statCount    = document.getElementById('stat-count');
+    var statRevDelta = document.getElementById('stat-revision-delta');
+    if (statTotal)    statTotal.textContent    = fmtMoney(total);
+    if (statRevision) statRevision.textContent = fmtMoney(total);
+    if (statCount)    statCount.textContent    = count;
+    if (statRevDelta) statRevDelta.innerHTML   = '<i class="ti ti-clock"></i> ' + count + ' pendiente' + (count !== 1 ? 's' : '');
+  }
+
+  function saveRequest(req) {
+    solicitudes.push(req);
+    renderHistory();
+    updateStats();
+  }
+
+  function setBtnLoading(btnId, loading, label) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;display:inline-block;vertical-align:-2px;margin-right:6px;"></i>Enviando...'
+      : label + ' <i class="ti ti-arrow-right"></i>';
+  }
+
+  function showModal(title, body) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent  = body;
+    document.getElementById('modal').classList.add('open');
+  }
+
+  // Init
+  renderHistory();
+
+  // ─── SUBMIT REEMBOLSO ───
+  function submitForm() {
+    var nombre = gv('emp-name');
+    if (!nombre) { showToast('Por favor ingresa tu nombre'); return; }
+
+    var items = [];
+    document.querySelectorAll('#items-list .item-row').forEach(function(row) {
+      var desc = row.querySelector('input[type="text"]');
+      var amt  = row.querySelector('input[type="number"]');
+      var d = desc ? desc.value.trim() : '';
+      var a = amt  ? amt.value.trim()  : '';
+      if (d || a) items.push('- ' + (d || 'Sin descripcion') + ': ' + gv('currency-select') + ' ' + (a || '0.00'));
+    });
+
+    var catEl    = document.querySelector('#tab-new .cat-card.selected .cat-label');
+    var categoria = catEl ? catEl.textContent.trim() : 'Reembolso';
+    var totalEl  = document.getElementById('total-display');
+    var totalTxt = totalEl ? totalEl.textContent.replace('USD','').replace(/,/g,'').trim() : '0';
+    var monto    = parseFloat(totalTxt) || 0;
+    var fecha    = gv('expense-date');
+    var centro   = gv('exp-centro-costos');
+
+    var titulo = (items.length && items[0].indexOf('-') === 0)
+      ? items[0].replace(/^- /,'').split(':')[0].trim()
+      : categoria + ' - ' + nombre;
+
+    var emailParams = {
+      tipo:             'SOLICITUD DE REEMBOLSO',
+      nombre_empleado:  nombre,
+      numero_empleado:  gv('emp-id'),
+      departamento:     gv('emp-dept'),
+      centro_costos:    centro,
+      categoria:        categoria,
+      fecha_gasto:      fecha || new Date().toLocaleDateString('es-DO'),
+      moneda:           gv('currency-select') || 'USD',
+      conceptos:        items.join(' | ') || 'No especificado',
+      total:            fmtMoney(monto),
+      justificacion:    gv('exp-justificacion'),
+      fecha_envio:      new Date().toLocaleString('es-DO', {timeZone:'America/Santo_Domingo'})
+    };
+
+    setBtnLoading('btn-submit-expense', true, 'Enviar solicitud');
+
+    emailjs.send(EJS_SERVICE, EJS_TEMPLATE, emailParams)
+      .then(function() {
+        saveRequest({ titulo: titulo, categoria: categoria, fecha: fmtDate(fecha), centro: centro, monto: monto });
+        showModal('Solicitud enviada', 'La solicitud de ' + nombre + ' por ' + fmtMoney(monto) + ' fue enviada y registrada en Mis Solicitudes.');
+        clearForm();
+      })
+      .catch(function(err) {
+        // Save locally even if email fails
+        saveRequest({ titulo: titulo, categoria: categoria, fecha: fmtDate(fecha), centro: centro, monto: monto });
+        showToast('Guardado localmente. Error de correo: ' + (err.text || 'revisa tu conexion'));
+        console.error('EmailJS:', err);
+      })
+      .finally(function() {
+        setBtnLoading('btn-submit-expense', false, 'Enviar solicitud');
+      });
+  }
+
+  // ─── SUBMIT VIATICOS ───
+  function submitTravel() {
+    var nombre  = gv('travel-emp-name');
+    if (!nombre) { showToast('Por favor ingresa tu nombre'); return; }
+    var destino = gv('travel-destino') || 'destino no especificado';
+    var motivo  = gv('travel-motivo')  || '';
+    var totalEl = document.getElementById('travel-total');
+    var totalTxt = totalEl ? totalEl.textContent.replace('USD','').replace(/,/g,'').trim() : '0';
+    var monto   = parseFloat(totalTxt) || 0;
+    var fecha   = gv('travel-fecha-salida');
+    var centro  = gv('travel-emp-dept');
+    var titulo  = 'Viaje a ' + destino + (motivo ? ' - ' + motivo : '');
+
+    var emailParams = {
+      tipo:                'SOLICITUD DE VIATICOS',
+      nombre_empleado:     nombre,
+      numero_empleado:     gv('travel-emp-id'),
+      departamento:        gv('travel-emp-dept'),
+      aprobado_por:        gv('travel-supervisor'),
+      destino:             destino,
+      motivo:              motivo,
+      fecha_salida:        fecha,
+      fecha_regreso:       gv('travel-fecha-regreso'),
+      vuelos:              'USD ' + (gv('t-vuelos')  || '0.00'),
+      transporte:          'USD ' + (gv('t-tierra')  || '0.00'),
+      hospedaje:           'USD ' + (gv('t-hotel')   || '0.00'),
+      alimentacion:        'USD ' + (gv('t-food')    || '0.00'),
+      visa_gestiones:      'USD ' + (gv('t-visa')    || '0.00'),
+      gastos_varios:       'USD ' + (gv('t-misc')    || '0.00'),
+      total:               fmtMoney(monto),
+      agenda:              gv('travel-agenda'),
+      fecha_envio:         new Date().toLocaleString('es-DO', {timeZone:'America/Santo_Domingo'})
+    };
+
+    setBtnLoading('btn-submit-travel', true, 'Solicitar viaticos');
+
+    emailjs.send(EJS_SERVICE, EJS_TEMPLATE, emailParams)
+      .then(function() {
+        saveRequest({ titulo: titulo, categoria: 'Viaticos', fecha: fmtDate(fecha), centro: centro, monto: monto });
+        showModal('Viaticos enviados', 'La solicitud de ' + nombre + ' por ' + fmtMoney(monto) + ' fue enviada y registrada en Mis Solicitudes.');
+      })
+      .catch(function(err) {
+        saveRequest({ titulo: titulo, categoria: 'Viaticos', fecha: fmtDate(fecha), centro: centro, monto: monto });
+        showToast('Guardado localmente. Error de correo: ' + (err.text || 'revisa tu conexion'));
+        console.error('EmailJS:', err);
+      })
+      .finally(function() {
+        setBtnLoading('btn-submit-travel', false, 'Solicitar viaticos');
+      });
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.remove('show');
+    void t.offsetWidth;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // Close modal on overlay click
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  const EMPLEADOS = [{"nombre": "Alexa Lora Lopez", "posicion": "Coordinadora Comercial", "id": "SJ-084", "departamento": "Gestión Comercial"}, {"nombre": "Alisangel Martinez Castro", "posicion": "Encargada de Contrato", "id": "SJ-069", "departamento": "PROTECCION DE MARCA OFICINA STIGO"}, {"nombre": "Ana Maria Santos Martínez", "posicion": "Coordinadora de Desarrollo", "id": "SJ-030", "departamento": "Dirección General"}, {"nombre": "Ana Mical Amador Hidalgo", "posicion": "Coordinadora de Sorteo", "id": "SJ-075", "departamento": "Sorteo"}, {"nombre": "Anthony Leandro Santos Valdez", "posicion": "Gerente de Contabilidad", "id": "SJ-050", "departamento": "Contabilidad"}, {"nombre": "Argenis Alfonso Rojas Colmenarez", "posicion": "Tecnico de TI e Instalador", "id": "SJ-089", "departamento": "Unidad de Juegos virtuales"}, {"nombre": "Belkys Ivelisse Almonte Almonte", "posicion": "Gerente de Sorteo", "id": "SJ-001", "departamento": "Sorteo"}, {"nombre": "Camilo Paredes Espinosa", "posicion": "Camarógrafo", "id": "SJ-056", "departamento": "Sorteo"}, {"nombre": "Carlos Alberto Baez", "posicion": "Presentador", "id": "SJ-077", "departamento": "Sorteo"}, {"nombre": "Carlos Joel Suarez Espinosa", "posicion": "Coordinador de Contabilidad", "id": "SJ-032", "departamento": "Contabilidad"}, {"nombre": "Charles Isaac Betances Tejada", "posicion": "Dir. Planificacion y Des. Estrategico", "id": "SJ-078", "departamento": "Dirección General"}, {"nombre": "Dimairy Fernández Marmolejos", "posicion": "Coordinadora Comenrcial", "id": "SJ-043", "departamento": "Gestión Comercial"}, {"nombre": "Eluin Alberto Polanco Rodriguez", "posicion": "Auxiliar de Cobros y Facturacion", "id": "SJ-092", "departamento": "Contabilidad"}, {"nombre": "Estefani Peña", "posicion": "Presentadora", "id": "SJ-022", "departamento": "Sorteo"}, {"nombre": "Francheska Nicole Ramirez Rosario", "posicion": "Analista de Reclutamiento y Seleccion", "id": "SJ-093", "departamento": "Recursos Humanos"}, {"nombre": "Francis Santiago Sanchez Mateo", "posicion": "Tecnico de TI e Instalador", "id": "SJ/088", "departamento": "Unidad de Juegos virtuales"}, {"nombre": "Francisco Aristides Gil Duverge", "posicion": "Analista de Compras", "id": "SJ-091", "departamento": "Compras"}, {"nombre": "Gabriel Antonio Tavarez", "posicion": "Director de Camara", "id": "SJ-045", "departamento": "Sorteo"}, {"nombre": "Gilbert Sanchez Figuereo", "posicion": "Auxiliar de CxP", "id": "SJ-053", "departamento": "Contabilidad"}, {"nombre": "Isael De La Cruz Rodríguez", "posicion": "Camarógrafo", "id": "SJ-062", "departamento": "Sorteo"}, {"nombre": "Ivonni Alexandra Nuñez Martinez", "posicion": "Presentadora", "id": "SJ-081", "departamento": "Sorteo"}, {"nombre": "Jairo Simeon Cruz Restituyo", "posicion": "Chofer / Ayudante", "id": "SJ-090", "departamento": "Gestión Comercial"}, {"nombre": "Johanny García Ravelo", "posicion": "Encargada de Gestión Humana", "id": "SJ-055", "departamento": "Recursos Humanos"}, {"nombre": "Jordano Rafael Abreu Calderon", "posicion": "Supervisor de Plataforma / Back Office", "id": "SJ-080", "departamento": "Unidad de Juegos virtuales"}, {"nombre": "Josept Gregoric Landrin Cuevas", "posicion": "Proyect Manager", "id": "SJ-087", "departamento": "Unidad de Juegos virtuales"}, {"nombre": "Junior Esleither Chalas Feliz", "posicion": "Soporte Técnico", "id": "SJ-063", "departamento": "Tecnología"}, {"nombre": "Kelvin Almonte Martínez", "posicion": "Técnico de Audio", "id": "SJ-041", "departamento": "Sorteo"}, {"nombre": "Laycha Margaret Victoria", "posicion": "Supervicora de Sorteo", "id": "SJ-067", "departamento": "Sorteo"}, {"nombre": "Leonardo Salcedo", "posicion": "Coordinador de Producción", "id": "SJ-029", "departamento": "Sorteo"}, {"nombre": "Loraine Evangelina Pimentel Ramirez", "posicion": "Presentadora", "id": "SJ-068", "departamento": "Sorteo"}, {"nombre": "Lorenny Feliz Jimenez", "posicion": "Presentadora", "id": "SJ-073", "departamento": "Sorteo"}, {"nombre": "Luis David Beriguete Medina", "posicion": "Director de Camara", "id": "SJ-026", "departamento": "Sorteo"}, {"nombre": "Luisa María Pérez", "posicion": "Auditora de Lotería", "id": "SJ-027", "departamento": "Sorteo"}, {"nombre": "María Divina Paula Rodríguez", "posicion": "Coordinadora de Sorteo", "id": "SJ-066", "departamento": "Sorteo"}, {"nombre": "Natanael De Paula Quezada", "posicion": "Coordinador de Producción", "id": "SJ-008", "departamento": "Sorteo"}, {"nombre": "Nelson Arturo Rosa Lora", "posicion": "Tecnico de TI e Instalador", "id": "SJ-083", "departamento": "Sorteo"}, {"nombre": "Olguin Marcel Manzueta Ozorio", "posicion": "Supervisora de Sorteo", "id": "SJ-052", "departamento": "Sorteo"}, {"nombre": "Oscar Felipe Ventura", "posicion": "Técnico de Titulación", "id": "SJ-034", "departamento": "Sorteo"}, {"nombre": "Richard Ney Nuñez Almonte", "posicion": "Inspector", "id": "SJ-070", "departamento": "PROTECCION DE MARCA OFICINA STIGO"}, {"nombre": "Robert Jesús Tejeda García", "posicion": "Coordinador de Sorteo", "id": "SJ-033", "departamento": "Sorteo"}, {"nombre": "Ruth Iluminada Thomas Encarnacion", "posicion": "Auditora de Lotería", "id": "SJ-024", "departamento": "Sorteo"}, {"nombre": "Santo Alexander Payams Villa", "posicion": "Auxiliar de Cobros y Facturacion", "id": "SJ-079", "departamento": "Contabilidad"}, {"nombre": "Selichel Sanchez", "posicion": "Recepcionista", "id": "SJ-094", "departamento": "Recepcion."}, {"nombre": "Víctor Lenin Rosario Matos", "posicion": "Tecnico de Titulación", "id": "SJ-028", "departamento": "Sorteo"}, {"nombre": "William Frank Muñoz Cedeño", "posicion": "Coordinador de Tecnologia -JV", "id": "SJ-086", "departamento": "Unidad de Juegos virtuales"}, {"nombre": "Yeik Padewer Del Rosario Gutierrez", "posicion": "Tecnico de Audio", "id": "SJ-047", "departamento": "Sorteo"}, {"nombre": "Yeison Paez Hernandez", "posicion": "Chofer / Ayudante", "id": "SJ-085", "departamento": "Gestión Comercial"}, {"nombre": "Yordenys Estevez", "posicion": "Coordinadora de Sorteo", "id": "SJ-010", "departamento": "Sorteo"}];
+
+  function buildEmpField(nameInputId, idInputId) {
+    const nameInput = document.getElementById(nameInputId);
+    const idInput   = document.getElementById(idInputId);
+    if (!nameInput || !idInput) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'emp-field-wrap';
+    nameInput.parentNode.insertBefore(wrap, nameInput);
+
+    const row = document.createElement('div');
+    row.className = 'emp-input-row';
+    wrap.appendChild(row);
+
+    nameInput.style.cssText = '';
+    nameInput.style.border = 'none';
+    nameInput.style.outline = 'none';
+    row.appendChild(nameInput);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'emp-clear-btn';
+    clearBtn.innerHTML = '<i class="ti ti-x"></i>';
+    clearBtn.title = 'Limpiar';
+    clearBtn.style.display = 'none';
+    row.appendChild(clearBtn);
+
+    const hint = document.createElement('div');
+    hint.className = 'emp-manual-hint';
+    hint.innerHTML = '<i class="ti ti-info-circle"></i> Si no aparece en la lista, escribe el nombre manualmente.';
+    wrap.appendChild(hint);
+
+    const badge = document.createElement('div');
+    badge.className = 'emp-badge';
+    badge.style.display = 'none';
+    wrap.appendChild(badge);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'emp-dropdown';
+    wrap.appendChild(dropdown);
+
+    let activeIdx = -1;
+    let selectedFromList = false;
+
+    function normalize(s) {
+      return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    }
+
+    function renderList(query) {
+      const q = normalize(query.trim());
+      const matches = q.length === 0 ? EMPLEADOS : EMPLEADOS.filter(e =>
+        normalize(e.nombre).includes(q) || normalize(e.posicion).includes(q) || e.id.toLowerCase().includes(q)
+      );
+      dropdown.innerHTML = '';
+      activeIdx = -1;
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="emp-opt-empty"><i class="ti ti-search-off"></i> Sin resultados — escribe el nombre manualmente</div>';
+      } else {
+        matches.slice(0, 40).forEach((emp, i) => {
+          const opt = document.createElement('div');
+          opt.className = 'emp-opt';
+          opt.dataset.idx = i;
+          opt.innerHTML = `<div class="emp-opt-info"><div class="emp-opt-name">${emp.nombre}</div><div class="emp-opt-pos">${emp.posicion}</div></div><span class="emp-opt-id">${emp.id}</span>`;
+          opt.addEventListener('mousedown', (e) => { e.preventDefault(); selectEmployee(emp); });
+          dropdown.appendChild(opt);
+        });
+      }
+    }
+
+    function selectEmployee(emp) {
+      nameInput.value = emp.nombre;
+      idInput.value = emp.id;
+      idInput.classList.add('filled');
+      selectedFromList = true;
+      // fill dept if sibling field exists
+      const deptFieldId = idInput.id === 'emp-id' ? 'emp-dept' : (idInput.id === 'travel-emp-id' ? 'travel-emp-dept' : null);
+      if (deptFieldId) { const df2 = document.getElementById(deptFieldId); if (df2) { df2.value = emp.departamento || ''; df2.className = 'emp-id-field' + (emp.departamento ? ' filled' : ''); } }
+      clearBtn.style.display = 'flex';
+      dropdown.classList.remove('open');
+      badge.className = 'emp-badge found';
+      badge.innerHTML = '<i class="ti ti-circle-check"></i> Empleado encontrado en el registro';
+      badge.style.display = 'inline-flex';
+    }
+
+    function setManual() {
+      idInput.classList.remove('filled');
+      selectedFromList = false;
+      if (nameInput.value.trim().length > 0) {
+        badge.className = 'emp-badge manual';
+        badge.innerHTML = '<i class="ti ti-pencil"></i> Nombre ingresado manualmente';
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    nameInput.addEventListener('input', () => {
+      const val = nameInput.value;
+      clearBtn.style.display = val ? 'flex' : 'none';
+      const match = EMPLEADOS.find(e => normalize(e.nombre) === normalize(val));
+      if (match) { selectEmployee(match); return; }
+      setManual();
+      renderList(val);
+      dropdown.classList.add('open');
+    });
+
+    nameInput.addEventListener('focus', () => {
+      renderList(nameInput.value);
+      dropdown.classList.add('open');
+    });
+
+    nameInput.addEventListener('keydown', (e) => {
+      const items = dropdown.querySelectorAll('.emp-opt');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+        if (items[activeIdx]) items[activeIdx].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+        if (items[activeIdx]) items[activeIdx].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' && activeIdx >= 0 && items[activeIdx]) {
+        e.preventDefault();
+        const idx = parseInt(items[activeIdx].dataset.idx);
+        const q = normalize(nameInput.value.trim());
+        const matches = q.length === 0 ? EMPLEADOS : EMPLEADOS.filter(e =>
+          normalize(e.nombre).includes(q) || normalize(e.posicion).includes(q) || e.id.toLowerCase().includes(q)
+        );
+        if (matches[idx]) selectEmployee(matches[idx]);
+      } else if (e.key === 'Escape') {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) dropdown.classList.remove('open');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      nameInput.value = ''; idInput.value = '';
+      idInput.classList.remove('filled');
+      clearBtn.style.display = 'none';
+      badge.style.display = 'none';
+      selectedFromList = false;
+      nameInput.focus();
+    });
+
+    idInput.addEventListener('input', () => {
+      if (!selectedFromList) idInput.classList.remove('filled');
+    });
+  }
+
+
+  // Init autocomplete fields
+  document.addEventListener('DOMContentLoaded', () => {
+    buildEmpField('emp-name', 'emp-id');
+    buildEmpField('travel-emp-name', 'travel-emp-id');
+  });
+
+</script>
+</body>
+</html>

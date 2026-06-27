@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Erogaciones — Gstar</title>
+<!-- Guard de autenticación: sin sesión activa redirige al login -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<!-- =====================================================================
+     DASHBOARD DE EROGACIONES (app independiente)
+     Extraído de CONCILIADORA v2.0 para vivir como módulo propio dentro
+     de la plataforma Gstar (Banco › Dashboard de Erogaciones).
+     Conserva el 100% de la funcionalidad original: carga de Excel/CSV,
+     mapeo de columnas, KPIs, gráficos, filtros, tabla y export Excel/PDF.
+====================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg-app:#EEF2FF;--bg-card:#FFFFFF;--bg-sidebar:#0B1437;
+  --text-primary:#0F172A;--text-secondary:#64748B;
+  --text-sidebar:#7E94B8;--border-color:#E2E8F0;
+  --blue:#2563EB;--blue-lt:#DBEAFE;
+  --emerald:#10B981;--emerald-lt:#D1FAE5;
+  --amber:#F59E0B;--amber-lt:#FEF3C7;
+  --coral:#EF4444;--coral-lt:#FEE2E2;
+  --purple:#8B5CF6;--purple-lt:#EDE9FE;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 10px 15px -3px rgba(0,0,0,.04);
+  --radius:12px;--sidebar:260px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0F1E3A;--bg-sidebar:#050B1A;
+  --text-primary:#E8F0FE;--text-secondary:#7E94B8;--border-color:#1A2E55;
+  --blue-lt:#1A2E5F;--emerald-lt:#0A3020;--amber-lt:#352500;
+  --coral-lt:#3A1010;--purple-lt:#251050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--text-primary);min-height:100vh;transition:background .3s,color .3s}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);background:var(--bg-sidebar);z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.05)}
+.brand-name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.brand-name span{color:var(--blue)}
+.brand-tag{font-size:10px;color:var(--text-sidebar);margin-top:2px;text-transform:uppercase;letter-spacing:.8px}
+.sidebar-nav{padding:14px 10px;flex:1;overflow-y:auto}
+.nav-group-label{font-size:10px;font-weight:700;color:#3A5080;text-transform:uppercase;letter-spacing:1px;padding:10px 8px 5px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--text-sidebar);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(37,99,235,.2);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
+.nav-btn i{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;color:#2D4070;text-align:center}
+
+/* MAIN */
+.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border-color);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+.mobile-toggle{display:none;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:2px}
+
+/* PAGES */
+.page{padding:24px;display:none}
+.page.active{display:block}
+.sec-title{font-size:21px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px}
+.sec-sub{font-size:13px;color:var(--text-secondary);margin-top:2px}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+.card-body{padding:18px}
+
+/* STAT CARDS */
+.scard{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;box-shadow:var(--shadow)}
+.scard-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.tbl thead th{background:var(--bg-app);color:var(--text-secondary);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:9px 13px;border-bottom:1px solid var(--border-color);white-space:nowrap;position:sticky;top:0;z-index:9}
+.tbl tbody tr:hover{background:var(--bg-app)}
+.tbl tbody td{padding:9px 13px;border-bottom:1px solid var(--border-color);color:var(--text-primary);vertical-align:middle}
+.tbl .mono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+.tbl-wrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius)}
+
+/* BUTTONS */
+.btn-p{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-p:hover{background:#1D4ED8;transform:translateY(-1px)}
+.btn-s{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+.xbtn{padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1.5px solid;transition:all .15s;background:transparent;font-family:'Inter',sans-serif}
+
+/* FILTERS */
+.fi{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:7px 11px;font-size:12.5px;outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fi option{background:var(--bg-card);color:var(--text-primary)}
+
+/* PAGINATION */
+.pag-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.pag-btn:hover,.pag-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* MAP ROWS */
+.map-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.map-lbl{font-size:12.5px;font-weight:600;color:var(--text-primary);width:150px;flex-shrink:0}
+.map-sel{flex:1}
+
+/* MODAL */
+.modal-content{background:var(--bg-card)!important;border:1px solid var(--border-color)!important;color:var(--text-primary)!important}
+.modal-header,.modal-footer{border-color:var(--border-color)!important}
+.modal-title{font-weight:700!important;color:var(--text-primary)!important}
+.btn-close{filter:var(--close-filter,none)}
+[data-theme="dark"] .btn-close{filter:invert(1)}
+
+/* EMPTY */
+.empty-s{text-align:center;padding:56px 20px;color:var(--text-secondary)}
+.empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
+.empty-s h4{font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+
+/* SPINNER */
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;display:none}
+.sp-box{background:var(--bg-card);border-radius:var(--radius);padding:28px 36px;text-align:center;box-shadow:var(--shadow-md)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0}.mobile-toggle{display:flex!important}
+  .page{padding:14px}.topbar{padding:10px 14px}
+}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fi-in{animation:fadeIn .28s ease forwards}
+
+/* Rule info box */
+.rule-box{background:var(--bg-card);border:1px solid var(--border-color);border-left:4px solid var(--blue);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
+
+/* ─── EROGACIONES MODULE ─── */
+:root{
+  --erog-1:#6366F1;--erog-1-lt:#EEF2FF;
+  --erog-2:#EC4899;--erog-2-lt:#FCE7F3;
+  --erog-3:#F97316;--erog-3-lt:#FFF7ED;
+  --erog-4:#14B8A6;--erog-4-lt:#F0FDFA;
+}
+[data-theme="dark"]{
+  --erog-1-lt:#1E1B4B;--erog-2-lt:#3B0764;--erog-3-lt:#431407;--erog-4-lt:#042F2E;
+}
+.erog-hero{background:linear-gradient(135deg,#0B1437 0%,#1a1060 50%,#0B1437 100%);border-radius:var(--radius);padding:22px 24px;margin-bottom:20px;position:relative;overflow:hidden}
+.erog-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(99,102,241,.25) 0%,transparent 70%);pointer-events:none}
+.erog-hero::after{content:'';position:absolute;bottom:-30px;left:30%;width:150px;height:150px;background:radial-gradient(circle,rgba(236,72,153,.15) 0%,transparent 70%);pointer-events:none}
+.erog-hero-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;margin-bottom:3px}
+.erog-hero-sub{font-size:13px;color:rgba(255,255,255,.55)}
+.erog-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:900px){.erog-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.erog-kpi-grid{grid-template-columns:1fr}}
+.ekpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;box-shadow:var(--shadow)}
+.ekpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.ekpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.ekpi-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+.ekpi-val{font-size:24px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text-primary);letter-spacing:-.5px;line-height:1}
+.ekpi-label{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-top:5px}
+.ekpi-trend{font-size:11px;color:var(--text-secondary);margin-top:4px}
+
+/* Charts grid */
+.erog-charts{display:grid;grid-template-columns:2fr 3fr;gap:14px;margin-bottom:20px}
+@media(max-width:900px){.erog-charts{grid-template-columns:1fr}}
+.erog-chart-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.erog-chart-title{font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.erog-chart-sub{font-size:11.5px;color:var(--text-secondary);margin-bottom:14px}
+.erog-ch-h240{position:relative;height:240px}
+.erog-ch-h280{position:relative;height:280px}
+.erog-ch-h220{position:relative;height:220px}
+
+/* Top beneficiarios */
+.ben-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-color)}
+.ben-row:last-child{border-bottom:none}
+.ben-rank{width:22px;height:22px;border-radius:6px;background:var(--erog-1-lt);color:var(--erog-1);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ben-rank.top3{background:linear-gradient(135deg,#F59E0B,#F97316);color:#fff}
+.ben-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ben-bar-wrap{width:90px;height:6px;background:var(--border-color);border-radius:3px;flex-shrink:0}
+.ben-bar-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--erog-1),var(--erog-2));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.ben-amt{font-size:11.5px;font-weight:700;color:var(--text-primary);font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;flex-shrink:0}
+
+/* Erog filters */
+.erog-filter-bar{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.erog-filter-bar .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Erog table */
+.erog-tbl-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+
+/* Upload section for erogaciones */
+.erog-upload-hero{background:linear-gradient(135deg,#0B1437,#1a1060);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px}
+.erog-upload-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px}
+.erog-upload-sub{font-size:12.5px;color:rgba(255,255,255,.5)}
+.upload-zone-erog{border:2px dashed var(--border-color);border-radius:var(--radius);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-card);position:relative}
+.upload-zone-erog:hover,.upload-zone-erog.drag{border-color:var(--erog-1);background:var(--erog-1-lt)}
+.upload-zone-erog input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone-erog.done{border-color:var(--emerald);background:var(--emerald-lt)}
+
+/* Category badge */
+.cat-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.2px}
+
+/* Empty erog */
+.erog-empty{text-align:center;padding:70px 20px}
+.erog-empty i{font-size:52px;display:block;margin-bottom:16px;background:linear-gradient(135deg,var(--erog-1),var(--erog-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.erog-empty h3{font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+.erog-empty p{font-size:13px;color:var(--text-secondary);max-width:320px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div class="sp-overlay" id="spOv">
+  <div class="sp-box">
+    <div class="spinner-border text-primary mb-3" role="status" style="width:38px;height:38px;border-width:3px"></div>
+    <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Procesando...</div>
+    <div id="spMsg" style="font-size:12px;color:var(--text-secondary);margin-top:3px">Por favor espera</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand-name">EROGA<span>CIONES</span></div>
+    <div class="brand-tag">Salida de Efectivo</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Erogaciones</div>
+    <button class="nav-btn active" onclick="nav('erog-upload')"><i class="bi bi-cash-coin"></i>Cargar Erogaciones</button>
+    <button class="nav-btn" onclick="nav('erogaciones')"><i class="bi bi-pie-chart-fill"></i>Dashboard Erogaciones</button>
+  </nav>
+  <div class="sidebar-footer">v1.0.0 · Gstar</div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <span class="topbar-title" id="pgTitle">Cargar Erogaciones</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="bi bi-moon-stars" id="thIcon"></i></button>
+    </div>
+  </div>
+
+  <!-- PAGE: EROG UPLOAD -->
+  <div class="page active" id="page-erog-upload">
+    <div class="erog-upload-hero">
+      <div class="erog-upload-title"><i class="bi bi-cash-coin me-2"></i>Erogaciones — Salida de Efectivo</div>
+      <div class="erog-upload-sub">Carga el archivo Excel con el detalle de pagos y salidas de efectivo de la empresa.</div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-8 mx-auto">
+        <div class="card"><div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="scard-icon" style="background:var(--erog-1-lt);color:var(--erog-1);margin:0;width:40px;height:40px;font-size:18px"><i class="bi bi-file-earmark-excel-fill"></i></div>
+            <div>
+              <div style="font-size:15px;font-weight:700">Archivo de Erogaciones</div>
+              <div style="font-size:12px;color:var(--text-secondary)">Excel o CSV con el detalle de salidas de efectivo</div>
+            </div>
+          </div>
+          <div class="upload-zone-erog" id="eznErog">
+            <input type="file" accept=".xlsx,.xls,.csv" id="erogFile" onchange="handleErogUp(this)">
+            <i class="bi bi-cloud-arrow-up" style="font-size:42px;color:var(--erog-1);display:block;margin-bottom:12px" id="erogIcon"></i>
+            <div style="font-size:15px;font-weight:700;color:var(--text-primary)" id="erogName">Arrastra tu archivo aquí</div>
+            <div style="font-size:12.5px;color:var(--text-secondary);margin-top:5px" id="erogHint">o clic para seleccionar · .xlsx, .xls, .csv</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <!-- Column info -->
+    <div class="col-md-8 mx-auto">
+      <div class="rule-box">
+        <i class="bi bi-info-circle-fill" style="color:var(--erog-1);font-size:18px;margin-top:1px;flex-shrink:0"></i>
+        <div>
+          <div style="font-size:13.5px;font-weight:700;margin-bottom:8px">Columnas esperadas en el archivo</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <span style="background:var(--erog-1-lt);color:var(--erog-1);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-calendar3 me-1"></i>Fecha</span>
+            <span style="background:var(--erog-2-lt);color:var(--erog-2);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-person me-1"></i>Beneficiario</span>
+            <span style="background:var(--erog-3-lt);color:var(--erog-3);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-credit-card me-1"></i>Vía de Pago</span>
+            <span style="background:var(--erog-4-lt);color:var(--erog-4);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-chat-text me-1"></i>Concepto</span>
+            <span style="background:var(--amber-lt);color:var(--amber);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-tag me-1"></i>Tipo</span>
+            <span style="background:var(--emerald-lt);color:var(--emerald);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600"><i class="bi bi-currency-dollar me-1"></i>Total / Monto</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px">El sistema detecta automáticamente los nombres de columnas. Los nombres pueden variar.</div>
+        </div>
+      </div>
+    </div>
+    <!-- Map modal trigger shown after upload -->
+    <div id="erogStartBtn" style="display:none;text-align:center;padding:20px 0" class="fi-in">
+      <button class="btn-p" style="font-size:15px;padding:12px 30px;background:linear-gradient(135deg,var(--erog-1),var(--erog-2));border:none" onclick="runErogMap()">
+        <i class="bi bi-pie-chart-fill"></i>Procesar y Ver Dashboard
+      </button>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">Archivo listo. Presiona para analizar las erogaciones.</p>
+    </div>
+  </div>
+
+  <!-- PAGE: EROGACIONES DASHBOARD -->
+  <div class="page" id="page-erogaciones">
+    <!-- Hero -->
+    <div class="erog-hero mb-0">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="erog-hero-title"><i class="bi bi-pie-chart-fill me-2"></i>Erogaciones — Salida de Efectivo</div>
+          <div class="erog-hero-sub" id="erogHeroSub">Carga un archivo para comenzar el análisis</div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="xbtn" style="color:#fff;border-color:rgba(255,255,255,.3);font-size:12px" onclick="exportErogExcel()"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+          <button class="xbtn" style="color:#fff;border-color:rgba(255,255,255,.3);font-size:12px" onclick="exportErogPDF()"><i class="bi bi-file-earmark-pdf"></i>PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="erogEmptyState" class="erog-empty">
+      <i class="bi bi-cash-coin"></i>
+      <h3>Sin datos de erogaciones</h3>
+      <p>Ve a <strong>Cargar Erogaciones</strong> en el menú lateral y sube tu archivo Excel para ver el análisis completo.</p>
+      <button class="btn-p mt-3" style="background:linear-gradient(135deg,var(--erog-1),var(--erog-2));border:none" onclick="nav('erog-upload')"><i class="bi bi-cloud-upload"></i>Cargar Archivo</button>
+    </div>
+
+    <!-- Dashboard content (hidden until data loaded) -->
+    <div id="erogDashContent" style="display:none">
+      <!-- Filters -->
+      <div class="erog-filter-bar mt-3">
+        <div class="filter-row">
+          <div style="position:relative">
+            <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
+            <input class="fi" style="padding-left:28px;width:165px" placeholder="Beneficiario..." id="efBen" oninput="applyErogFilters()">
+          </div>
+          <select class="fi" id="efTipo" onchange="applyErogFilters()"><option value="">Todos los tipos</option></select>
+          <select class="fi" id="efVia" onchange="applyErogFilters()"><option value="">Todas las vías</option></select>
+          <input type="date" class="fi" id="efD1" onchange="applyErogFilters()">
+          <input type="date" class="fi" id="efD2" onchange="applyErogFilters()">
+          <input type="number" class="fi" style="width:115px" placeholder="Monto mín." id="efAmin" oninput="applyErogFilters()">
+          <input type="number" class="fi" style="width:115px" placeholder="Monto máx." id="efAmax" oninput="applyErogFilters()">
+          <button class="btn-s" style="padding:7px 12px;font-size:12.5px" onclick="clearErogFilters()"><i class="bi bi-x-circle"></i>Limpiar</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="erog-kpi-grid" id="erogKPIGrid">
+        <div class="ekpi">
+          <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-1),var(--erog-2))"></div>
+          <div class="ekpi-icon" style="background:var(--erog-1-lt);color:var(--erog-1)"><i class="bi bi-cash-stack"></i></div>
+          <div class="ekpi-val" id="ekTotal">RD$ 0</div>
+          <div class="ekpi-label">Total Erogado</div>
+          <div class="ekpi-trend" id="ekTotalSub">—</div>
+        </div>
+        <div class="ekpi">
+          <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-2),var(--erog-3))"></div>
+          <div class="ekpi-icon" style="background:var(--erog-2-lt);color:var(--erog-2)"><i class="bi bi-receipt"></i></div>
+          <div class="ekpi-val" id="ekCount">0</div>
+          <div class="ekpi-label">Total Transacciones</div>
+          <div class="ekpi-trend" id="ekCountSub">—</div>
+        </div>
+        <div class="ekpi">
+          <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-3),var(--erog-4))"></div>
+          <div class="ekpi-icon" style="background:var(--erog-3-lt);color:var(--erog-3)"><i class="bi bi-graph-up"></i></div>
+          <div class="ekpi-val" id="ekAvg">RD$ 0</div>
+          <div class="ekpi-label">Promedio por Erogación</div>
+          <div class="ekpi-trend" id="ekAvgSub">—</div>
+        </div>
+        <div class="ekpi">
+          <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-4),var(--erog-1))"></div>
+          <div class="ekpi-icon" style="background:var(--erog-4-lt);color:var(--erog-4)"><i class="bi bi-tag-fill"></i></div>
+          <div class="ekpi-val" id="ekTopCat" style="font-size:15px;line-height:1.2">—</div>
+          <div class="ekpi-label">Mayor Categoría de Gasto</div>
+          <div class="ekpi-trend" id="ekTopCatSub">—</div>
+        </div>
+      </div>
+
+      <!-- Charts row 1: Donut + Top Beneficiarios -->
+      <div class="erog-charts mb-3">
+        <div class="erog-chart-card">
+          <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo</div>
+          <div class="erog-chart-sub">% del gasto por categoría</div>
+          <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
+        </div>
+        <div class="erog-chart-card">
+          <div class="erog-chart-title"><i class="bi bi-people-fill" style="color:var(--erog-2)"></i>Top 10 Beneficiarios</div>
+          <div class="erog-chart-sub">Por monto total pagado</div>
+          <div id="erogTopBen" style="max-height:280px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- Charts row 2: Barras + Tendencia -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="erog-chart-card">
+            <div class="erog-chart-title"><i class="bi bi-bar-chart-fill" style="color:var(--erog-3)"></i>Gasto por Categoría</div>
+            <div class="erog-chart-sub">Monto total por tipo de erogación</div>
+            <div class="erog-ch-h220"><canvas id="erogBar"></canvas></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="erog-chart-card">
+            <div class="erog-chart-title"><i class="bi bi-graph-up-arrow" style="color:var(--erog-4)"></i>Tendencia Mensual</div>
+            <div class="erog-chart-sub">Evolución de salidas de efectivo</div>
+            <div class="erog-ch-h220"><canvas id="erogLine"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vía de pago chart + Detail table -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <div class="erog-chart-card" style="height:100%">
+            <div class="erog-chart-title"><i class="bi bi-credit-card-fill" style="color:var(--amber)"></i>Por Vía de Pago</div>
+            <div class="erog-chart-sub">Distribución por método de pago</div>
+            <div class="erog-ch-h220"><canvas id="erogVia"></canvas></div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="erog-tbl-card">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:13.5px;font-weight:700">Detalle de Erogaciones</div>
+                <div style="font-size:11.5px;color:var(--text-secondary)">Mostrando <strong id="erogShowN">0</strong> de <strong id="erogTotN">0</strong> registros</div>
+              </div>
+            </div>
+            <div class="tbl-wrap" style="max-height:260px;overflow-y:auto">
+              <table class="tbl">
+                <thead><tr>
+                  <th>Fecha</th><th>Beneficiario</th><th>Vía de Pago</th><th>Concepto</th><th>Tipo</th><th>Monto</th>
+                </tr></thead>
+                <tbody id="erogTblBody"></tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center p-3" style="border-top:1px solid var(--border-color)">
+              <div style="font-size:12px;color:var(--text-secondary)">Pág. <span id="erogCurPg">1</span> de <span id="erogTotPg">1</span></div>
+              <div class="d-flex gap-1" id="erogPgBtns"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- EROG COLUMN MAP MODAL -->
+<div class="modal fade" id="erogMapModal" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-diagram-3 me-2" style="color:var(--erog-1)"></i>Mapear Columnas — Erogaciones</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:16px">Confirma qué columna corresponde a cada campo. El sistema intentó detectarlas automáticamente.</p>
+        <div class="map-row"><div class="map-lbl">Fecha <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emDate"></select></div>
+        <div class="map-row"><div class="map-lbl">Beneficiario</div><select class="fi map-sel" id="emBen"></select></div>
+        <div class="map-row"><div class="map-lbl">Vía de Pago</div><select class="fi map-sel" id="emVia"></select></div>
+        <div class="map-row"><div class="map-lbl">Concepto</div><select class="fi map-sel" id="emConc"></select></div>
+        <div class="map-row"><div class="map-lbl">Tipo / Categoría</div><select class="fi map-sel" id="emTipo"></select></div>
+        <div class="map-row"><div class="map-lbl">Monto <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emMonto"></select></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-s" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-p" style="background:linear-gradient(135deg,var(--erog-1),var(--erog-2));border:none" onclick="confirmErogMap()"><i class="bi bi-check2"></i>Confirmar y Analizar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// ─── STATE & SHARED HELPERS (extraídos de CONCILIADORA) ──────
+const S = { theme:'light' };
+
+const PAGE_TITLES = {
+  'erog-upload':'Cargar Erogaciones',
+  erogaciones:'Erogaciones — Salida de Efectivo'
+};
+
+// ─── NAVIGATION ──────────────────────────────────────────────
+function nav(pg){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const p = document.getElementById('page-'+pg);
+  if(p){ p.classList.add('active'); p.classList.add('fi-in'); setTimeout(()=>p.classList.remove('fi-in'),300); }
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+pg+"'")) b.classList.add('active');
+  });
+  document.getElementById('pgTitle').textContent = PAGE_TITLES[pg]||pg;
+  document.getElementById('sidebar').classList.remove('open');
+  if(pg==='erogaciones' && E.mapped && E.mapped.length>0) setTimeout(renderErogDash,120);
+}
+
+// ─── THEME ───────────────────────────────────────────────────
+function toggleTheme(){
+  S.theme = S.theme==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',S.theme);
+  document.getElementById('thIcon').className = S.theme==='dark'?'bi bi-sun':'bi bi-moon-stars';
+  if(E.mapped && E.mapped.length>0) setTimeout(renderErogDash,120);
+}
+
+// ─── SPINNER ─────────────────────────────────────────────────
+function showSp(msg){ document.getElementById('spMsg').textContent=msg||'Por favor espera'; document.getElementById('spOv').style.display='flex'; }
+function hideSp(){ document.getElementById('spOv').style.display='none'; }
+
+// ─── AMOUNT UTILS ────────────────────────────────────────────
+function clean(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s=String(v).replace(/[RD$\s,]/g,'').replace(/[^0-9.\-]/g,'');
+  const n=parseFloat(s); return isNaN(n)?0:n;
+}
+function fmtZ(v){ return 'RD$ '+(parseFloat(v)||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ══════════════════════════════════════════════════════════════
+// ─── EROGACIONES MODULE ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+const E = {
+  raw:[], headers:[], mapped:[], filtered:[],
+  eMap:{}, page:1, perPage:15, charts:{}
+};
+
+const EROG_PALETTE = [
+  '#6366F1','#EC4899','#F97316','#14B8A6','#F59E0B',
+  '#8B5CF6','#10B981','#EF4444','#3B82F6','#84CC16',
+  '#06B6D4','#D946EF'
+];
+
+// ── Upload ────────────────────────────────────────────────────
+function handleErogUp(input){
+  const file = input.files[0]; if(!file) return;
+  showSp('Leyendo archivo de erogaciones...');
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      let data;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if(ext==='csv'){
+        const wb = XLSX.read(e.target.result,{type:'string'});
+        data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false});
+      } else {
+        const wb = XLSX.read(e.target.result,{type:'array',cellDates:true});
+        data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false});
+      }
+      if(!data.length){ hideSp(); alert('El archivo está vacío.'); return; }
+      E.raw = data;
+      E.headers = Object.keys(data[0]);
+      // Update UI
+      document.getElementById('erogName').textContent = file.name;
+      document.getElementById('erogHint').textContent = data.length.toLocaleString()+' registros encontrados';
+      document.getElementById('erogIcon').style.color = 'var(--emerald)';
+      document.getElementById('eznErog').classList.add('done');
+      const sb = document.getElementById('erogStartBtn');
+      sb.style.display='block'; sb.classList.add('fi-in');
+      hideSp();
+    } catch(err){ hideSp(); console.error(err); alert('Error al leer el archivo: '+err.message); }
+  };
+  if(file.name.endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+// ── Column auto-detect ────────────────────────────────────────
+function autoDetectErog(headers){
+  const h = headers.map(x=>x.toLowerCase().trim());
+  const find = kws => { for(const kw of kws){ const i=h.findIndex(x=>x.includes(kw)); if(i!==-1) return headers[i]; } return ''; };
+  return {
+    date:  find(['fecha','date','fec']),
+    ben:   find(['beneficiario','proveedor','pagado a','ben','vendor','supplier','nombre']),
+    via:   find(['via','vía','método','metodo','forma','medio','channel','payment']),
+    conc:  find(['concepto','descripci','concept','detail','motivo','razón']),
+    tipo:  find(['tipo','type','categoria','categoría','category','clase','rubro']),
+    monto: find(['total','monto','importe','amount','valor','suma','pago'])
+  };
+}
+
+// ── Map modal ─────────────────────────────────────────────────
+function runErogMap(){
+  if(!E.raw.length){ alert('Carga primero el archivo.'); return; }
+  const detected = autoDetectErog(E.headers);
+  E.eMap = detected;
+  const fillSel = (id, detected) => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">— Sin asignar —</option>';
+    E.headers.forEach(h=>{ el.innerHTML += `<option value="${h}" ${h===detected?'selected':''}>${h}</option>`; });
+  };
+  fillSel('emDate', detected.date);
+  fillSel('emBen',  detected.ben);
+  fillSel('emVia',  detected.via);
+  fillSel('emConc', detected.conc);
+  fillSel('emTipo', detected.tipo);
+  fillSel('emMonto',detected.monto);
+  new bootstrap.Modal(document.getElementById('erogMapModal')).show();
+}
+
+function confirmErogMap(){
+  const g = id => document.getElementById(id).value;
+  E.eMap = { date:g('emDate'), ben:g('emBen'), via:g('emVia'), conc:g('emConc'), tipo:g('emTipo'), monto:g('emMonto') };
+  if(!E.eMap.monto){ alert('Debes asignar al menos la columna de Monto.'); return; }
+  bootstrap.Modal.getInstance(document.getElementById('erogMapModal')).hide();
+  setTimeout(processErog, 300);
+}
+
+// ── Process ───────────────────────────────────────────────────
+function processErog(){
+  showSp('Analizando erogaciones...');
+  setTimeout(()=>{
+    try {
+      E.mapped = E.raw.map((row,i)=>({
+        _i: i,
+        date:  row[E.eMap.date]  || '',
+        ben:   row[E.eMap.ben]   || 'Sin beneficiario',
+        via:   row[E.eMap.via]   || 'Sin especificar',
+        conc:  row[E.eMap.conc]  || '',
+        tipo:  row[E.eMap.tipo]  || 'Sin categoría',
+        monto: clean(row[E.eMap.monto])
+      })).filter(r=>r.monto>0);
+
+      E.filtered = [...E.mapped];
+
+      // Populate filter dropdowns
+      const tipos  = [...new Set(E.mapped.map(r=>r.tipo))].sort();
+      const vias   = [...new Set(E.mapped.map(r=>r.via))].sort();
+      const tEl = document.getElementById('efTipo');
+      tEl.innerHTML = '<option value="">Todos los tipos</option>';
+      tipos.forEach(t=>{ tEl.innerHTML += `<option value="${t}">${t}</option>`; });
+      const vEl = document.getElementById('efVia');
+      vEl.innerHTML = '<option value="">Todas las vías</option>';
+      vias.forEach(v=>{ vEl.innerHTML += `<option value="${v}">${v}</option>`; });
+
+      hideSp();
+      renderErogDash();
+      nav('erogaciones');
+    } catch(err){ hideSp(); console.error(err); alert('Error procesando: '+err.message); }
+  }, 80);
+}
+
+// ── Filters ───────────────────────────────────────────────────
+function applyErogFilters(){
+  const ben  = document.getElementById('efBen').value.toLowerCase();
+  const tipo = document.getElementById('efTipo').value;
+  const via  = document.getElementById('efVia').value;
+  const amin = parseFloat(document.getElementById('efAmin').value)||0;
+  const amax = parseFloat(document.getElementById('efAmax').value)||Infinity;
+  const d1   = document.getElementById('efD1').value;
+  const d2   = document.getElementById('efD2').value;
+  E.filtered = E.mapped.filter(r=>{
+    if(ben && !(r.ben.toLowerCase().includes(ben)||(r.conc||'').toLowerCase().includes(ben))) return false;
+    if(tipo && r.tipo!==tipo) return false;
+    if(via  && r.via!==via)   return false;
+    if(r.monto<amin||r.monto>amax) return false;
+    if(d1 && r.date && r.date < d1) return false;
+    if(d2 && r.date && r.date > d2) return false;
+    return true;
+  });
+  E.page=1;
+  renderErogDash();
+}
+
+function clearErogFilters(){
+  ['efBen','efD1','efD2','efAmin','efAmax'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('efTipo').value='';
+  document.getElementById('efVia').value='';
+  E.filtered=[...E.mapped]; E.page=1; renderErogDash();
+}
+
+// ── Render Dashboard ──────────────────────────────────────────
+function renderErogDash(){
+  if(!E.mapped.length) return;
+  document.getElementById('erogEmptyState').style.display='none';
+  document.getElementById('erogDashContent').style.display='block';
+
+  const data = E.filtered;
+  const total = data.reduce((a,r)=>a+r.monto,0);
+  const count = data.length;
+  const avg   = count>0?total/count:0;
+
+  // Top category
+  const byTipo = {};
+  data.forEach(r=>{ byTipo[r.tipo]=(byTipo[r.tipo]||0)+r.monto; });
+  const sortedTipos = Object.entries(byTipo).sort((a,b)=>b[1]-a[1]);
+  const topCat = sortedTipos[0]||['—',0];
+
+  // Hero sub
+  document.getElementById('erogHeroSub').textContent =
+    count.toLocaleString()+' transacciones · '+fmtZ(total)+' total · '+sortedTipos.length+' categorías';
+
+  // KPIs
+  document.getElementById('ekTotal').textContent = fmtZ(total);
+  document.getElementById('ekTotalSub').textContent = count+' pagos registrados';
+  document.getElementById('ekCount').textContent = count.toLocaleString();
+  document.getElementById('ekCountSub').textContent = sortedTipos.length+' categorías distintas';
+  document.getElementById('ekAvg').textContent = fmtZ(avg);
+  document.getElementById('ekAvgSub').textContent = 'mediana del gasto';
+  document.getElementById('ekTopCat').textContent = topCat[0];
+  document.getElementById('ekTopCatSub').textContent = fmtZ(topCat[1])+' ('+
+    (total>0?Math.round(topCat[1]/total*100):0)+'% del total)';
+
+  renderErogCharts(data, byTipo, sortedTipos);
+  renderErogTopBen(data);
+  renderErogTable(data);
+}
+
+// ── Charts ────────────────────────────────────────────────────
+function renderErogCharts(data, byTipo, sortedTipos){
+  const dark = S.theme==='dark';
+  const txt  = dark?'#7E94B8':'#64748B';
+  const grid = dark?'#1A2E55':'#E2E8F0';
+  Chart.defaults.color = txt; Chart.defaults.borderColor = grid;
+  Object.values(E.charts).forEach(c=>{ try{c.destroy()}catch(e){} }); E.charts={};
+  const total = data.reduce((a,r)=>a+r.monto,0);
+
+  // Donut — tipo
+  const tipoLabels = sortedTipos.map(t=>t[0]);
+  const tipoData   = sortedTipos.map(t=>t[1]);
+  E.charts.donut = new Chart(document.getElementById('erogDonut'),{
+    type:'doughnut',
+    data:{ labels:tipoLabels, datasets:[{ data:tipoData, backgroundColor:EROG_PALETTE, borderWidth:2, borderColor:dark?'#0F1E3A':'#fff', borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:10.5}}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)} (${total?Math.round(c.parsed/total*100):0}%)`}} } }
+  });
+
+  // Bar — categorías
+  E.charts.bar = new Chart(document.getElementById('erogBar'),{
+    type:'bar',
+    data:{ labels:tipoLabels.slice(0,8).map(l=>l.length>15?l.slice(0,14)+'…':l),
+           datasets:[{ data:tipoData.slice(0,8), backgroundColor:EROG_PALETTE.slice(0,8), borderRadius:7, borderSkipped:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed)}`}}},
+      scales:{ x:{beginAtZero:true, ticks:{callback:v=>'RD$'+(v>=1000?(v/1000).toFixed(0)+'K':v)}, grid:{color:grid}}, y:{grid:{display:false}} } }
+  });
+
+  // Line — tendencia mensual
+  const byMonth = {};
+  data.forEach(r=>{
+    const raw = r.date||'';
+    let m = '';
+    // Try to parse date
+    const d = new Date(raw);
+    if(!isNaN(d.getTime())) m = d.toISOString().slice(0,7);
+    else if(raw.match(/\d{2}[\/\-]\d{2}[\/\-]\d{4}/)){
+      const parts = raw.split(/[\/\-]/);
+      m = parts[2]+'-'+parts[1];
+    } else m = raw.slice(0,7)||'Sin fecha';
+    byMonth[m] = (byMonth[m]||0)+r.monto;
+  });
+  const months = Object.keys(byMonth).sort();
+  E.charts.line = new Chart(document.getElementById('erogLine'),{
+    type:'line',
+    data:{ labels:months.map(m=>{ try{ const [y,mo]=m.split('-'); return new Date(y,parseInt(mo)-1,1).toLocaleString('es-DO',{month:'short',year:'2-digit'}); }catch(e){return m;} }),
+           datasets:[{ label:'Total mensual', data:months.map(m=>byMonth[m]),
+             borderColor:'#6366F1', backgroundColor:'rgba(99,102,241,.12)',
+             fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'#6366F1', borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtZ(c.parsed)}`}}},
+      scales:{ y:{beginAtZero:true, ticks:{callback:v=>'RD$'+(v>=1000?(v/1000).toFixed(0)+'K':v)}, grid:{color:grid}}, x:{grid:{display:false}} } }
+  });
+
+  // Vía de pago doughnut
+  const byVia = {};
+  data.forEach(r=>{ byVia[r.via]=(byVia[r.via]||0)+r.monto; });
+  const viaEntries = Object.entries(byVia).sort((a,b)=>b[1]-a[1]);
+  E.charts.via = new Chart(document.getElementById('erogVia'),{
+    type:'doughnut',
+    data:{ labels:viaEntries.map(v=>v[0]), datasets:[{ data:viaEntries.map(v=>v[1]),
+      backgroundColor:['#F59E0B','#14B8A6','#EC4899','#6366F1','#10B981','#F97316'],
+      borderWidth:2, borderColor:dark?'#0F1E3A':'#fff', borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins:{ legend:{position:'bottom',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:9.5}}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)}`}} } }
+  });
+}
+
+// ── Top Beneficiarios ─────────────────────────────────────────
+function renderErogTopBen(data){
+  const byBen = {};
+  data.forEach(r=>{ byBen[r.ben]=(byBen[r.ben]||0)+r.monto; });
+  const sorted = Object.entries(byBen).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxAmt = sorted[0]?sorted[0][1]:1;
+  const el = document.getElementById('erogTopBen');
+  if(!sorted.length){ el.innerHTML='<div class="empty-s" style="padding:20px"><p>Sin datos</p></div>'; return; }
+  el.innerHTML = sorted.map(([name,amt],i)=>`
+    <div class="ben-row">
+      <div class="ben-rank ${i<3?'top3':''}">${i+1}</div>
+      <div class="ben-name" title="${name}">${name}</div>
+      <div class="ben-bar-wrap"><div class="ben-bar-fill" style="width:${Math.round(amt/maxAmt*100)}%"></div></div>
+      <div class="ben-amt">${fmtZ(amt)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Table ─────────────────────────────────────────────────────
+function renderErogTable(data){
+  const tot   = data.length;
+  const pages = Math.max(1,Math.ceil(tot/E.perPage));
+  const sl    = data.slice((E.page-1)*E.perPage, E.page*E.perPage);
+  document.getElementById('erogShowN').textContent = sl.length;
+  document.getElementById('erogTotN').textContent  = tot;
+  document.getElementById('erogCurPg').textContent = E.page;
+  document.getElementById('erogTotPg').textContent = pages;
+
+  const catColors = {};
+  const uniq = [...new Set(data.map(r=>r.tipo))];
+  uniq.forEach((t,i)=>{ catColors[t]=EROG_PALETTE[i%EROG_PALETTE.length]; });
+
+  const tb = document.getElementById('erogTblBody');
+  if(!sl.length){
+    tb.innerHTML='<tr><td colspan="6"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
+  } else {
+    tb.innerHTML = sl.map(r=>{
+      const col = catColors[r.tipo]||'#6366F1';
+      return `<tr>
+        <td style="white-space:nowrap">${r.date||'—'}</td>
+        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben}">${r.ben}</td>
+        <td><span style="background:${col}18;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap">${r.via}</span></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc}">${r.conc||'—'}</td>
+        <td><span style="background:${col}20;color:${col};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipo}</span></td>
+        <td class="mono" style="font-weight:700;color:var(--erog-1)">${fmtZ(r.monto)}</td>
+      </tr>`;
+    }).join('');
+  }
+  renderErogPag(pages);
+}
+
+function renderErogPag(pages){
+  const el = document.getElementById('erogPgBtns');
+  if(pages<=1){ el.innerHTML=''; return; }
+  let h='';
+  if(E.page>1) h+=`<button class="pag-btn" onclick="egp(${E.page-1})"><i class="bi bi-chevron-left"></i></button>`;
+  const st=Math.max(1,E.page-2), en=Math.min(pages,E.page+2);
+  if(st>1){ h+=`<button class="pag-btn" onclick="egp(1)">1</button>`; if(st>2) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; }
+  for(let i=st;i<=en;i++) h+=`<button class="pag-btn ${i===E.page?'on':''}" onclick="egp(${i})">${i}</button>`;
+  if(en<pages){ if(en<pages-1) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; h+=`<button class="pag-btn" onclick="egp(${pages})">${pages}</button>`; }
+  if(E.page<pages) h+=`<button class="pag-btn" onclick="egp(${E.page+1})"><i class="bi bi-chevron-right"></i></button>`;
+  el.innerHTML=h;
+}
+function egp(p){ E.page=p; renderErogTable(E.filtered); }
+
+// ── Drag & drop for erogaciones ───────────────────────────────
+function setupErogDnD(){
+  const z = document.getElementById('eznErog');
+  z.addEventListener('dragover', e=>{ e.preventDefault(); z.classList.add('drag'); });
+  z.addEventListener('dragleave', ()=>z.classList.remove('drag'));
+  z.addEventListener('drop', e=>{
+    e.preventDefault(); z.classList.remove('drag');
+    const f = e.dataTransfer.files[0]; if(!f) return;
+    const inp = z.querySelector('input[type=file]');
+    try{ const dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files; }catch(err){}
+    handleErogUp({files:[f]});
+  });
+}
+setupErogDnD();
+
+// ── Exports ───────────────────────────────────────────────────
+function exportErogExcel(){
+  if(!E.filtered.length){ alert('No hay datos de erogaciones para exportar.'); return; }
+  const total = E.filtered.reduce((a,r)=>a+r.monto,0);
+  const wb = XLSX.utils.book_new();
+  const wsData = [
+    ['EROGACIONES — SALIDA DE EFECTIVO'],
+    ['Generado: '+new Date().toLocaleString('es-DO')],
+    ['Total Erogado: '+fmtZ(total)],
+    [],
+    ['Fecha','Beneficiario','Vía de Pago','Concepto','Tipo / Categoría','Monto'],
+    ...E.filtered.map(r=>[r.date,r.ben,r.via,r.conc,r.tipo,r.monto])
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [12,25,18,30,20,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Erogaciones');
+
+  // Summary sheet
+  const byTipo = {};
+  E.filtered.forEach(r=>{ byTipo[r.tipo]=(byTipo[r.tipo]||0)+r.monto; });
+  const sumData = [
+    ['RESUMEN POR CATEGORÍA'],[''],
+    ['Categoría','Monto Total','% del Total'],
+    ...Object.entries(byTipo).sort((a,b)=>b[1]-a[1]).map(([t,v])=>[t,v,total?Math.round(v/total*100)+'%':'0%'])
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(sumData);
+  ws2['!cols']=[{wch:28},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Resumen');
+  XLSX.writeFile(wb,'erogaciones_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportErogPDF(){
+  if(!E.filtered.length){ alert('No hay datos de erogaciones para exportar.'); return; }
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    // Header
+    doc.setFillColor(11,20,55); doc.rect(0,0,297,20,'F');
+    doc.setFillColor(99,102,241); doc.rect(0,20,297,3,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('EROGACIONES — SALIDA DE EFECTIVO',14,13);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Generado: '+new Date().toLocaleString('es-DO'),200,13);
+    const total = E.filtered.reduce((a,r)=>a+r.monto,0);
+    doc.setTextColor(0); doc.setFontSize(8.5);
+    doc.text(`Total Erogado: ${fmtZ(total)} · Transacciones: ${E.filtered.length}`,14,30);
+    doc.autoTable({
+      head:[['Fecha','Beneficiario','Vía de Pago','Concepto','Tipo','Monto']],
+      body:E.filtered.slice(0,500).map(r=>[
+        r.date||'',
+        (r.ben||'').substring(0,22),
+        r.via||'',
+        (r.conc||'').substring(0,28),
+        r.tipo||'',
+        fmtZ(r.monto)
+      ]),
+      startY:34,
+      styles:{fontSize:6.5,cellPadding:2},
+      headStyles:{fillColor:[99,102,241],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[242,244,255]},
+      columnStyles:{5:{halign:'right',fontStyle:'bold'}},
+      margin:{left:6,right:6}
+    });
+    const pc = doc.internal.getNumberOfPages();
+    for(let i=1;i<=pc;i++){
+      doc.setPage(i); doc.setFontSize(6.5); doc.setTextColor(150);
+      doc.text(`Pág. ${i}/${pc} · Gstar · Erogaciones`,14,207);
+    }
+    doc.save('erogaciones_'+new Date().toISOString().slice(0,10)+'.pdf');
+  } catch(e){ console.error(e); alert('Error generando PDF.'); }
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+nav('erog-upload');
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Datos sensibles
+PORTAL DE SOLICITUDES GSTAR/NOMBRE DE EMPLEADOS.xlsx
+
+# Archivos temporales del sistema
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Archivos de extracción temporal
+docx_extract*/
+*.tmp

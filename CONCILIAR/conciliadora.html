@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONCILIADORA – Conciliación Bancaria</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg-app:#EEF2FF;--bg-card:#FFFFFF;--bg-sidebar:#0B1437;
+  --text-primary:#0F172A;--text-secondary:#64748B;
+  --text-sidebar:#7E94B8;--border-color:#E2E8F0;
+  --blue:#2563EB;--blue-lt:#DBEAFE;
+  --emerald:#10B981;--emerald-lt:#D1FAE5;
+  --amber:#F59E0B;--amber-lt:#FEF3C7;
+  --coral:#EF4444;--coral-lt:#FEE2E2;
+  --purple:#8B5CF6;--purple-lt:#EDE9FE;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 10px 15px -3px rgba(0,0,0,.04);
+  --radius:12px;--sidebar:260px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0F1E3A;--bg-sidebar:#050B1A;
+  --text-primary:#E8F0FE;--text-secondary:#7E94B8;--border-color:#1A2E55;
+  --blue-lt:#1A2E5F;--emerald-lt:#0A3020;--amber-lt:#352500;
+  --coral-lt:#3A1010;--purple-lt:#251050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--text-primary);min-height:100vh;transition:background .3s,color .3s}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);background:var(--bg-sidebar);z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.05)}
+.brand-name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.brand-name span{color:var(--blue)}
+.brand-tag{font-size:10px;color:var(--text-sidebar);margin-top:2px;text-transform:uppercase;letter-spacing:.8px}
+.sidebar-nav{padding:14px 10px;flex:1;overflow-y:auto}
+.nav-group-label{font-size:10px;font-weight:700;color:#3A5080;text-transform:uppercase;letter-spacing:1px;padding:10px 8px 5px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--text-sidebar);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(37,99,235,.2);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
+.nav-btn i{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;color:#2D4070;text-align:center}
+
+/* MAIN */
+.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border-color);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+.mobile-toggle{display:none;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:2px}
+
+/* PAGES */
+.page{padding:24px;display:none}
+.page.active{display:block}
+.sec-title{font-size:21px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px}
+.sec-sub{font-size:13px;color:var(--text-secondary);margin-top:2px}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+.card-body{padding:18px}
+
+/* STAT CARDS */
+.scard{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;box-shadow:var(--shadow)}
+.scard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.scard.c-blue::before{background:var(--blue)}.scard.c-emerald::before{background:var(--emerald)}
+.scard.c-amber::before{background:var(--amber)}.scard.c-coral::before{background:var(--coral)}
+.scard.c-purple::before{background:var(--purple)}
+.scard-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+.scard.c-blue .scard-icon{background:var(--blue-lt);color:var(--blue)}
+.scard.c-emerald .scard-icon{background:var(--emerald-lt);color:var(--emerald)}
+.scard.c-amber .scard-icon{background:var(--amber-lt);color:var(--amber)}
+.scard.c-coral .scard-icon{background:var(--coral-lt);color:var(--coral)}
+.scard.c-purple .scard-icon{background:var(--purple-lt);color:var(--purple)}
+.scard-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-primary);letter-spacing:-.5px}
+.scard-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.scard-sub{font-size:11px;color:var(--text-secondary);margin-top:3px}
+
+/* PROGRESS RING */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
+.ring{position:relative;width:110px;height:110px}
+.ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--border-color);stroke-width:9}
+.ring-fill{fill:none;stroke:var(--emerald);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+.ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-pct{font-size:20px;font-weight:800;color:var(--text-primary);font-family:'JetBrains Mono',monospace;line-height:1}
+.ring-lbl{font-size:9px;color:var(--text-secondary);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border-color);border-radius:var(--radius);padding:36px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-card);position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:var(--blue-lt)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone .u-icon{font-size:36px;color:var(--text-secondary);margin-bottom:10px;display:block;transition:color .2s}
+.upload-zone.done .u-icon{color:var(--emerald)}
+.upload-zone.done{border-color:var(--emerald);background:var(--emerald-lt)}
+.u-name{font-size:14px;font-weight:600;color:var(--text-primary)}
+.u-hint{font-size:12px;color:var(--text-secondary);margin-top:3px}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.tbl thead th{background:var(--bg-app);color:var(--text-secondary);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:9px 13px;border-bottom:1px solid var(--border-color);white-space:nowrap;position:sticky;top:0;z-index:9}
+.tbl tbody tr:hover{background:var(--bg-app)}
+.tbl tbody td{padding:9px 13px;border-bottom:1px solid var(--border-color);color:var(--text-primary);vertical-align:middle}
+.tbl .mono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+.tbl-wrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius)}
+
+/* BADGES */
+.badge-s{padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.bs-c{background:var(--emerald-lt);color:var(--emerald)}
+.bs-pb{background:var(--blue-lt);color:var(--blue)}
+.bs-ps{background:var(--amber-lt);color:var(--amber)}
+.bs-d{background:var(--coral-lt);color:var(--coral)}
+
+/* BUTTONS */
+.btn-p{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-p:hover{background:#1D4ED8;transform:translateY(-1px)}
+.btn-s{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+.xbtn{padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1.5px solid;transition:all .15s;background:transparent;font-family:'Inter',sans-serif}
+.xbtn-xl{color:#16A34A;border-color:#16A34A}.xbtn-xl:hover{background:var(--emerald-lt)}
+.xbtn-pdf{color:var(--coral);border-color:var(--coral)}.xbtn-pdf:hover{background:var(--coral-lt)}
+.xbtn-csv{color:var(--purple);border-color:var(--purple)}.xbtn-csv:hover{background:var(--purple-lt)}
+
+/* FILTERS */
+.fi{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:7px 11px;font-size:12.5px;outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fi option{background:var(--bg-card);color:var(--text-primary)}
+
+/* DIFF CARDS */
+.diff-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border-left:4px solid;transition:transform .15s;box-shadow:var(--shadow)}
+.diff-card:hover{transform:translateX(4px)}
+.dc-sb{border-left-color:var(--blue)}.dc-ss{border-left-color:var(--amber)}
+.dc-dup{border-left-color:var(--purple)}.dc-df{border-left-color:var(--coral)}
+.dc-tipo{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.dc-sb .dc-tipo{color:var(--blue)}.dc-ss .dc-tipo{color:var(--amber)}
+.dc-dup .dc-tipo{color:var(--purple)}.dc-df .dc-tipo{color:var(--coral)}
+.dc-amount{font-size:19px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-primary)}
+.dc-detail{font-size:11.5px;color:var(--text-secondary);margin-top:3px}
+.dc-sug{font-size:11.5px;color:var(--text-secondary);margin-top:8px;padding:7px 10px;background:var(--bg-app);border-radius:6px;border-left:3px solid var(--blue)}
+
+/* CHARTS */
+.chart-box{position:relative;height:210px}
+.chart-box-lg{position:relative;height:250px}
+
+/* PAGINATION */
+.pag-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.pag-btn:hover,.pag-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* MAP ROWS */
+.map-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.map-lbl{font-size:12.5px;font-weight:600;color:var(--text-primary);width:150px;flex-shrink:0}
+.map-sel{flex:1}
+
+/* MODAL */
+.modal-content{background:var(--bg-card)!important;border:1px solid var(--border-color)!important;color:var(--text-primary)!important}
+.modal-header,.modal-footer{border-color:var(--border-color)!important}
+.modal-title{font-weight:700!important;color:var(--text-primary)!important}
+.btn-close{filter:var(--close-filter,none)}
+[data-theme="dark"] .btn-close{filter:invert(1)}
+
+/* INFO */
+.info-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--emerald-lt);color:var(--emerald)}
+
+/* EMPTY */
+.empty-s{text-align:center;padding:56px 20px;color:var(--text-secondary)}
+.empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
+.empty-s h4{font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+
+/* SPINNER */
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;display:none}
+.sp-box{background:var(--bg-card);border-radius:var(--radius);padding:28px 36px;text-align:center;box-shadow:var(--shadow-md)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0}.mobile-toggle{display:flex!important}
+  .page{padding:14px}.topbar{padding:10px 14px}
+  .scard-val{font-size:18px}
+}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fi-in{animation:fadeIn .28s ease forwards}
+
+/* Rule info box */
+.rule-box{background:var(--bg-card);border:1px solid var(--border-color);border-left:4px solid var(--blue);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
+.rule-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:12.5px;font-weight:700}
+.rt-e{background:var(--emerald-lt);color:var(--emerald)}.rt-b{background:var(--blue-lt);color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div class="sp-overlay" id="spOv">
+  <div class="sp-box">
+    <div class="spinner-border text-primary mb-3" role="status" style="width:38px;height:38px;border-width:3px"></div>
+    <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Procesando...</div>
+    <div id="spMsg" style="font-size:12px;color:var(--text-secondary);margin-top:3px">Por favor espera</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand-name">CONCILI<span>ADORA</span></div>
+    <div class="brand-tag">Conciliación Bancaria</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Principal</div>
+    <button class="nav-btn active" onclick="nav('upload')"><i class="bi bi-cloud-upload"></i>Cargar Archivos</button>
+    <button class="nav-btn" onclick="nav('dashboard')"><i class="bi bi-grid-1x2"></i>Dashboard</button>
+    <div class="nav-group-label" style="margin-top:6px">Análisis</div>
+    <button class="nav-btn" onclick="nav('conciliacion')"><i class="bi bi-arrow-left-right"></i>Conciliación</button>
+    <button class="nav-btn" onclick="nav('banco')"><i class="bi bi-bank"></i>Movimientos Banco</button>
+    <button class="nav-btn" onclick="nav('sistema')"><i class="bi bi-server"></i>Movimientos Sistema</button>
+    <button class="nav-btn" onclick="nav('diferencias')"><i class="bi bi-search"></i>Buscar Diferencias</button>
+    <div class="nav-group-label" style="margin-top:6px">Reportes</div>
+    <button class="nav-btn" onclick="nav('graficos')"><i class="bi bi-bar-chart-line"></i>Gráficos</button>
+  </nav>
+  <div class="sidebar-footer">v1.0.0 · CONCILIADORA</div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <span class="topbar-title" id="pgTitle">Cargar Archivos</span>
+    </div>
+    <div class="topbar-actions">
+      <div id="stPill" style="display:none" class="info-pill"><i class="bi bi-check-circle-fill"></i><span id="stText">Listo</span></div>
+      <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="bi bi-moon-stars" id="thIcon"></i></button>
+    </div>
+  </div>
+
+  <!-- PAGE: UPLOAD -->
+  <div class="page active" id="page-upload">
+    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+      <div><h2 class="sec-title">Cargar Archivos Excel</h2><p class="sec-sub">Sube ambos archivos para iniciar la conciliación automática.</p></div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card"><div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="scard-icon" style="background:var(--blue-lt);color:var(--blue);margin:0;width:36px;height:36px;font-size:16px"><i class="bi bi-bank"></i></div>
+            <div><div style="font-size:14px;font-weight:700">Estado de Cuenta Bancario</div><div style="font-size:11.5px;color:var(--text-secondary)">Archivo exportado del banco</div></div>
+          </div>
+          <div class="upload-zone" id="bzn">
+            <input type="file" accept=".xlsx,.xls,.csv" id="bFile" onchange="handleUp('bank',this)">
+            <i class="bi bi-file-earmark-excel u-icon" id="bIcon"></i>
+            <div class="u-name" id="bName">Arrastra tu archivo aquí</div>
+            <div class="u-hint" id="bHint">o clic para seleccionar · .xlsx, .xls, .csv</div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card"><div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="scard-icon" style="background:var(--amber-lt);color:var(--amber);margin:0;width:36px;height:36px;font-size:16px"><i class="bi bi-server"></i></div>
+            <div><div style="font-size:14px;font-weight:700">Movimientos del Sistema</div><div style="font-size:11.5px;color:var(--text-secondary)">Archivo exportado del sistema interno</div></div>
+          </div>
+          <div class="upload-zone" id="szn">
+            <input type="file" accept=".xlsx,.xls,.csv" id="sFile" onchange="handleUp('system',this)">
+            <i class="bi bi-file-earmark-excel u-icon" id="sIcon"></i>
+            <div class="u-name" id="sName">Arrastra tu archivo aquí</div>
+            <div class="u-hint" id="sHint">o clic para seleccionar · .xlsx, .xls, .csv</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="rule-box mb-3">
+      <i class="bi bi-info-circle-fill" style="color:var(--blue);font-size:18px;margin-top:1px;flex-shrink:0"></i>
+      <div>
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:6px">Regla de Negocio: Inversión Débito / Crédito</div>
+        <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:8px">La aplicación aplica automáticamente la equivalencia al comparar los registros:</p>
+        <div class="d-flex gap-3 flex-wrap align-items-center">
+          <span class="rule-tag rt-e"><i class="bi bi-bank"></i>Crédito Banco ≡ <i class="bi bi-server ms-1"></i>Débito Sistema</span>
+          <span style="color:var(--text-secondary);font-size:18px">⟷</span>
+          <span class="rule-tag rt-b"><i class="bi bi-bank"></i>Débito Banco ≡ <i class="bi bi-server ms-1"></i>Crédito Sistema</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="startBtn" style="display:none;text-align:center;padding:16px 0" class="fi-in">
+      <button class="btn-p" style="font-size:15px;padding:12px 30px" onclick="runReconciliation()">
+        <i class="bi bi-arrow-left-right"></i>Iniciar Conciliación
+      </button>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">Ambos archivos listos. Presiona para comparar los movimientos.</p>
+    </div>
+  </div>
+
+  <!-- PAGE: DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+      <div><h2 class="sec-title">Dashboard</h2><p class="sec-sub" id="dashSub">Resumen de la conciliación bancaria</p></div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="xbtn xbtn-xl" onclick="exportExcel()"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+        <button class="xbtn xbtn-pdf" onclick="exportPDF()"><i class="bi bi-file-earmark-pdf"></i>PDF</button>
+        <button class="xbtn xbtn-csv" onclick="exportCSV()"><i class="bi bi-file-earmark-text"></i>CSV</button>
+      </div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3"><div class="scard c-blue"><div class="scard-icon"><i class="bi bi-bank"></i></div><div class="scard-val" id="dBankN">0</div><div class="scard-label">Movimientos Banco</div><div class="scard-sub" id="dBankA">RD$ 0.00</div></div></div>
+      <div class="col-6 col-lg-3"><div class="scard c-amber"><div class="scard-icon"><i class="bi bi-server"></i></div><div class="scard-val" id="dSysN">0</div><div class="scard-label">Movimientos Sistema</div><div class="scard-sub" id="dSysA">RD$ 0.00</div></div></div>
+      <div class="col-6 col-lg-3"><div class="scard c-emerald"><div class="scard-icon"><i class="bi bi-check-circle"></i></div><div class="scard-val" id="dConcN">0</div><div class="scard-label">Conciliados</div><div class="scard-sub" id="dConcA">RD$ 0.00</div></div></div>
+      <div class="col-6 col-lg-3"><div class="scard c-coral"><div class="scard-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="scard-val" id="dPendN">0</div><div class="scard-label">Pendientes</div><div class="scard-sub" id="dPendA">RD$ 0.00</div></div></div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3"><div class="scard c-blue"><div class="scard-icon"><i class="bi bi-bank2"></i></div><div class="scard-val" id="dPB">0</div><div class="scard-label">Pendiente Banco</div></div></div>
+      <div class="col-6 col-lg-3"><div class="scard c-amber"><div class="scard-icon"><i class="bi bi-database-exclamation"></i></div><div class="scard-val" id="dPS">0</div><div class="scard-label">Pendiente Sistema</div></div></div>
+      <div class="col-6 col-lg-3"><div class="scard c-coral"><div class="scard-icon"><i class="bi bi-cash-stack"></i></div><div class="scard-val" id="dDif" style="font-size:15px">RD$ 0</div><div class="scard-label">Diferencia General</div></div></div>
+      <div class="col-6 col-lg-3">
+        <div class="scard c-emerald" style="display:flex;align-items:center;justify-content:center;min-height:120px">
+          <div class="ring-wrap">
+            <div class="ring">
+              <svg width="110" height="110" viewBox="0 0 110 110">
+                <circle class="ring-bg" cx="55" cy="55" r="47"/>
+                <circle class="ring-fill" id="ringFill" cx="55" cy="55" r="47" stroke-dasharray="295.3" stroke-dashoffset="295.3"/>
+              </svg>
+              <div class="ring-inner"><div class="ring-pct" id="ringPct">0%</div><div class="ring-lbl">Conciliado</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CONCILIACION -->
+  <div class="page" id="page-conciliacion">
+    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+      <div><h2 class="sec-title">Reporte de Conciliación</h2><p class="sec-sub">Detalle comparativo de movimientos banco vs. sistema</p></div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="xbtn xbtn-xl" onclick="exportExcel()"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+        <button class="xbtn xbtn-pdf" onclick="exportPDF()"><i class="bi bi-file-earmark-pdf"></i>PDF</button>
+        <button class="xbtn xbtn-csv" onclick="exportCSV()"><i class="bi bi-file-earmark-text"></i>CSV</button>
+      </div>
+    </div>
+    <div class="card mb-3"><div class="card-body py-2">
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+        <div style="position:relative">
+          <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
+          <input class="fi" style="padding-left:28px;width:185px" placeholder="Buscar referencia..." id="fRef" oninput="applyFilters()">
+        </div>
+        <select class="fi" id="fStat" onchange="applyFilters()">
+          <option value="">Todos los estados</option>
+          <option value="Conciliado">Conciliado</option>
+          <option value="Pendiente Banco">Pendiente Banco</option>
+          <option value="Pendiente Sistema">Pendiente Sistema</option>
+        </select>
+        <input type="date" class="fi" id="fD1" onchange="applyFilters()">
+        <input type="date" class="fi" id="fD2" onchange="applyFilters()">
+        <input type="number" class="fi" style="width:120px" placeholder="Monto mín." id="fAmin" oninput="applyFilters()">
+        <input type="number" class="fi" style="width:120px" placeholder="Monto máx." id="fAmax" oninput="applyFilters()">
+        <button class="btn-s" style="padding:7px 12px;font-size:12.5px" onclick="clearFilters()"><i class="bi bi-x-circle"></i>Limpiar</button>
+      </div>
+    </div></div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div style="font-size:12.5px;color:var(--text-secondary)">Mostrando <strong id="showN">0</strong> de <strong id="totN">0</strong> registros</div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table class="tbl" id="rTable">
+          <thead><tr>
+            <th>Fecha Banco</th><th>Fecha Sistema</th><th>Ref. Banco</th><th>Ref. Sistema</th>
+            <th>Desc. Banco</th><th>Desc. Sistema</th>
+            <th>Deb. Banco</th><th>Crd. Banco</th><th>Deb. Sistema</th><th>Crd. Sistema</th>
+            <th>Monto</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="rBody"><tr><td colspan="12"><div class="empty-s"><i class="bi bi-inbox"></i><h4>Sin datos</h4><p>Carga y concilia los archivos</p></div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center p-3" style="border-top:1px solid var(--border-color)">
+        <div style="font-size:12px;color:var(--text-secondary)">Pág. <span id="curPg">1</span> de <span id="totPg">1</span></div>
+        <div class="d-flex gap-1" id="pgBtns"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: BANCO -->
+  <div class="page" id="page-banco">
+    <div class="mb-3"><h2 class="sec-title">Movimientos Bancarios</h2><p class="sec-sub">Registros del estado de cuenta bancario</p></div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead id="bHead"><tr><th colspan="7" style="padding:20px;color:var(--text-secondary)">Sin datos</th></tr></thead>
+      <tbody id="bBody"><tr><td colspan="7"><div class="empty-s"><i class="bi bi-bank"></i><h4>Sin datos</h4><p>Carga el estado de cuenta bancario</p></div></td></tr></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <!-- PAGE: SISTEMA -->
+  <div class="page" id="page-sistema">
+    <div class="mb-3"><h2 class="sec-title">Movimientos del Sistema</h2><p class="sec-sub">Registros exportados del sistema interno</p></div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead id="sHead"><tr><th colspan="6" style="padding:20px;color:var(--text-secondary)">Sin datos</th></tr></thead>
+      <tbody id="sBody"><tr><td colspan="6"><div class="empty-s"><i class="bi bi-server"></i><h4>Sin datos</h4><p>Carga los movimientos del sistema</p></div></td></tr></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <!-- PAGE: DIFERENCIAS -->
+  <div class="page" id="page-diferencias">
+    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+      <div><h2 class="sec-title">Buscar Diferencias</h2><p class="sec-sub">Análisis inteligente de discrepancias entre banco y sistema</p></div>
+      <button class="btn-p" onclick="runDiffAnalysis()"><i class="bi bi-search"></i>Analizar Diferencias</button>
+    </div>
+    <div class="row g-3 mb-3" id="diffSum" style="display:none">
+      <div class="col-6 col-md-3"><div class="scard c-blue"><div class="scard-icon"><i class="bi bi-bank-fill"></i></div><div class="scard-val" id="dsB">0</div><div class="scard-label">Solo en Banco</div></div></div>
+      <div class="col-6 col-md-3"><div class="scard c-amber"><div class="scard-icon"><i class="bi bi-server"></i></div><div class="scard-val" id="dsS">0</div><div class="scard-label">Solo en Sistema</div></div></div>
+      <div class="col-6 col-md-3"><div class="scard c-purple"><div class="scard-icon"><i class="bi bi-copy"></i></div><div class="scard-val" id="dsD">0</div><div class="scard-label">Duplicados</div></div></div>
+      <div class="col-6 col-md-3"><div class="scard c-coral"><div class="scard-icon"><i class="bi bi-calendar-x"></i></div><div class="scard-val" id="dsF">0</div><div class="scard-label">Dif. Fecha</div></div></div>
+    </div>
+    <div id="diffOut">
+      <div class="empty-s"><i class="bi bi-search"></i><h4>Sin análisis aún</h4><p>Presiona "Analizar Diferencias" después de conciliar</p></div>
+    </div>
+  </div>
+
+  <!-- PAGE: GRAFICOS -->
+  <div class="page" id="page-graficos">
+    <div class="mb-3"><h2 class="sec-title">Gráficos y Estadísticas</h2><p class="sec-sub">Visualización de la conciliación bancaria</p></div>
+    <div class="row g-3">
+      <div class="col-md-5"><div class="card"><div class="card-body"><div style="font-size:14px;font-weight:700;margin-bottom:14px">Conciliados vs Pendientes</div><div class="chart-box"><canvas id="cDonut"></canvas></div></div></div></div>
+      <div class="col-md-7"><div class="card"><div class="card-body"><div style="font-size:14px;font-weight:700;margin-bottom:14px">Estado de Movimientos</div><div class="chart-box"><canvas id="cBar"></canvas></div></div></div></div>
+      <div class="col-12"><div class="card"><div class="card-body"><div style="font-size:14px;font-weight:700;margin-bottom:14px">Distribución por Rangos de Monto</div><div class="chart-box-lg"><canvas id="cAmts"></canvas></div></div></div></div>
+    </div>
+  </div>
+</main>
+
+<!-- MAPPING MODAL -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>Mapear Columnas</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:16px">Selecciona qué columna corresponde a cada campo. Los campos marcados con <span style="color:var(--coral)">*</span> son requeridos para la conciliación.</p>
+        <div class="mb-4">
+          <div style="font-size:13.5px;font-weight:700;color:var(--blue);margin-bottom:10px"><i class="bi bi-bank me-1"></i>Estado de Cuenta Bancario</div>
+          <div class="map-row"><div class="map-lbl">Fecha <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mBDate"></select></div>
+          <div class="map-row"><div class="map-lbl">Referencia</div><select class="fi map-sel" id="mBRef"></select></div>
+          <div class="map-row"><div class="map-lbl">Descripción</div><select class="fi map-sel" id="mBDesc"></select></div>
+          <div class="map-row"><div class="map-lbl">Débito <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mBDeb"></select></div>
+          <div class="map-row"><div class="map-lbl">Crédito <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mBCrd"></select></div>
+          <div class="map-row"><div class="map-lbl">Balance</div><select class="fi map-sel" id="mBBal"></select></div>
+        </div>
+        <hr style="border-color:var(--border-color)">
+        <div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--amber);margin-bottom:10px"><i class="bi bi-server me-1"></i>Movimientos del Sistema</div>
+          <div class="map-row"><div class="map-lbl">Fecha <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mSDate"></select></div>
+          <div class="map-row"><div class="map-lbl">N° Documento</div><select class="fi map-sel" id="mSRef"></select></div>
+          <div class="map-row"><div class="map-lbl">Descripción</div><select class="fi map-sel" id="mSDesc"></select></div>
+          <div class="map-row"><div class="map-lbl">Débito <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mSDeb"></select></div>
+          <div class="map-row"><div class="map-lbl">Crédito <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="mSCrd"></select></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-s" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-p" onclick="confirmMap()"><i class="bi bi-check2"></i>Confirmar Mapeo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+const S = {
+  bankRaw:[], sysRaw:[], bankH:[], sysH:[],
+  bankM:[], sysM:[], results:[], filtered:[],
+  bMap:{}, sMap:{}, page:1, perPage:20,
+  charts:{}, theme:'light', bothLoaded:false
+};
+
+const PAGE_TITLES = {
+  upload:'Cargar Archivos', dashboard:'Dashboard',
+  conciliacion:'Reporte de Conciliación', banco:'Movimientos Bancarios',
+  sistema:'Movimientos del Sistema', diferencias:'Buscar Diferencias',
+  graficos:'Gráficos y Estadísticas'
+};
+
+// ─── NAVIGATION ──────────────────────────────────────────────
+function nav(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const p = document.getElementById('page-'+pg);
+  if(p){ p.classList.add('active'); p.classList.add('fi-in'); setTimeout(()=>p.classList.remove('fi-in'),300); }
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+pg+"'")) b.classList.add('active');
+  });
+  document.getElementById('pgTitle').textContent = PAGE_TITLES[pg]||pg;
+  document.getElementById('sidebar').classList.remove('open');
+  if(pg==='graficos' && S.results.length>0) setTimeout(renderCharts,120);
+}
+
+// ─── THEME ───────────────────────────────────────────────────
+function toggleTheme(){
+  S.theme = S.theme==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',S.theme);
+  document.getElementById('thIcon').className = S.theme==='dark'?'bi bi-sun':'bi bi-moon-stars';
+  if(S.results.length>0) setTimeout(renderCharts,120);
+}
+
+// ─── SPINNER ─────────────────────────────────────────────────
+function showSp(msg){ document.getElementById('spMsg').textContent=msg||'Por favor espera'; document.getElementById('spOv').style.display='flex'; }
+function hideSp(){ document.getElementById('spOv').style.display='none'; }
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────
+function handleUp(type, input){
+  const file=input.files[0]; if(!file) return;
+  showSp('Leyendo '+(type==='bank'?'estado de cuenta':'movimientos del sistema')+'...');
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      let data;
+      const ext=file.name.split('.').pop().toLowerCase();
+      if(ext==='csv'){
+        const wb=XLSX.read(e.target.result,{type:'string'});
+        data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false});
+      } else {
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        data=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      }
+      if(!data.length){ hideSp(); alert('El archivo está vacío o no tiene datos reconocibles.'); return; }
+      const headers=Object.keys(data[0]);
+      if(type==='bank'){ S.bankRaw=data; S.bankH=headers; updateUpUI('bank',file.name,data.length); }
+      else { S.sysRaw=data; S.sysH=headers; updateUpUI('sys',file.name,data.length); }
+      hideSp(); checkBoth();
+    } catch(err){ hideSp(); console.error(err); alert('Error al leer el archivo. Verifica que sea Excel válido o CSV.'); }
+  };
+  ext2=='csv'?reader.readAsText(file,'UTF-8'):reader.readAsArrayBuffer(file);
+  function ext2(){ return file.name.split('.').pop().toLowerCase(); }
+  if(file.name.endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function updateUpUI(type,name,count){
+  const id=type==='bank'?'b':'s';
+  document.getElementById(id+'Name').textContent=name;
+  document.getElementById(id+'Hint').textContent=count.toLocaleString()+' registros encontrados';
+  document.getElementById(id+'Icon').style.color='var(--emerald)';
+  const zn=document.getElementById(type==='bank'?'bzn':'szn');
+  zn.classList.add('done');
+}
+
+function checkBoth(){
+  if(S.bankRaw.length>0 && S.sysRaw.length>0){
+    S.bothLoaded=true;
+    const btn=document.getElementById('startBtn');
+    btn.style.display='block'; btn.classList.add('fi-in');
+  }
+}
+
+// ─── AMOUNT UTILS ────────────────────────────────────────────
+function clean(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s=String(v).replace(/[RD$\s,]/g,'').replace(/[^0-9.\-]/g,'');
+  const n=parseFloat(s); return isNaN(n)?0:n;
+}
+function fmt(v,zero){
+  if(!v&&v!==0) return zero||'';
+  const n=parseFloat(v);
+  if(n===0) return zero||'';
+  return 'RD$ '+Math.abs(n).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtZ(v){ return 'RD$ '+(parseFloat(v)||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ─── AUTO DETECT COLUMNS ─────────────────────────────────────
+function autoDetect(headers,kind){
+  const h=headers.map(x=>x.toLowerCase().trim());
+  const find=kws=>{ for(const kw of kws){ const i=h.findIndex(x=>x.includes(kw)); if(i!==-1) return headers[i]; } return ''; };
+  if(kind==='bank') return {
+    date:find(['fecha','date','fec']),
+    ref:find(['referencia','ref','numero','num']),
+    desc:find(['descripci','concepto','detail','desc']),
+    debit:find(['debito','débito','debit','cargo','salida']),
+    credit:find(['credito','crédito','credit','abono','entrada']),
+    balance:find(['balance','saldo','bal'])
+  };
+  return {
+    date:find(['fecha','date','fec']),
+    ref:find(['referencia','ref','numero','núm','voucher','doc','comp']),
+    desc:find(['descripci','concepto','detail','desc']),
+    debit:find(['debito','débito','debit','cargo','salida']),
+    credit:find(['credito','crédito','credit','abono','entrada'])
+  };
+}
+
+// ─── RECONCILIATION FLOW ─────────────────────────────────────
+function runReconciliation(){
+  S.bMap=autoDetect(S.bankH,'bank');
+  S.sMap=autoDetect(S.sysH,'sys');
+  populateMap();
+  new bootstrap.Modal(document.getElementById('mapModal')).show();
+}
+
+function populateMap(){
+  const fillSel=(id,headers,detected)=>{
+    const el=document.getElementById(id);
+    el.innerHTML='<option value="">— Sin asignar —</option>';
+    headers.forEach(h=>{ el.innerHTML+=`<option value="${h}" ${h===detected?'selected':''}>${h}</option>`; });
+  };
+  [['mBDate',S.bankH,S.bMap.date],['mBRef',S.bankH,S.bMap.ref],['mBDesc',S.bankH,S.bMap.desc],
+   ['mBDeb',S.bankH,S.bMap.debit],['mBCrd',S.bankH,S.bMap.credit],['mBBal',S.bankH,S.bMap.balance]
+  ].forEach(([id,h,d])=>fillSel(id,h,d));
+  [['mSDate',S.sysH,S.sMap.date],['mSRef',S.sysH,S.sMap.ref],['mSDesc',S.sysH,S.sMap.desc],
+   ['mSDeb',S.sysH,S.sMap.debit],['mSCrd',S.sysH,S.sMap.credit]
+  ].forEach(([id,h,d])=>fillSel(id,h,d));
+}
+
+function confirmMap(){
+  const g=id=>document.getElementById(id).value;
+  S.bMap={date:g('mBDate'),ref:g('mBRef'),desc:g('mBDesc'),debit:g('mBDeb'),credit:g('mBCrd'),balance:g('mBBal')};
+  S.sMap={date:g('mSDate'),ref:g('mSRef'),desc:g('mSDesc'),debit:g('mSDeb'),credit:g('mSCrd')};
+  if(!S.bMap.debit&&!S.bMap.credit){ alert('Asigna al menos Débito o Crédito del banco.'); return; }
+  if(!S.sMap.debit&&!S.sMap.credit){ alert('Asigna al menos Débito o Crédito del sistema.'); return; }
+  bootstrap.Modal.getInstance(document.getElementById('mapModal')).hide();
+  setTimeout(doReconcile,320);
+}
+
+function doReconcile(){
+  showSp('Realizando conciliación automática...');
+  setTimeout(()=>{
+    try {
+      // Map bank
+      S.bankM=S.bankRaw.map((row,i)=>{
+        const deb=clean(row[S.bMap.debit]), crd=clean(row[S.bMap.credit]);
+        return { _i:i, date:row[S.bMap.date]||'', ref:row[S.bMap.ref]||'', desc:row[S.bMap.desc]||'',
+                 debit:deb, credit:crd, balance:clean(row[S.bMap.balance]),
+                 mv:crd-deb, matched:false };
+      });
+      // Map system  
+      S.sysM=S.sysRaw.map((row,i)=>{
+        const deb=clean(row[S.sMap.debit]), crd=clean(row[S.sMap.credit]);
+        return { _i:i, date:row[S.sMap.date]||'', ref:row[S.sMap.ref]||'', desc:row[S.sMap.desc]||'',
+                 debit:deb, credit:crd,
+                 mv:deb-crd,  // inverted: system debit = bank credit
+                 matched:false };
+      });
+      // Greedy matching by match-value
+      const sysCopy=S.sysM.map(s=>({...s}));
+      const res=[];
+      S.bankM.forEach(b=>{
+        const si=sysCopy.findIndex(s=>!s.matched && Math.abs(s.mv-b.mv)<0.005);
+        if(si!==-1){
+          const s=sysCopy[si]; s.matched=true; b.matched=true;
+          res.push({type:'Conciliado',bDate:b.date,sDate:s.date,bRef:b.ref,sRef:s.ref,bDesc:b.desc,sDesc:s.desc,
+                    bDeb:b.debit,bCrd:b.credit,sDeb:s.debit,sCrd:s.credit,amount:Math.abs(b.mv),bi:b._i,si:s._i});
+        }
+      });
+      S.bankM.forEach(b=>{
+        if(!b.matched) res.push({type:'Pendiente Banco',bDate:b.date,sDate:'',bRef:b.ref,sRef:'',bDesc:b.desc,sDesc:'',
+          bDeb:b.debit,bCrd:b.credit,sDeb:0,sCrd:0,amount:Math.abs(b.mv),bi:b._i,si:-1});
+      });
+      sysCopy.forEach(s=>{
+        if(!s.matched) res.push({type:'Pendiente Sistema',bDate:'',sDate:s.date,bRef:'',sRef:s.ref,bDesc:'',sDesc:s.desc,
+          bDeb:0,bCrd:0,sDeb:s.debit,sCrd:s.credit,amount:Math.abs(s.mv),bi:-1,si:s._i});
+      });
+      S.results=res; S.filtered=[...res];
+      hideSp();
+      updateDash(); renderRT(); renderBankT(); renderSysT();
+      const nc=res.filter(r=>r.type==='Conciliado').length;
+      document.getElementById('stPill').style.display='flex';
+      document.getElementById('stText').textContent=nc+' conciliados';
+      nav('dashboard');
+    } catch(err){ hideSp(); console.error(err); alert('Error: '+err.message); }
+  },80);
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────
+function updateDash(){
+  const r=S.results, bm=S.bankM, sm=S.sysM;
+  const conc=r.filter(x=>x.type==='Conciliado');
+  const pb=r.filter(x=>x.type==='Pendiente Banco');
+  const ps=r.filter(x=>x.type==='Pendiente Sistema');
+  const bAmt=bm.reduce((a,b)=>a+Math.abs(b.mv),0);
+  const sAmt=sm.reduce((a,b)=>a+Math.abs(b.mv),0);
+  const cAmt=conc.reduce((a,b)=>a+b.amount,0);
+  const pAmt=[...pb,...ps].reduce((a,b)=>a+b.amount,0);
+  const pct=bm.length>0?Math.round(conc.length/bm.length*100):0;
+  document.getElementById('dBankN').textContent=bm.length.toLocaleString();
+  document.getElementById('dSysN').textContent=sm.length.toLocaleString();
+  document.getElementById('dConcN').textContent=conc.length.toLocaleString();
+  document.getElementById('dPendN').textContent=(pb.length+ps.length).toLocaleString();
+  document.getElementById('dPB').textContent=pb.length.toLocaleString();
+  document.getElementById('dPS').textContent=ps.length.toLocaleString();
+  document.getElementById('dBankA').textContent=fmtZ(bAmt);
+  document.getElementById('dSysA').textContent=fmtZ(sAmt);
+  document.getElementById('dConcA').textContent=fmtZ(cAmt);
+  document.getElementById('dPendA').textContent=fmtZ(pAmt);
+  document.getElementById('dDif').textContent=fmtZ(Math.abs(bAmt-sAmt));
+  document.getElementById('dashSub').textContent=bm.length+' mov. banco · '+sm.length+' mov. sistema · '+pct+'% conciliado';
+  // Ring
+  const circ=2*Math.PI*47;
+  document.getElementById('ringFill').style.strokeDashoffset=circ-(pct/100*circ);
+  document.getElementById('ringPct').textContent=pct+'%';
+}
+
+// ─── BADGE ───────────────────────────────────────────────────
+function badge(t){
+  const m={'Conciliado':'bs-c','Pendiente Banco':'bs-pb','Pendiente Sistema':'bs-ps','Diferencia':'bs-d'};
+  return `<span class="badge-s ${m[t]||'bs-d'}">${t}</span>`;
+}
+
+// ─── RECONCILIATION TABLE ────────────────────────────────────
+function renderRT(){
+  const data=S.filtered, tot=data.length;
+  const pages=Math.max(1,Math.ceil(tot/S.perPage));
+  const sl=data.slice((S.page-1)*S.perPage, S.page*S.perPage);
+  document.getElementById('showN').textContent=sl.length;
+  document.getElementById('totN').textContent=tot;
+  document.getElementById('curPg').textContent=S.page;
+  document.getElementById('totPg').textContent=pages;
+  const tb=document.getElementById('rBody');
+  if(!sl.length){ tb.innerHTML='<tr><td colspan="12"><div class="empty-s"><i class="bi bi-inbox"></i><h4>Sin resultados</h4><p>Ajusta los filtros</p></div></td></tr>'; }
+  else { tb.innerHTML=sl.map(r=>`<tr>
+    <td>${r.bDate||'—'}</td><td>${r.sDate||'—'}</td>
+    <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bRef}">${r.bRef||'—'}</td>
+    <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.sRef}">${r.sRef||'—'}</td>
+    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bDesc}">${r.bDesc||'—'}</td>
+    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.sDesc}">${r.sDesc||'—'}</td>
+    <td class="mono" style="color:var(--coral)">${r.bDeb>0?fmt(r.bDeb):''}</td>
+    <td class="mono" style="color:var(--emerald)">${r.bCrd>0?fmt(r.bCrd):''}</td>
+    <td class="mono" style="color:var(--coral)">${r.sDeb>0?fmt(r.sDeb):''}</td>
+    <td class="mono" style="color:var(--emerald)">${r.sCrd>0?fmt(r.sCrd):''}</td>
+    <td class="mono" style="font-weight:600">${fmt(r.amount,'0')}</td>
+    <td>${badge(r.type)}</td>
+  </tr>`).join(''); }
+  renderPag(pages);
+}
+
+function renderPag(pages){
+  const el=document.getElementById('pgBtns');
+  if(pages<=1){ el.innerHTML=''; return; }
+  let h='';
+  if(S.page>1) h+=`<button class="pag-btn" onclick="gp(${S.page-1})"><i class="bi bi-chevron-left"></i></button>`;
+  const st=Math.max(1,S.page-2), en=Math.min(pages,S.page+2);
+  if(st>1){ h+=`<button class="pag-btn" onclick="gp(1)">1</button>`; if(st>2) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; }
+  for(let i=st;i<=en;i++) h+=`<button class="pag-btn ${i===S.page?'on':''}" onclick="gp(${i})">${i}</button>`;
+  if(en<pages){ if(en<pages-1) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; h+=`<button class="pag-btn" onclick="gp(${pages})">${pages}</button>`; }
+  if(S.page<pages) h+=`<button class="pag-btn" onclick="gp(${S.page+1})"><i class="bi bi-chevron-right"></i></button>`;
+  el.innerHTML=h;
+}
+function gp(p){ S.page=p; renderRT(); }
+
+// ─── BANK / SYS TABLES ───────────────────────────────────────
+function renderBankT(){
+  if(!S.bankM.length) return;
+  document.getElementById('bHead').innerHTML='<tr><th>Fecha</th><th>Referencia</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Balance</th><th>Estado</th></tr>';
+  const matched=new Set(S.results.filter(r=>r.type==='Conciliado').map(r=>r.bi));
+  document.getElementById('bBody').innerHTML=S.bankM.map(b=>`<tr>
+    <td>${b.date||'—'}</td>
+    <td style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.ref||'—'}</td>
+    <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.desc||'—'}</td>
+    <td class="mono" style="color:var(--coral)">${b.debit>0?fmt(b.debit):''}</td>
+    <td class="mono" style="color:var(--emerald)">${b.credit>0?fmt(b.credit):''}</td>
+    <td class="mono">${b.balance!==0?fmt(b.balance):''}</td>
+    <td>${badge(matched.has(b._i)?'Conciliado':'Pendiente Banco')}</td>
+  </tr>`).join('');
+}
+
+function renderSysT(){
+  if(!S.sysM.length) return;
+  document.getElementById('sHead').innerHTML='<tr><th>Fecha</th><th>N° Documento</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Estado</th></tr>';
+  const matched=new Set(S.results.filter(r=>r.type==='Conciliado').map(r=>r.si));
+  document.getElementById('sBody').innerHTML=S.sysM.map(s=>`<tr>
+    <td>${s.date||'—'}</td>
+    <td style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.ref||'—'}</td>
+    <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.desc||'—'}</td>
+    <td class="mono" style="color:var(--coral)">${s.debit>0?fmt(s.debit):''}</td>
+    <td class="mono" style="color:var(--emerald)">${s.credit>0?fmt(s.credit):''}</td>
+    <td>${badge(matched.has(s._i)?'Conciliado':'Pendiente Sistema')}</td>
+  </tr>`).join('');
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────
+function applyFilters(){
+  const ref=document.getElementById('fRef').value.toLowerCase();
+  const stat=document.getElementById('fStat').value;
+  const amin=parseFloat(document.getElementById('fAmin').value)||0;
+  const amax=parseFloat(document.getElementById('fAmax').value)||Infinity;
+  S.filtered=S.results.filter(r=>{
+    if(ref && !((r.bRef||'').toLowerCase().includes(ref)||(r.sRef||'').toLowerCase().includes(ref)||
+                (r.bDesc||'').toLowerCase().includes(ref)||(r.sDesc||'').toLowerCase().includes(ref))) return false;
+    if(stat && r.type!==stat) return false;
+    if(r.amount<amin||r.amount>amax) return false;
+    return true;
+  });
+  S.page=1; renderRT();
+}
+function clearFilters(){
+  ['fRef','fD1','fD2','fAmin','fAmax'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fStat').value='';
+  S.filtered=[...S.results]; S.page=1; renderRT();
+}
+
+// ─── DIFFERENCE ANALYSIS ─────────────────────────────────────
+function runDiffAnalysis(){
+  if(!S.results.length){ alert('Primero concilia los archivos.'); nav('upload'); return; }
+  showSp('Buscando diferencias inteligentes...');
+  setTimeout(()=>{
+    const pb=S.results.filter(r=>r.type==='Pendiente Banco');
+    const ps=S.results.filter(r=>r.type==='Pendiente Sistema');
+    const diffs=[];
+    pb.forEach(r=>diffs.push({
+      cls:'dc-sb',tipo:'solo-banco',label:'Solo en Banco',amount:r.amount,
+      detail:`${r.bDate||'N/A'} · Ref: ${r.bRef||'N/A'} · ${r.bDesc||''}`,
+      sug:`El monto ${fmtZ(r.amount)} está registrado en el banco pero no en el sistema. Verificar si falta registrar la transacción internamente.`
+    }));
+    ps.forEach(r=>diffs.push({
+      cls:'dc-ss',tipo:'solo-sistema',label:'Solo en Sistema',amount:r.amount,
+      detail:`${r.sDate||'N/A'} · Doc: ${r.sRef||'N/A'} · ${r.sDesc||''}`,
+      sug:`El monto ${fmtZ(r.amount)} está en el sistema pero no aparece en el banco. Posible transacción pendiente de acreditar o diferencia de fecha.`
+    }));
+    // Duplicates in bank
+    const bAmts={};
+    S.bankM.forEach(b=>{ const k=Math.abs(b.mv).toFixed(2); bAmts[k]=(bAmts[k]||0)+1; });
+    Object.entries(bAmts).forEach(([a,n])=>{
+      if(n>1 && parseFloat(a)>0) diffs.push({
+        cls:'dc-dup',tipo:'duplicado',label:'Monto Duplicado en Banco',amount:parseFloat(a),
+        detail:`Aparece ${n} veces en el banco`,
+        sug:`El monto ${fmtZ(parseFloat(a))} aparece ${n} veces en el banco. Verificar si son transacciones distintas o un posible registro duplicado.`
+      });
+    });
+    // Duplicates in system
+    const sAmts={};
+    S.sysM.forEach(s=>{ const k=Math.abs(s.mv).toFixed(2); sAmts[k]=(sAmts[k]||0)+1; });
+    Object.entries(sAmts).forEach(([a,n])=>{
+      if(n>1 && parseFloat(a)>0) diffs.push({
+        cls:'dc-dup',tipo:'duplicado',label:'Monto Duplicado en Sistema',amount:parseFloat(a),
+        detail:`Aparece ${n} veces en el sistema`,
+        sug:`El monto ${fmtZ(parseFloat(a))} aparece ${n} veces en el sistema. Revisar si corresponde a transacciones distintas.`
+      });
+    });
+    // Date differences (same amount, different date in pending)
+    const pbDone=new Set();
+    pb.forEach(b=>{
+      if(pbDone.has(b.amount.toFixed(2))) return;
+      const sm=ps.find(s=>Math.abs(s.amount-b.amount)<0.005);
+      if(sm){ pbDone.add(b.amount.toFixed(2));
+        diffs.push({
+          cls:'dc-df',tipo:'diferencia-fecha',label:'Diferencia de Fecha (mismo monto)',amount:b.amount,
+          detail:`Banco: ${b.bDate||'N/A'} · Sistema: ${sm.sDate||'N/A'}`,
+          sug:`El monto ${fmtZ(b.amount)} existe en ambos con fechas distintas. Banco: ${b.bDate||'N/A'}, Sistema: ${sm.sDate||'N/A'}. Considera conciliar manualmente si corresponden a la misma operación.`
+        });
+      }
+    });
+    hideSp();
+    const n_sb=diffs.filter(d=>d.tipo==='solo-banco').length;
+    const n_ss=diffs.filter(d=>d.tipo==='solo-sistema').length;
+    const n_dup=diffs.filter(d=>d.tipo==='duplicado').length;
+    const n_df=diffs.filter(d=>d.tipo==='diferencia-fecha').length;
+    document.getElementById('dsB').textContent=n_sb;
+    document.getElementById('dsS').textContent=n_ss;
+    document.getElementById('dsD').textContent=n_dup;
+    document.getElementById('dsF').textContent=n_df;
+    document.getElementById('diffSum').style.cssText='display:flex!important;flex-wrap:wrap;gap:12px;';
+    document.getElementById('diffSum').className='row g-3 mb-3';
+    const out=document.getElementById('diffOut');
+    if(!diffs.length){ out.innerHTML='<div class="empty-s"><i class="bi bi-check-circle" style="color:var(--emerald)"></i><h4>¡Sin diferencias!</h4><p>Todos los movimientos fueron conciliados exitosamente.</p></div>'; return; }
+    out.innerHTML=`<div style="font-size:13.5px;font-weight:600;margin-bottom:12px">${diffs.length} diferencia${diffs.length!==1?'s':''} detectada${diffs.length!==1?'s':''}</div>`+
+      diffs.map(d=>`<div class="diff-card ${d.cls}">
+        <div class="dc-tipo"><i class="bi bi-${d.tipo==='solo-banco'?'bank':d.tipo==='solo-sistema'?'server':d.tipo==='duplicado'?'copy':'calendar-x'} me-1"></i>${d.label}</div>
+        <div class="dc-amount">${fmtZ(d.amount)}</div>
+        <div class="dc-detail">${d.detail}</div>
+        <div class="dc-sug"><i class="bi bi-lightbulb me-1" style="color:var(--blue)"></i>${d.sug}</div>
+      </div>`).join('');
+  },200);
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────
+function renderCharts(){
+  if(!S.results.length) return;
+  const dark=S.theme==='dark';
+  const txt=dark?'#7E94B8':'#64748B', grid=dark?'#1A2E55':'#E2E8F0';
+  Chart.defaults.color=txt; Chart.defaults.borderColor=grid;
+  Object.values(S.charts).forEach(c=>{ try{c.destroy()}catch(e){} }); S.charts={};
+  const conc=S.results.filter(r=>r.type==='Conciliado').length;
+  const pb=S.results.filter(r=>r.type==='Pendiente Banco').length;
+  const ps=S.results.filter(r=>r.type==='Pendiente Sistema').length;
+  const tot=conc+pb+ps;
+  // Donut
+  S.charts.donut=new Chart(document.getElementById('cDonut').getContext('2d'),{
+    type:'doughnut',
+    data:{ labels:['Conciliados','Pend. Banco','Pend. Sistema'],
+           datasets:[{ data:[conc,pb,ps], backgroundColor:['#10B981','#2563EB','#F59E0B'], borderWidth:0, borderRadius:4 }] },
+    options:{ responsive:true,maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${tot?Math.round(c.parsed/tot*100):0}%)`}} } }
+  });
+  // Bar
+  S.charts.bar=new Chart(document.getElementById('cBar').getContext('2d'),{
+    type:'bar',
+    data:{ labels:['Conciliados','Pend. Banco','Pend. Sistema'],
+           datasets:[{ data:[conc,pb,ps], backgroundColor:['rgba(16,185,129,.85)','rgba(37,99,235,.85)','rgba(245,158,11,.85)'], borderRadius:8, borderSkipped:false }] },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ y:{beginAtZero:true,ticks:{precision:0},grid:{color:grid}}, x:{grid:{display:false}} } }
+  });
+  // Amount buckets
+  const bkts={'0-1K':0,'1K-5K':0,'5K-25K':0,'25K-100K':0,'100K+':0};
+  S.results.forEach(r=>{
+    if(r.amount<1000) bkts['0-1K']++;
+    else if(r.amount<5000) bkts['1K-5K']++;
+    else if(r.amount<25000) bkts['5K-25K']++;
+    else if(r.amount<100000) bkts['25K-100K']++;
+    else bkts['100K+']++;
+  });
+  S.charts.amts=new Chart(document.getElementById('cAmts').getContext('2d'),{
+    type:'bar',
+    data:{ labels:Object.keys(bkts).map(k=>'RD$ '+k), datasets:[{ label:'Movimientos', data:Object.values(bkts), backgroundColor:'rgba(37,99,235,.75)', borderRadius:7, borderSkipped:false }] },
+    options:{ responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ y:{beginAtZero:true,ticks:{precision:0},grid:{color:grid}}, x:{grid:{display:false}} } }
+  });
+}
+
+// ─── EXPORTS ─────────────────────────────────────────────────
+function exportCSV(){
+  if(!S.filtered.length){ alert('No hay datos para exportar.'); return; }
+  const hd=['Fecha Banco','Fecha Sistema','Ref. Banco','Ref. Sistema','Desc. Banco','Desc. Sistema','Débito Banco','Crédito Banco','Débito Sistema','Crédito Sistema','Monto','Estado'];
+  const rows=S.filtered.map(r=>[r.bDate,r.sDate,r.bRef,r.sRef,r.bDesc,r.sDesc,r.bDeb||0,r.bCrd||0,r.sDeb||0,r.sCrd||0,r.amount,r.type]);
+  const csv=[hd,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlFile('\uFEFF'+csv,'conciliacion.csv','text/csv;charset=utf-8;');
+}
+
+function exportExcel(){
+  if(!S.filtered.length){ alert('No hay datos para exportar.'); return; }
+  const conc=S.results.filter(r=>r.type==='Conciliado');
+  const pb=S.results.filter(r=>r.type==='Pendiente Banco');
+  const ps=S.results.filter(r=>r.type==='Pendiente Sistema');
+  const pct=S.bankM.length>0?Math.round(conc.length/S.bankM.length*100):0;
+  const wsD=[
+    ['CONCILIADORA - Reporte de Conciliación'],
+    ['Generado: '+new Date().toLocaleString('es-DO')],
+    [],
+    ['Fecha Banco','Fecha Sistema','Ref. Banco','Ref. Sistema','Desc. Banco','Desc. Sistema','Débito Banco','Crédito Banco','Débito Sistema','Crédito Sistema','Monto','Estado'],
+    ...S.filtered.map(r=>[r.bDate,r.sDate,r.bRef,r.sRef,r.bDesc,r.sDesc,r.bDeb||0,r.bCrd||0,r.sDeb||0,r.sCrd||0,r.amount,r.type])
+  ];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(wsD);
+  ws['!cols']=[12,12,15,15,24,24,13,13,13,13,13,16].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Conciliación');
+  const ws2=XLSX.utils.aoa_to_sheet([
+    ['RESUMEN DE CONCILIACIÓN'],[''],
+    ['Concepto','Cantidad'],
+    ['Total Banco',S.bankM.length],['Total Sistema',S.sysM.length],
+    ['Conciliados',conc.length],['Pendiente Banco',pb.length],
+    ['Pendiente Sistema',ps.length],['% Conciliación',pct+'%']
+  ]);
+  ws2['!cols']=[{wch:22},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Resumen');
+  XLSX.writeFile(wb,'conciliacion_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportPDF(){
+  if(!S.filtered.length){ alert('No hay datos para exportar.'); return; }
+  try {
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    doc.setFillColor(11,20,55); doc.rect(0,0,297,18,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('CONCILIADORA',14,12);
+    doc.setFontSize(8.5); doc.setFont('helvetica','normal');
+    doc.text('Reporte de Conciliación · '+new Date().toLocaleString('es-DO'),90,12);
+    const conc=S.results.filter(r=>r.type==='Conciliado').length;
+    const pct=S.bankM.length>0?Math.round(conc/S.bankM.length*100):0;
+    doc.setTextColor(0,0,0); doc.setFontSize(8.5);
+    doc.text(`Banco: ${S.bankM.length} · Sistema: ${S.sysM.length} · Conciliados: ${conc} · % Conciliación: ${pct}%`,14,26);
+    doc.autoTable({
+      head:[['Fec. Banco','Fec. Sistema','Ref. Banco','Ref. Sistema','Deb. Banco','Crd. Banco','Deb. Sistema','Crd. Sistema','Monto','Estado']],
+      body:S.filtered.slice(0,500).map(r=>[
+        r.bDate||'',r.sDate||'',(r.bRef||'').substring(0,12),(r.sRef||'').substring(0,12),
+        r.bDeb>0?r.bDeb.toLocaleString('es-DO',{minimumFractionDigits:2}):'',
+        r.bCrd>0?r.bCrd.toLocaleString('es-DO',{minimumFractionDigits:2}):'',
+        r.sDeb>0?r.sDeb.toLocaleString('es-DO',{minimumFractionDigits:2}):'',
+        r.sCrd>0?r.sCrd.toLocaleString('es-DO',{minimumFractionDigits:2}):'',
+        r.amount.toLocaleString('es-DO',{minimumFractionDigits:2}),r.type
+      ]),
+      startY:30,styles:{fontSize:6.5,cellPadding:2},
+      headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[242,245,255]},
+      didParseCell:d=>{
+        if(d.section==='body'&&d.column.index===9){
+          const v=d.cell.raw;
+          if(v==='Conciliado') d.cell.styles.textColor=[16,185,129];
+          else if(v==='Pendiente Banco') d.cell.styles.textColor=[37,99,235];
+          else if(v==='Pendiente Sistema') d.cell.styles.textColor=[245,158,11];
+        }
+      },margin:{left:6,right:6}
+    });
+    const pc=doc.internal.getNumberOfPages();
+    for(let i=1;i<=pc;i++){
+      doc.setPage(i); doc.setFontSize(6.5); doc.setTextColor(150);
+      doc.text(`Pág. ${i} / ${pc} · CONCILIADORA · ${new Date().toLocaleString('es-DO')}`,14,207);
+    }
+    doc.save('conciliacion_'+new Date().toISOString().slice(0,10)+'.pdf');
+  } catch(e){ console.error(e); alert('Error generando PDF. Usa CSV o Excel.'); }
+}
+
+function dlFile(content,name,mime){
+  const b=new Blob([content],{type:mime}), u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
+}
+
+// ─── DRAG AND DROP ───────────────────────────────────────────
+function setupDnD(zoneId,type){
+  const z=document.getElementById(zoneId);
+  z.addEventListener('dragover',e=>{ e.preventDefault(); z.classList.add('drag'); });
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{
+    e.preventDefault(); z.classList.remove('drag');
+    const f=e.dataTransfer.files[0]; if(!f) return;
+    const inp=z.querySelector('input[type=file]');
+    try{ const dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files; }catch(e){}
+    handleUp(type,{files:[f]});
+  });
+}
+setupDnD('bzn','bank');
+setupDnD('szn','system');
+
+// ─── INIT ────────────────────────────────────────────────────
+nav('upload');
+</script>
+</body>
+</html>

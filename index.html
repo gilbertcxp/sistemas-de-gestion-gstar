@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestión y Reportes Gstar</title>
+
+<!-- ===== AUTENTICACIÓN: guard de acceso =====
+     Carga el módulo y exige sesión activa ANTES de pintar la plataforma.
+     Sin sesión -> redirige al login recordando el destino. -->
+<script src="auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+
+<!-- ===================================================================
+     SISTEMA DE GESTIÓN Y REPORTES G-STAR
+     Plataforma central (shell) que centraliza herramientas y reportes.
+
+     ARQUITECTURA
+     - SPA ligera: navegación por show/hide de "páginas" (.page).
+     - Cada módulo está aislado en su propia sección; las apps web
+       existentes se integran vía <iframe> para mantener su lógica y
+       funcionalidad 100% separadas de la plataforma.
+     - Para añadir/integrar una app: ver el objeto APPS más abajo.
+
+     FASE ACTUAL (1)
+     - Funcional: Módulo Banco -> Preconciliación (app integrada).
+     - Pendiente de adjuntar: Banco -> Dashboard de Erogaciones.
+     - Placeholders: Reportes de Erogaciones, Disponibilidad Bancaria,
+       Compensación, Cuentas por Cobrar, Cuentas por Pagar.
+     - Login / usuarios / roles: estructura preparada, NO implementado.
+==================================================================== -->
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root{
+  --bg-app:#EEF2FF;--bg-card:#FFFFFF;--bg-sidebar:#0B1437;
+  --text-primary:#0F172A;--text-secondary:#64748B;
+  --text-sidebar:#7E94B8;--border-color:#E2E8F0;
+  --blue:#2563EB;--blue-lt:#DBEAFE;
+  --emerald:#10B981;--emerald-lt:#D1FAE5;
+  --amber:#F59E0B;--amber-lt:#FEF3C7;
+  --coral:#EF4444;--coral-lt:#FEE2E2;
+  --purple:#8B5CF6;--purple-lt:#EDE9FE;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 10px 15px -3px rgba(0,0,0,.04);
+  --radius:12px;--sidebar:264px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0F1E3A;--bg-sidebar:#050B1A;
+  --text-primary:#E8F0FE;--text-secondary:#7E94B8;--border-color:#1A2E55;
+  --blue-lt:#1A2E5F;--emerald-lt:#0A3020;--amber-lt:#352500;
+  --coral-lt:#3A1010;--purple-lt:#251050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--text-primary);min-height:100vh;transition:background .3s,color .3s}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);background:var(--bg-sidebar);z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:11px}
+.logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#1E40AF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:800;flex-shrink:0;box-shadow:0 4px 12px rgba(37,99,235,.4)}
+.brand-name{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.4px;line-height:1.1}
+.brand-name span{color:#60A5FA}
+.brand-tag{font-size:9.5px;color:var(--text-sidebar);margin-top:2px;text-transform:uppercase;letter-spacing:.7px}
+.sidebar-nav{padding:12px 10px;flex:1;overflow-y:auto}
+.sidebar-nav::-webkit-scrollbar{width:5px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+.nav-group-label{font-size:10px;font-weight:700;color:#3A5080;text-transform:uppercase;letter-spacing:1px;padding:14px 8px 5px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;color:var(--text-sidebar);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(37,99,235,.2);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
+.nav-btn i.nav-ico{font-size:16px;width:18px;text-align:center;flex-shrink:0}
+.nav-btn .chev{margin-left:auto;font-size:12px;transition:transform .2s}
+.nav-btn.open .chev{transform:rotate(90deg)}
+.nav-badge{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;background:rgba(245,158,11,.2);color:#FBBF24;text-transform:uppercase;letter-spacing:.4px}
+/* Submenu */
+.submenu{max-height:0;overflow:hidden;transition:max-height .28s ease;margin-left:8px;border-left:1px solid rgba(255,255,255,.07);padding-left:6px}
+.submenu.open{max-height:340px}
+.sub-btn{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:var(--text-sidebar);font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin:1px 0}
+.sub-btn:hover{background:rgba(255,255,255,.05);color:#fff}
+.sub-btn.active{color:#fff;background:rgba(37,99,235,.16)}
+.sub-btn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.sub-btn.active .dot{opacity:1;background:var(--blue)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:10.5px;color:#2D4070;text-align:center}
+
+/* ===================== MAIN ===================== */
+.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column;transition:margin .3s}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border-color);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.topbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.topbar-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb{font-size:11.5px;color:var(--text-secondary);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:9px}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+.user-menu{position:relative}
+.user-chip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;border-radius:30px;border:1px solid var(--border-color);background:var(--bg-card);cursor:pointer;transition:all .15s}
+.user-chip:hover{border-color:var(--blue)}
+.user-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.user-av.lg{width:40px;height:40px;font-size:15px}
+.user-meta{line-height:1.15}
+.user-name{font-size:12.5px;font-weight:600;color:var(--text-primary)}
+.user-role{font-size:10px;color:var(--text-secondary)}
+.user-caret{font-size:11px;color:var(--text-secondary);transition:transform .2s}
+.user-menu.open .user-caret{transform:rotate(180deg)}
+/* Dropdown */
+.user-dropdown{position:absolute;top:calc(100% + 9px);right:0;width:248px;background:var(--bg-card);
+  border:1px solid var(--border-color);border-radius:14px;box-shadow:var(--shadow-md);padding:8px;z-index:120;
+  opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .18s,transform .18s,visibility .18s}
+.user-menu.open .user-dropdown{opacity:1;visibility:visible;transform:translateY(0)}
+.ud-head{display:flex;align-items:center;gap:11px;padding:10px 10px 12px}
+.ud-name{font-size:13.5px;font-weight:700;color:var(--text-primary)}
+.ud-role{font-size:11px;color:var(--blue);font-weight:600;margin-top:1px}
+.ud-sep{height:1px;background:var(--border-color);margin:4px 2px}
+.ud-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:none;
+  padding:10px 11px;border-radius:9px;font-size:13px;font-weight:500;color:var(--text-primary);cursor:pointer;
+  font-family:inherit;transition:background .14s,color .14s}
+.ud-item i{font-size:15px;width:18px;text-align:center;color:var(--text-secondary)}
+.ud-item:hover:not(:disabled){background:var(--blue-lt);color:var(--blue)}
+.ud-item:hover:not(:disabled) i{color:var(--blue)}
+.ud-item:disabled{opacity:.55;cursor:not-allowed}
+.ud-item.danger{color:var(--coral)}
+.ud-item.danger i{color:var(--coral)}
+.ud-item.danger:hover{background:var(--coral-lt);color:var(--coral)}
+.ud-item.danger:hover i{color:var(--coral)}
+.ud-soon{margin-left:auto;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  background:var(--amber-lt);color:#B45309;padding:2px 7px;border-radius:20px}
+.mobile-toggle{display:none;background:none;border:none;font-size:21px;color:var(--text-primary);cursor:pointer;padding:2px}
+
+/* ===================== PAGES ===================== */
+.page{display:none;flex:1;flex-direction:column}
+.page.active{display:flex}
+.page-pad{padding:24px}
+.sec-title{font-size:21px;font-weight:800;letter-spacing:-.4px}
+.sec-sub{font-size:13px;color:var(--text-secondary);margin-top:3px}
+
+/* Dashboard cards */
+.grid{display:grid;gap:16px}
+.stat-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:20px}
+.scard{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s}
+.scard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.scard.c-blue::before{background:var(--blue)}.scard.c-emerald::before{background:var(--emerald)}
+.scard.c-amber::before{background:var(--amber)}.scard.c-purple::before{background:var(--purple)}
+.scard-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+.scard.c-blue .scard-icon{background:var(--blue-lt);color:var(--blue)}
+.scard.c-emerald .scard-icon{background:var(--emerald-lt);color:var(--emerald)}
+.scard.c-amber .scard-icon{background:var(--amber-lt);color:var(--amber)}
+.scard.c-purple .scard-icon{background:var(--purple-lt);color:var(--purple)}
+.scard-val{font-size:24px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-.5px}
+.scard-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+/* Module quick-access cards */
+.mod-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:24px}
+.mod-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:6px;text-align:left}
+.mod-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--blue)}
+.mod-card .mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mc-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--blue-lt);color:var(--blue)}
+.mc-icon.g{background:var(--emerald-lt);color:var(--emerald)}
+.mc-icon.a{background:var(--amber-lt);color:var(--amber)}
+.mc-icon.p{background:var(--purple-lt);color:var(--purple)}
+.mc-title{font-size:15.5px;font-weight:700}
+.mc-desc{font-size:12.5px;color:var(--text-secondary);line-height:1.45}
+.mc-status{margin-top:10px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;width:fit-content}
+.mc-status.ok{background:var(--emerald-lt);color:var(--emerald)}
+.mc-status.soon{background:var(--amber-lt);color:#B45309}
+.mc-status.dev{background:var(--blue-lt);color:var(--blue)}
+
+/* Section heading row */
+.head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* ===================== IFRAME EMBED ===================== */
+.embed-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
+.embed-frame{flex:1;width:100%;border:none;background:var(--bg-card);min-height:calc(100vh - 53px)}
+
+/* ===================== PLACEHOLDER / EMPTY STATES ===================== */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;min-height:calc(100vh - 200px)}
+.empty-card{max-width:480px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:18px;box-shadow:var(--shadow-md);padding:42px 36px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty-ico{width:78px;height:78px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:8px;background:var(--blue-lt);color:var(--blue)}
+.empty-ico.amber{background:var(--amber-lt);color:var(--amber)}
+.empty-ico.purple{background:var(--purple-lt);color:var(--purple)}
+.empty-ico.emerald{background:var(--emerald-lt);color:var(--emerald)}
+.empty-title{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.empty-msg{font-size:13.5px;color:var(--text-secondary);line-height:1.6;margin-top:4px}
+.empty-sign{margin-top:14px;font-size:12px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:30px;background:var(--bg-app);border:1px solid var(--border-color)}
+.empty-sign b{color:var(--blue)}
+
+/* overlay */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90}
+.overlay.show{display:block}
+
+/* ===================== RESPONSIVE ===================== */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0);box-shadow:0 0 40px rgba(0,0,0,.4)}
+  .main-content{margin-left:0}
+  .mobile-toggle{display:block}
+  .user-meta{display:none}
+}
+@media(max-width:560px){
+  .page-pad{padding:16px}
+  .topbar{padding:10px 14px}
+  .empty-card{padding:32px 22px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">G</div>
+    <div>
+      <div class="brand-name">G<span>Star</span></div>
+      <div class="brand-tag">Gestión &amp; Reportes</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-btn active" data-page="home">
+      <i class="bi bi-grid-1x2-fill nav-ico"></i> Dashboard
+    </button>
+
+    <div class="nav-group-label">Operación Financiera</div>
+
+    <!-- BANCO (con submenú) -->
+    <button class="nav-btn open" id="bancoToggle" onclick="toggleSub('banco')">
+      <i class="bi bi-bank2 nav-ico"></i> Banco
+      <i class="bi bi-chevron-right chev"></i>
+    </button>
+    <div class="submenu open" id="sub-banco">
+      <button class="sub-btn" data-page="erogaciones"><span class="dot"></span> Dashboard de Erogaciones</button>
+      <button class="sub-btn" data-page="reportes-erog"><span class="dot"></span> Reportes de Erogaciones</button>
+      <button class="sub-btn" data-page="preconciliacion"><span class="dot"></span> Preconciliación</button>
+      <button class="sub-btn" data-page="disponibilidad"><span class="dot"></span> Disponibilidad Bancaria</button>
+    </div>
+
+    <button class="nav-btn" data-page="compensacion">
+      <i class="bi bi-arrow-left-right nav-ico"></i> Compensación
+    </button>
+    <button class="nav-btn" data-page="cxc">
+      <i class="bi bi-cash-coin nav-ico"></i> Cuentas por Cobrar
+    </button>
+    <!-- CUENTAS POR PAGAR (con submenú) -->
+    <button class="nav-btn" id="cxpToggle" onclick="toggleSub('cxp')">
+      <i class="bi bi-receipt nav-ico"></i> Cuentas por Pagar
+      <i class="bi bi-chevron-right chev"></i>
+    </button>
+    <div class="submenu" id="sub-cxp">
+      <button class="sub-btn" data-page="cxp-antiguedad"><span class="dot"></span> Antigüedad de Saldo</button>
+      <button class="sub-btn" data-page="cxp-reporte"><span class="dot"></span> Reporte de CXP</button>
+      <button class="sub-btn" data-page="cxp-carta"><span class="dot"></span> Carta de Retención</button>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    © <span id="year"></span> Gstar Services · v1.0
+  </div>
+</aside>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- ============ MAIN ============ -->
+<div class="main-content">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="mobile-toggle" onclick="openSidebar()"><i class="bi bi-list"></i></button>
+      <div>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="crumb" id="crumb">Inicio</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="toggleTheme()" title="Cambiar tema"><i class="bi bi-moon-stars" id="themeIco"></i></button>
+      <!-- USER MENU: refleja la sesión activa (auth.js) y permite cerrar sesión. -->
+      <div class="user-menu" id="userMenu">
+        <button class="user-chip" onclick="toggleUserMenu(event)" title="Cuenta">
+          <div class="user-av" id="userAv">GS</div>
+          <div class="user-meta">
+            <div class="user-name" id="userName">Invitado</div>
+            <div class="user-role" id="userRole">Sin sesión</div>
+          </div>
+          <i class="bi bi-chevron-down user-caret"></i>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="ud-head">
+            <div class="user-av lg" id="userAvLg">GS</div>
+            <div>
+              <div class="ud-name" id="udName">Invitado</div>
+              <div class="ud-role" id="udRole">Sin sesión</div>
+            </div>
+          </div>
+          <div class="ud-sep"></div>
+          <button class="ud-item" disabled><i class="bi bi-person-gear"></i> Mi perfil <span class="ud-soon">Pronto</span></button>
+          <button class="ud-item" disabled><i class="bi bi-shield-lock"></i> Seguridad <span class="ud-soon">Pronto</span></button>
+          <div class="ud-sep"></div>
+          <button class="ud-item danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======= PÁGINA: DASHBOARD ======= -->
+  <section class="page active" id="page-home">
+    <div class="page-pad">
+      <div class="head-row">
+        <div>
+          <div class="sec-title">Bienvenido a Gstar</div>
+          <div class="sec-sub">Sistema de Gestión y Reportes · Centraliza tus herramientas operativas en un solo lugar.</div>
+        </div>
+      </div>
+
+      <div class="grid stat-grid">
+        <div class="scard c-blue"><div class="scard-icon"><i class="bi bi-bank2"></i></div><div class="scard-val">4</div><div class="scard-label">Módulos del sistema</div></div>
+        <div class="scard c-emerald"><div class="scard-icon"><i class="bi bi-check2-circle"></i></div><div class="scard-val">1</div><div class="scard-label">Herramientas activas</div></div>
+        <div class="scard c-amber"><div class="scard-icon"><i class="bi bi-hourglass-split"></i></div><div class="scard-val">5</div><div class="scard-label">En desarrollo</div></div>
+        <div class="scard c-purple"><div class="scard-icon"><i class="bi bi-diagram-3"></i></div><div class="scard-val">Fase 1</div><div class="scard-label">Etapa actual</div></div>
+      </div>
+
+      <div class="head-row" style="margin-top:30px">
+        <div><div class="sec-title" style="font-size:17px">Accesos rápidos</div><div class="sec-sub">Selecciona un módulo para comenzar.</div></div>
+      </div>
+
+      <div class="grid mod-grid">
+        <button class="mod-card" data-page="preconciliacion">
+          <div class="mc-top"><div class="mc-icon g"><i class="bi bi-bank2"></i></div></div>
+          <div class="mc-title">Banco · Preconciliación</div>
+          <div class="mc-desc">Conciliación bancaria automatizada. Herramienta integrada y operativa.</div>
+          <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
+        </button>
+        <button class="mod-card" data-page="erogaciones">
+          <div class="mc-top"><div class="mc-icon"><i class="bi bi-graph-up-arrow"></i></div></div>
+          <div class="mc-title">Banco · Dashboard de Erogaciones</div>
+          <div class="mc-desc">Panel de control de erogaciones. Listo para integrar la aplicación.</div>
+          <span class="mc-status dev"><i class="bi bi-circle-fill" style="font-size:7px"></i> Por integrar</span>
+        </button>
+        <button class="mod-card" data-page="compensacion">
+          <div class="mc-top"><div class="mc-icon a"><i class="bi bi-arrow-left-right"></i></div></div>
+          <div class="mc-title">Compensación</div>
+          <div class="mc-desc">Módulo de compensación de facturas. Próximamente disponible.</div>
+          <span class="mc-status soon"><i class="bi bi-circle-fill" style="font-size:7px"></i> Próximamente</span>
+        </button>
+        <button class="mod-card" data-page="cxc">
+          <div class="mc-top"><div class="mc-icon p"><i class="bi bi-cash-coin"></i></div></div>
+          <div class="mc-title">Cuentas por Cobrar</div>
+          <div class="mc-desc">Gestión y seguimiento de cobranza. Próximamente disponible.</div>
+          <span class="mc-status soon"><i class="bi bi-circle-fill" style="font-size:7px"></i> Próximamente</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= BANCO · DASHBOARD DE EROGACIONES (por integrar) ======= -->
+  <section class="page" id="page-erogaciones">
+    <!-- Cuando adjuntes la app, define su ruta en APPS.erogaciones (ver JS).
+         El iframe se rellenará automáticamente y se mostrará el panel real. -->
+    <div class="embed-wrap" id="embed-erogaciones"></div>
+    <div class="empty-state" id="empty-erogaciones">
+      <div class="empty-card">
+        <div class="empty-ico"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="empty-title">Dashboard de Erogaciones</div>
+        <div class="empty-msg">Este apartado está reservado para integrar la aplicación de <b>Dashboard de Erogaciones</b>. En cuanto adjuntes el archivo, se cargará aquí manteniendo toda su funcionalidad.</div>
+        <div class="empty-sign"><i class="bi bi-paperclip"></i> Esperando archivo de la aplicación</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= BANCO · REPORTES DE EROGACIONES (reservado) ======= -->
+  <section class="page" id="page-reportes-erog">
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="empty-ico purple"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div class="empty-title">Reportes de Erogaciones</div>
+        <div class="empty-msg">Espacio reservado para futuros desarrollos. Aquí se construirán los reportes de erogaciones del módulo Banco.</div>
+        <div class="empty-sign"><i class="bi bi-bookmark-star"></i> Espacio reservado</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= BANCO · PRECONCILIACIÓN (app integrada) ======= -->
+  <section class="page" id="page-preconciliacion">
+    <div class="embed-wrap">
+      <!-- App externa cargada en iframe (lógica 100% aislada). Lazy-load via data-src. -->
+      <iframe class="embed-frame" id="frame-preconciliacion"
+              data-src="CONCILIAR/conciliadorav2.0.html"
+              title="Preconciliación – Conciliación Bancaria"></iframe>
+    </div>
+  </section>
+
+  <!-- ======= BANCO · DISPONIBILIDAD BANCARIA (reporte integrado) ======= -->
+  <section class="page" id="page-disponibilidad">
+    <div class="embed-wrap">
+      <!-- Reporte ejecutivo de tesorería (lógica 100% aislada). Lazy-load via data-src. -->
+      <iframe class="embed-frame" id="frame-disponibilidad"
+              data-src="DISPONIBILIDAD/disponibilidad-bancaria.html"
+              title="Disponibilidad Bancaria – Reporte de Tesorería"></iframe>
+    </div>
+  </section>
+
+  <!-- ======= COMPENSACIÓN (placeholder) ======= -->
+  <section class="page" id="page-compensacion">
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="empty-ico"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="empty-title">Compensación</div>
+        <div class="empty-msg">Este campo está siendo trabajado por tu programador <b>Gilbert</b>. Próximamente estará disponible.</div>
+        <div class="empty-sign"><i class="bi bi-person-gear"></i> Trabajado por <b>Gilbert</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= CUENTAS POR COBRAR (placeholder) ======= -->
+  <section class="page" id="page-cxc">
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="empty-ico emerald"><i class="bi bi-cash-coin"></i></div>
+        <div class="empty-title">Cuentas por Cobrar</div>
+        <div class="empty-msg">Este campo está siendo trabajado por tu programador <b>Gilbert</b>. Próximamente estará disponible.</div>
+        <div class="empty-sign"><i class="bi bi-person-gear"></i> Trabajado por <b>Gilbert</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= CXP · ANTIGÜEDAD DE SALDO (en desarrollo) ======= -->
+  <section class="page" id="page-cxp-antiguedad">
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="empty-ico amber"><i class="bi bi-clock-history"></i></div>
+        <div class="empty-title">Antigüedad de Saldo</div>
+        <div class="empty-msg">Este módulo se encuentra en desarrollo y estará disponible próximamente.</div>
+        <div class="empty-sign"><i class="bi bi-hourglass-split"></i> En desarrollo</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= CXP · REPORTE DE CXP (en desarrollo) ======= -->
+  <section class="page" id="page-cxp-reporte">
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="empty-ico purple"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div class="empty-title">Reporte de Cuentas por Pagar</div>
+        <div class="empty-msg">Este módulo se encuentra en desarrollo y estará disponible próximamente.</div>
+        <div class="empty-sign"><i class="bi bi-hourglass-split"></i> En desarrollo</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= CXP · CARTA DE RETENCIÓN (app integrada) ======= -->
+  <section class="page" id="page-cxp-carta">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-cxp-carta"
+              data-src="CXP/carta-retencion.html"
+              title="Carta de Retención a Proveedores"></iframe>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===================================================================
+   CONFIGURACIÓN DE APPS INTEGRABLES
+   Para integrar una app existente: pon su ruta (relativa a este
+   archivo) en la clave correspondiente. El iframe se rellena solo.
+   Deja la ruta en null para mostrar el placeholder "por integrar".
+==================================================================== */
+const APPS = {
+  preconciliacion : "CONCILIAR/conciliadorav2.0.html",          // ✅ integrada
+  erogaciones     : "EROGACIONES/dashboard-erogaciones.html"    // ✅ integrada
+};
+
+/* ===================================================================
+   METADATA DE PÁGINAS (título + ruta de navegación / breadcrumb)
+==================================================================== */
+const PAGES = {
+  'home':            {title:'Dashboard',                 crumb:'Inicio',                          sub:false},
+  'erogaciones':     {title:'Dashboard de Erogaciones',  crumb:'Banco › Dashboard de Erogaciones',sub:'banco'},
+  'reportes-erog':   {title:'Reportes de Erogaciones',   crumb:'Banco › Reportes de Erogaciones', sub:'banco'},
+  'preconciliacion': {title:'Preconciliación',           crumb:'Banco › Preconciliación',         sub:'banco'},
+  'disponibilidad':  {title:'Disponibilidad Bancaria',   crumb:'Banco › Disponibilidad Bancaria', sub:'banco'},
+  'compensacion':    {title:'Compensación',              crumb:'Compensación',                    sub:false},
+  'cxc':             {title:'Cuentas por Cobrar',        crumb:'Cuentas por Cobrar',              sub:false},
+  'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
+  'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
+  'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'}
+};
+
+/* ===================== NAVEGACIÓN ===================== */
+function navigate(page){
+  const meta = PAGES[page] || PAGES['home'];
+
+  // Páginas
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const target = document.getElementById('page-'+page);
+  if(target) target.classList.add('active');
+
+  // Estado activo en el menú
+  document.querySelectorAll('.nav-btn, .sub-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-page="'+page+'"]').forEach(b=>{
+    if(b.classList.contains('nav-btn')||b.classList.contains('sub-btn')) b.classList.add('active');
+  });
+  // Si la página vive dentro de un submenú, lo abrimos
+  if(meta.sub){ openSub(meta.sub); }
+
+  // Topbar
+  document.getElementById('pageTitle').textContent = meta.title;
+  document.getElementById('crumb').textContent = meta.crumb;
+
+  // Carga diferida de iframes (solo la primera vez)
+  lazyLoadFrame(page);
+
+  // Cerrar sidebar en móvil
+  closeSidebar();
+  window.scrollTo(0,0);
+}
+
+/* Lazy-load de iframes + gestión del placeholder de Erogaciones */
+function lazyLoadFrame(page){
+  // Preconciliación
+  if(page==='preconciliacion'){
+    const f=document.getElementById('frame-preconciliacion');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Disponibilidad Bancaria
+  if(page==='disponibilidad'){
+    const f=document.getElementById('frame-disponibilidad');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // CXP · Carta de Retención
+  if(page==='cxp-carta'){
+    const f=document.getElementById('frame-cxp-carta');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Erogaciones (pendiente de adjuntar)
+  if(page==='erogaciones'){
+    const wrap=document.getElementById('embed-erogaciones');
+    const empty=document.getElementById('empty-erogaciones');
+    if(APPS.erogaciones){
+      if(!wrap.querySelector('iframe')){
+        const f=document.createElement('iframe');
+        f.className='embed-frame'; f.title='Dashboard de Erogaciones'; f.src=APPS.erogaciones;
+        wrap.appendChild(f);
+      }
+      wrap.style.display='flex'; empty.style.display='none';
+    }else{
+      wrap.style.display='none'; empty.style.display='flex';
+    }
+  }
+}
+
+/* ===================== SUBMENÚ ===================== */
+function toggleSub(id){
+  const sub=document.getElementById('sub-'+id);
+  const btn=document.getElementById(id+'Toggle');
+  sub.classList.toggle('open'); btn.classList.toggle('open');
+}
+function openSub(id){
+  document.getElementById('sub-'+id)?.classList.add('open');
+  document.getElementById(id+'Toggle')?.classList.add('open');
+}
+
+/* ===================== SIDEBAR MÓVIL ===================== */
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+
+/* ===================== TEMA CLARO/OSCURO ===================== */
+function toggleTheme(){
+  const html=document.documentElement;
+  const dark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', dark?'light':'dark');
+  document.getElementById('themeIco').className = dark?'bi bi-moon-stars':'bi bi-sun';
+  try{ localStorage.setItem('gstar-theme', dark?'light':'dark'); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const t=localStorage.getItem('gstar-theme');
+    if(t){ document.documentElement.setAttribute('data-theme',t);
+      document.getElementById('themeIco').className = t==='dark'?'bi bi-sun':'bi bi-moon-stars'; }
+  }catch(e){}
+})();
+
+/* ===================================================================
+   SESIÓN / USUARIO  (consume auth/auth.js — lógica de auth aislada)
+   - Pinta el usuario y rol de la sesión activa en el menú superior.
+   - El control de acceso (guard) ya se ejecutó en el <head>.
+   - Preparado para roles/permisos: usar Auth.hasPermission('x:y') para
+     mostrar/ocultar módulos cuando se agreguen más perfiles.
+==================================================================== */
+function initials(name){
+  return String(name||'GS').trim().split(/\s+/).slice(0,2).map(function(w){return w[0];}).join('').toUpperCase() || 'GS';
+}
+(function renderSession(){
+  var u = window.Auth ? Auth.getUser() : null;
+  if(!u) return;
+  var role = (u.role && u.role.label) || 'Usuario';
+  var ini  = initials(u.name || u.username);
+  document.getElementById('userName').textContent = u.name || u.username;
+  document.getElementById('userRole').textContent = role;
+  document.getElementById('udName').textContent   = u.name || u.username;
+  document.getElementById('udRole').textContent   = role;
+  document.getElementById('userAv').textContent   = ini;
+  document.getElementById('userAvLg').textContent = ini;
+})();
+
+/* Menú de usuario (abrir/cerrar) */
+function toggleUserMenu(e){
+  if(e) e.stopPropagation();
+  document.getElementById('userMenu').classList.toggle('open');
+}
+document.addEventListener('click', function(e){
+  var m = document.getElementById('userMenu');
+  if(m && !m.contains(e.target)) m.classList.remove('open');
+});
+
+/* Cerrar sesión: limpia autenticación y vuelve al login */
+function logout(){
+  if(window.Auth) Auth.logout();
+  else location.href = 'login.html';
+}
+
+/* ===================================================================
+   ESCALABILIDAD AUTH (referencia)
+   - Nuevos usuarios/roles: ver catálogos ROLES y proveedor en auth/auth.js
+   - Backend real: Auth.useProvider(ApiUserProvider) sin tocar esta capa.
+   - Acceso por módulo (futuro): envolver navigate() con Auth.hasPermission().
+==================================================================== */
+
+/* ===================== INIT / EVENTOS =====================
+   La navegación se sincroniza con el hash de la URL para que el
+   estado sobreviva a recargas y permita enlaces directos
+   (ej. .../index.html#preconciliacion). El click cambia el hash y
+   el evento 'hashchange' dispara navigate(). */
+document.getElementById('year').textContent = new Date().getFullYear();
+document.querySelectorAll('[data-page]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const p = el.getAttribute('data-page');
+    if(('#'+p) === location.hash){ navigate(p); }   // misma página: navegar directo
+    else { location.hash = p; }                       // distinta: hashchange dispara navigate
+  });
+});
+function routeFromHash(){
+  const p = (location.hash||'').replace('#','');
+  navigate(PAGES[p] ? p : 'home');
+}
+window.addEventListener('hashchange', routeFromHash);
+routeFromHash(); // estado inicial (respeta deep-link)
+</script>
+</body>
+</html>

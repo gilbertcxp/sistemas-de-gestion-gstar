@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Prestaciones Laborales y Derechos Adquiridos · RD</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:    #002A5E;
+      --blue-mid:#003F8A;
+      --red:     #C01020;
+      --gold:    #B8860B;
+      --gold-lt: #E8C547;
+      --cream:   #F6F4F0;
+      --ink:     #0F172A;
+      --muted:   #64748B;
+      --border:  #CBD5E1;
+      --card:    #FFFFFF;
+      --success: #166534;
+      --success-lt: #DCFCE7;
+      --shadow:  0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,42,94,.07);
+      --shadow-lg: 0 2px 8px rgba(0,0,0,.06), 0 12px 40px rgba(0,42,94,.10);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #001E45 0%, #002A5E 60%, #003F8A 100%);
+      color: #fff;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .header-stripe {
+      display: flex;
+      height: 5px;
+    }
+    .stripe-blue  { background: var(--blue-mid); flex: 1; }
+    .stripe-red   { background: var(--red);  flex: 1; }
+    .stripe-gold  { background: var(--gold-lt); flex: 1; }
+
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 28px 32px;
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+    }
+    .header-left { flex: 1; }
+    .header-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3.5px;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-badge::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--gold-lt);
+      opacity: .6;
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    header h1 span { color: var(--gold-lt); }
+    .header-sub {
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 300;
+      letter-spacing: 0.2px;
+      line-height: 1.5;
+    }
+    .legal-refs {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ref-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.75);
+      padding: 3px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.3px;
+    }
+    .header-logo-block {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .header-logo-block .logo-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+    .header-logo-block .logo-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 680px) { main { grid-template-columns: 1fr; } }
+
+    .form-col { display: flex; flex-direction: column; gap: 20px; }
+    .result-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      background: var(--blue);
+      color: #fff;
+      padding: 13px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    .card-header.red   { background: var(--red); }
+    .card-header.gold  { background: #7B6000; }
+    .card-header.green { background: var(--success); }
+    .card-header.dark  { background: #1E293B; }
+    .card-icon {
+      font-size: 16px;
+      width: 26px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+      letter-spacing: 0.2px;
+    }
+    .card-art {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+    }
+    .card-body { padding: 20px; }
+
+    /* ── SECTION SEPARATOR INSIDE CARD ── */
+    .card-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 18px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-section-label:first-child { margin-top: 0; }
+
+    /* ── FORM ELEMENTS ── */
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    input, select {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 13.5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--ink);
+      background: #FAFAFA;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,42,94,0.08);
+      background: #fff;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── RADIO GROUP ── */
+    .radio-group { display: flex; flex-direction: column; gap: 8px; }
+    .radio-opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .radio-opt:hover { border-color: var(--blue); }
+    .radio-opt.active { border-color: var(--blue); background: #EFF4FB; }
+    .radio-opt input[type=radio] { margin-top: 2px; accent-color: var(--blue); }
+    .radio-label { font-size: 13px; font-weight: 500; }
+    .radio-sub   { font-size: 11px; color: var(--muted); }
+
+    /* ── CALCULATE BUTTON ── */
+    .btn-calc {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 28px;
+      font-size: 14px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      transition: background .2s, transform .1s, box-shadow .2s;
+      box-shadow: 0 4px 14px rgba(192,16,32,0.3);
+    }
+    .btn-calc:hover   { background: #A50E1B; box-shadow: 0 6px 20px rgba(192,16,32,0.4); }
+    .btn-calc:active  { transform: scale(.98); }
+
+    /* ── RESULTS ── */
+    .result-empty {
+      padding: 44px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .result-empty .icon { font-size: 44px; margin-bottom: 12px; opacity: .7; }
+    .result-empty p { font-size: 13px; line-height: 1.7; }
+
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 11px 0;
+      border-bottom: 1px solid #F1F5F9;
+      gap: 12px;
+    }
+    .line-item:last-child { border-bottom: none; }
+    .li-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      flex: 1;
+      line-height: 1.4;
+    }
+    .li-sub {
+      font-size: 10.5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      margin-top: 2px;
+    }
+    .li-amount {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue);
+      white-space: nowrap;
+    }
+    .li-zero { color: #CBD5E1; }
+
+    .total-box {
+      background: linear-gradient(135deg, #001E45, #002A5E);
+      color: #fff;
+      border-radius: 12px;
+      padding: 24px 22px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .total-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .total-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--gold-lt);
+      letter-spacing: -1px;
+    }
+    .total-note {
+      margin-top: 6px;
+      font-size: 10.5px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .info-box {
+      background: #FFFBEB;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: #78350F;
+      line-height: 1.65;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; font-size: 12.5px; }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .disclaimer {
+      max-width: 960px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.8;
+      text-align: center;
+    }
+    .disclaimer a { color: var(--blue); }
+
+    /* ── PRINT BUTTON ── */
+    .btn-print {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 22px;
+      font-size: 13px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      transition: background .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 4px;
+      box-shadow: 0 4px 12px rgba(0,42,94,0.25);
+    }
+    .btn-print:hover  { background: #001E45; }
+    .btn-print:active { transform: scale(.98); }
+
+    /* ══════════════════════════════════
+       PRINT / PDF STYLES
+    ══════════════════════════════════ */
+    @media print {
+      @page {
+        size: A4;
+        margin: 16mm 20mm 20mm 20mm;
+      }
+
+      /* Hide everything except the print document */
+      body > *                { display: none !important; }
+      #printDoc               { display: block !important; }
+
+      #printDoc {
+        font-family: 'IBM Plex Sans', Arial, sans-serif;
+        color: #0F172A;
+        background: #fff;
+        font-size: 10pt;
+        line-height: 1.55;
+      }
+
+      /* ─ Header ─ */
+      .pd-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        margin-bottom: 16px;
+        position: relative;
+      }
+      .pd-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #002A5E 0%, #C01020 50%, #B8860B 100%);
+        border-radius: 99px;
+      }
+      .pd-flag-bar {
+        display: flex;
+        height: 5px;
+        width: 100px;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .pd-flag-bar span { flex: 1; }
+      .pd-flag-bar .b  { background: #002A5E; }
+      .pd-flag-bar .r  { background: #C01020; }
+      .pd-flag-bar .g  { background: #B8860B; }
+
+      .pd-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 19pt;
+        font-weight: 900;
+        color: #002A5E;
+        line-height: 1.1;
+        margin-bottom: 3px;
+        letter-spacing: -0.5px;
+      }
+      .pd-subtitle {
+        font-size: 8pt;
+        color: #64748B;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+      .pd-logo-area {
+        text-align: right;
+        font-size: 8pt;
+        color: #64748B;
+        line-height: 1.6;
+      }
+      .pd-logo-area strong { color: #002A5E; display: block; font-size: 10pt; font-weight: 700; margin-bottom: 2px; }
+
+      /* ─ Data summary grid ─ */
+      .pd-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        border: 1.5px solid #CBD5E1;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 18px;
+      }
+      .pd-sum-item {
+        padding: 9px 13px;
+        border-right: 1px solid #CBD5E1;
+        border-bottom: 1px solid #CBD5E1;
+        background: #fff;
+      }
+      .pd-sum-item:nth-child(3n) { border-right: none; }
+      .pd-sum-item:nth-child(n+4):nth-last-child(-n+3) { border-bottom: none; }
+      .pd-sum-item:last-child { border-bottom: none; border-right: none; }
+      .pd-sum-item label {
+        display: block;
+        font-size: 7pt;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+        font-weight: 600;
+      }
+      .pd-sum-item span {
+        font-size: 10pt;
+        font-weight: 700;
+        color: #0F172A;
+      }
+
+      /* ─ Section heading ─ */
+      .pd-section-title {
+        font-size: 7.5pt;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #64748B;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pd-section-title::before {
+        content: '';
+        display: block;
+        width: 16px;
+        height: 2px;
+        background: #002A5E;
+        border-radius: 99px;
+        flex-shrink: 0;
+      }
+      .pd-section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #E2E8F0;
+      }
+
+      /* ─ Line items table ─ */
+      .pd-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 14px;
+      }
+      .pd-table th {
+        background: #002A5E;
+        color: #fff;
+        font-size: 7.5pt;
+        font-weight: 700;
+        padding: 8px 11px;
+        text-align: left;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .pd-table th:last-child { text-align: right; }
+      .pd-table td {
+        padding: 8px 11px;
+        font-size: 9.5pt;
+        border-bottom: 1px solid #F1F5F9;
+        vertical-align: top;
+      }
+      .pd-table td:last-child {
+        text-align: right;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 700;
+        color: #002A5E;
+        white-space: nowrap;
+      }
+      .pd-table tr:nth-child(even) td { background: #F8FAFC; }
+      .pd-table .zero-row td { color: #CBD5E1; }
+      .pd-table .zero-row td:last-child { color: #CBD5E1; }
+      .pd-art {
+        display: block;
+        font-size: 7pt;
+        color: #94A3B8;
+        font-family: 'IBM Plex Mono', monospace;
+        margin-top: 2px;
+      }
+
+      /* ─ Total box ─ */
+      .pd-total {
+        background: #002A5E;
+        color: #fff;
+        border-radius: 8px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      .pd-total-label {
+        font-size: 8.5pt;
+        color: rgba(255,255,255,0.65);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .pd-total-amount {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 22pt;
+        font-weight: 900;
+        color: #E8C547;
+        letter-spacing: -0.5px;
+      }
+
+      /* ─ Plazos & notas ─ */
+      .pd-plazos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .pd-plazo-item {
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        padding: 8px 11px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9pt;
+        background: #F8FAFC;
+      }
+      .pd-plazo-item .plab { color: #374151; }
+      .pd-plazo-item .pval { font-weight: 700; color: #002A5E; font-family: monospace; }
+
+      .pd-nota {
+        background: #FFFBEB;
+        border: 1px solid #FCD34D;
+        border-radius: 6px;
+        padding: 11px 13px;
+        font-size: 8pt;
+        color: #78350F;
+        line-height: 1.65;
+        margin-bottom: 16px;
+      }
+      .pd-nota strong { display: block; margin-bottom: 3px; font-size: 8.5pt; font-weight: 700; }
+
+      /* ─ Firma section ─ */
+      .pd-firmas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-top: 32px;
+        margin-bottom: 12px;
+      }
+      .pd-firma-box {
+        border-top: 2px solid #374151;
+        padding-top: 7px;
+        font-size: 8.5pt;
+        color: #64748B;
+        text-align: center;
+      }
+      .pd-firma-box strong { display: block; color: #0F172A; font-size: 9pt; font-weight: 700; }
+
+      /* ─ Footer ─ */
+      .pd-footer {
+        border-top: 1px solid #E2E8F0;
+        padding-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7.5pt;
+        color: #94A3B8;
+      }
+    }
+
+    /* Retenciones styles */
+    .ret-box {
+      background: #FFF1F2;
+      border: 1px solid #FECDD3;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 4px;
+    }
+    .ret-box-title {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--red);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+    }
+    .ret-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #9B1C1C;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 10px 0 5px;
+    }
+    .ret-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 5px 0;
+      border-bottom: 1px solid #FCA5A5;
+      color: #7F1D1D;
+    }
+    .ret-line:last-child { border-bottom: none; }
+    .ret-line span:last-child { font-family: monospace; font-weight: 700; }
+    .neto-box {
+      background: linear-gradient(135deg, #14532D, #166534);
+      color: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 4px;
+      box-shadow: 0 4px 14px rgba(22,101,52,0.25);
+    }
+    .neto-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 6px; }
+    .neto-amount { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 900; color: #fff; }
+    .neto-note { font-size: 10px; color: rgba(255,255,255,0.55); margin-top: 5px; }
+
+    /* Hide print doc in screen view */
+    #printDoc { display: none; }
+
+    .tenure-badge {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      background: #EEF3FB;
+      border: 1px solid #BFDBFE;
+      color: var(--blue);
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 16px;
+    }
+
+    /* Retenciones info card */
+    .ret-rates-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .ret-rate-item {
+      background: #FFF5F5;
+      border: 1px solid #FECDD3;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .ret-rate-pct {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--red);
+    }
+    .ret-rate-lbl {
+      font-size: 10px;
+      color: #9B1C1C;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-stripe">
+  <div class="stripe-blue"></div>
+  <div class="stripe-red"></div>
+  <div class="stripe-gold"></div>
+</div>
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <p class="header-badge">República Dominicana · Ministerio de Trabajo</p>
+      <h1>Calculadora de<br/><span>Prestaciones Laborales</span></h1>
+      <p class="header-sub">Basada en el Código de Trabajo (Ley 16-92) y normas complementarias vigentes</p>
+      <div class="legal-refs">
+        <span class="ref-pill">Art. 76 — Preaviso</span>
+        <span class="ref-pill">Art. 80 — Cesantía</span>
+        <span class="ref-pill">Art. 82 — Asist. Económica</span>
+        <span class="ref-pill">Art. 177 — Vacaciones</span>
+        <span class="ref-pill">Art. 219 — Regalía Pascual</span>
+        <span class="ref-pill">Art. 223 — Part. Beneficios</span>
+      </div>
+    </div>
+    <div class="header-logo-block">
+      <div class="logo-name">GSTAR Services</div>
+      <div class="logo-sub">RD · Gestión Laboral</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ══ COLUMNA FORMULARIO ══ -->
+  <div class="form-col">
+
+    <!-- Datos Básicos -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">👤</span>
+        <span class="card-title">Datos del Trabajador</span>
+        <span class="card-art">§ 01</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Fecha de Ingreso</label>
+          <input type="date" id="fechaIngreso" />
+        </div>
+        <div class="field">
+          <label>Fecha de Salida</label>
+          <input type="date" id="fechaSalida" />
+          <span class="hint">Déjalo vacío para usar la fecha de hoy</span>
+        </div>
+        <div class="field">
+          <label>Salario Mensual (RD$)</label>
+          <input type="number" id="salario" placeholder="Ej: 35000" min="0" step="0.01" />
+        </div>
+        <div class="field">
+          <label>Tipo de Jornada</label>
+          <select id="jornada">
+            <option value="23.83">Ordinaria (≤ 8h/día · ≤ 44h/semana) — Divisor 23.83</option>
+            <option value="26">Intermitente (porteros, serenos, camareros, etc.) — Divisor 26</option>
+          </select>
+          <span class="hint">Art. 147 CT — el divisor afecta el salario diario</span>
+        </div>
+        <div class="field">
+          <label>Nombre y Apellido del Trabajador</label>
+          <input type="text" id="nombreTrabajador" placeholder="Ej: Juan Pérez García" />
+        </div>
+        <div class="field">
+          <label>Días Pagados Trabajados (nómina parcial)</label>
+          <input type="number" id="diasPagados" placeholder="0" min="0" max="31" value="0" />
+          <span class="hint">Días que se deben pagar de la nómina actual aún no pagados al momento de la salida</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Causa de Terminación -->
+    <div class="card">
+      <div class="card-header red">
+        <span class="card-icon">⚖️</span>
+        <span class="card-title">Causa de Terminación</span>
+        <span class="card-art">§ 02</span>
+      </div>
+      <div class="card-body">
+        <div class="radio-group" id="causaGroup">
+
+          <label class="radio-opt" onclick="selectCausa(this, 'desahucio_empleador')">
+            <input type="radio" name="causa" value="desahucio_empleador" />
+            <div>
+              <div class="radio-label">Desahucio del Empleador</div>
+              <div class="radio-sub">El empleador termina sin causa justificada · Arts. 75-80 CT<br/>Genera: Preaviso + Cesantía + Vacaciones + Regalía</div>
+            </div>
+          </label>
+
+          <label class="radio-opt" onclick="selectCausa(this, 'despido_injustificado')">
+            <input type="radio" name="causa" value="despido_injustificado" />
+            <div>
+              <div class="radio-label">Despido Injustificado</div>
+              <div class="radio-sub">Empleador no prueba causa justa · Art. 88 CT<br/>Equivale al desahucio: Preaviso + Cesantía + Vacaciones + Regalía</div>
+            </div>
+          </label>
+
+          <label class="radio-opt" onclick="selectCausa(this, 'renuncia')">
+            <input type="radio" name="causa" value="renuncia" />
+            <div>
+              <div class="radio-label">Renuncia del Trabajador</div>
+              <div class="radio-sub">Arts. 96-101 CT · El trabajador también debe preaviso<br/>Genera: Vacaciones no disfrutadas + Regalía proporcional</div>
+            </div>
+          </label>
+
+          <label class="radio-opt" onclick="selectCausa(this, 'dimision_justificada')">
+            <input type="radio" name="causa" value="dimision_justificada" />
+            <div>
+              <div class="radio-label">Dimisión Justificada del Trabajador</div>
+              <div class="radio-sub">Trabajador termina por falta del empleador · Art. 97 CT<br/>Genera: Preaviso + Cesantía + Vacaciones + Regalía</div>
+            </div>
+          </label>
+
+          <label class="radio-opt" onclick="selectCausa(this, 'despido_justificado')">
+            <input type="radio" name="causa" value="despido_justificado" />
+            <div>
+              <div class="radio-label">Despido Justificado (causa probada)</div>
+              <div class="radio-sub">Art. 88 CT — empleador prueba la falta<br/>Genera: Solo vacaciones proporcionales + Regalía</div>
+            </div>
+          </label>
+
+          <label class="radio-opt" onclick="selectCausa(this, 'muerte_incapacidad')">
+            <input type="radio" name="causa" value="muerte_incapacidad" />
+            <div>
+              <div class="radio-label">Muerte o Incapacidad del Trabajador</div>
+              <div class="radio-sub">Art. 82 CT · Asistencia económica diferente<br/>Sin preaviso ni cesantía — solo asistencia económica + Regalía</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Opciones adicionales -->
+    <div class="card">
+      <div class="card-header dark">
+        <span class="card-icon">⚙️</span>
+        <span class="card-title">Opciones Adicionales</span>
+        <span class="card-art">§ 03</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>¿Se otorgó preaviso?</label>
+          <select id="preaviso">
+            <option value="no">No — el empleador paga indemnización sustitutiva (Art. 79)</option>
+            <option value="si">Sí — trabajó el período de preaviso</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Días de Vacaciones Ya Disfrutadas (período actual)</label>
+          <input type="number" id="vacsDisfrutadas" placeholder="0" min="0" max="365" value="0" />
+          <span class="hint">Solo las del año en curso. Las proporcionales no disfrutadas se pagan.</span>
+        </div>
+        <div class="field">
+          <label>Días de Vacaciones Pactados / Convenidos (si aplica)</label>
+          <input type="number" id="diasVacPactados" placeholder="0" min="0" value="0" />
+          <span class="hint">Si el contrato o política de empresa otorga más días de vacaciones que el mínimo legal (14 ó 18 días), indique aquí el total de días pactados. Sin límite — se usará este valor en lugar del mínimo legal.</span>
+        </div>
+        <div class="field">
+          <label>¿Tiene participación en beneficios? (Art. 223 CT)</label>
+          <select id="participacion">
+            <option value="no">No aplica o no especificado</option>
+            <option value="si">Sí — incluir proporcional de participación</option>
+          </select>
+        </div>
+        <div class="field" id="beneficiosField" style="display:none">
+          <label>Beneficios Netos de la Empresa (último ejercicio, RD$)</label>
+          <input type="number" id="beneficiosNetos" placeholder="Ej: 5000000" min="0" step="0.01" />
+          <span class="hint">El trabajador recibe 10% distribuido. Tope: 45 días (&lt;3 años) / 60 días (≥3 años)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retenciones -->
+    <div class="card">
+      <div class="card-header dark">
+        <span class="card-icon">🔢</span>
+        <span class="card-title">Retenciones sobre Conceptos Gravables</span>
+        <span class="card-art">§ 04</span>
+      </div>
+      <div class="card-body">
+        <div class="info-box" style="margin-bottom:16px;">
+          <strong>📌 ¿Qué se retiene y qué no?</strong>
+          Según el Código de Trabajo (Ley 16-92) y la DGII:<br/>
+          • <strong>Preaviso y Cesantía:</strong> No pagan AFP, ARS ni ISR (Art. 86 CT).<br/>
+          • <strong>Días trabajados y Vacaciones:</strong> Sí aplican AFP, ARS e ISR como salario ordinario.<br/>
+          • <strong>Regalía Pascual:</strong> Exenta hasta RD$15,507.23/mes; el exceso tributa ISR al 10%.<br/>
+          • <strong>Participación en Beneficios:</strong> Tributa ISR al 15% fijo.
+        </div>
+        <p class="section-title">Tasas Vigentes del Empleado</p>
+        <div class="ret-rates-grid">
+          <div class="ret-rate-item">
+            <div class="ret-rate-pct">2.87%</div>
+            <div class="ret-rate-lbl">AFP — Empleado<br/>Sobre conceptos gravables</div>
+          </div>
+          <div class="ret-rate-item">
+            <div class="ret-rate-pct">3.04%</div>
+            <div class="ret-rate-lbl">ARS/SFS — Empleado<br/>Sobre conceptos gravables</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>¿Incluir cálculo de retenciones?</label>
+          <select id="aplicarRetenciones">
+            <option value="si">Sí — mostrar retenciones sobre conceptos gravables</option>
+            <option value="no">No — solo mostrar montos brutos</option>
+          </select>
+        </div>
+        <div class="field" id="salarioAnualField">
+          <label>Salario Anual Bruto (RD$) — para cálculo ISR</label>
+          <input type="number" id="salarioAnual" placeholder="Ej: 420000 (salario mensual × 12)" min="0" step="0.01" />
+          <span class="hint">Se usa la escala progresiva DGII. Deja vacío para estimarlo del salario mensual × 12.</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calcular()">⚖ Calcular Prestaciones y Derechos</button>
+
+  </div>
+
+  <!-- ══ COLUMNA RESULTADOS ══ -->
+  <div class="result-col">
+    <div id="resultContainer">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <span class="card-title">Resultado de Prestaciones</span>
+        </div>
+        <div class="card-body">
+          <div class="result-empty">
+            <div class="icon">🇩🇴</div>
+            <p>Complete los datos del formulario y presione <strong>Calcular</strong> para ver su liquidación detallada.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ DOCUMENTO IMPRIMIBLE (oculto en pantalla) ══ -->
+<div id="printDoc"></div>
+
+<p class="disclaimer">
+  Esta herramienta es orientativa y se basa en el <strong>Código de Trabajo de la República Dominicana (Ley 16-92)</strong> y sus modificaciones.
+  Para casos complejos o disputas, consulte al <strong>Ministerio de Trabajo</strong> o a un abogado laboralista certificado.
+  Los cálculos pueden variar según salario variable, bonificaciones, horas extras u otras particularidades del contrato.
+</p>
+
+<script>
+  // ── Fecha por defecto ──
+  document.getElementById('fechaSalida').value = new Date().toISOString().split('T')[0];
+
+  // ── Radio opts ──
+  function selectCausa(el, val) {
+    document.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ── Show/hide beneficios ──
+  document.getElementById('participacion').addEventListener('change', function() {
+    document.getElementById('beneficiosField').style.display = this.value === 'si' ? 'block' : 'none';
+  });
+
+  // ── Helpers ──
+  function fmt(n) {
+    return 'RD$ ' + n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function diffDays(a, b) {
+    return Math.floor((b - a) / (1000 * 60 * 60 * 24));
+  }
+
+  function getYearsMonthsDays(start, end) {
+    let y = end.getFullYear() - start.getFullYear();
+    let m = end.getMonth() - start.getMonth();
+    let d = end.getDate() - start.getDate();
+    if (d < 0) { m--; d += new Date(end.getFullYear(), end.getMonth(), 0).getDate(); }
+    if (m < 0) { y--; m += 12; }
+    return { years: y, months: m, days: d, totalMonths: y * 12 + m };
+  }
+
+  // ── CÁLCULO PREAVISO (Art. 76) ──
+  function calcPreaviso(totalMonths) {
+    if (totalMonths < 3) return 0;
+    if (totalMonths < 6) return 7;
+    if (totalMonths < 12) return 14;
+    return 28;
+  }
+
+  // ── CÁLCULO CESANTÍA (Art. 80) ──
+  function calcCesantia(years, months, salarioDiario) {
+    const totalMeses = years * 12 + months;
+    if (totalMeses < 3) return 0; // menos de 3 meses: no hay cesantía
+
+    let dias = 0;
+    if (totalMeses < 6) {
+      // 3 a menos de 6 meses: 6 días ordinarios
+      dias = 6;
+    } else if (totalMeses < 12) {
+      // 6 meses a menos de 1 año: 13 días
+      dias = 13;
+    } else if (years < 5) {
+      // 1 a menos de 5 años: 21 días por año trabajado + fracción
+      dias = years * 21;
+      // fracción de año
+      if (months > 0) {
+        dias += Math.round((months / 12) * 21);
+      }
+    } else {
+      // 5 años o más: 23 días por año trabajado + fracción
+      dias = years * 23;
+      if (months > 0) {
+        dias += Math.round((months / 12) * 23);
+      }
+    }
+    return dias * salarioDiario;
+  }
+
+  // ── CÁLCULO ASISTENCIA ECONÓMICA (Art. 82) — muerte/incapacidad o causas especiales ──
+  function calcAsistenciaEconomica(years, months, salarioDiario) {
+    const totalMeses = years * 12 + months;
+    if (totalMeses < 3) return 0;
+    let dias = 0;
+    if (totalMeses < 6) {
+      dias = 5;
+    } else if (totalMeses < 12) {
+      dias = 10;
+    } else {
+      dias = years * 15;
+      if (months > 0) dias += Math.round((months / 12) * 15);
+    }
+    return dias * salarioDiario;
+  }
+
+  // ── CÁLCULO VACACIONES (Art. 177) ──
+  function calcVacaciones(years, months, salarioDiario, diasDisfrutados, diasPactadosOverride) {
+    // Días de vacaciones que corresponden según antigüedad
+    let diasVac = 0;
+    const totalMeses = years * 12 + months;
+
+    // Si hay días pactados/convenidos, se usan proporcionales sin límite
+    if (diasPactadosOverride && diasPactadosOverride > 0) {
+      // Usar los días pactados como base (sin tope legal)
+      if (years >= 1) {
+        // Años completos + proporcional del año en curso
+        diasVac = diasPactadosOverride + (months / 12) * diasPactadosOverride;
+      } else if (totalMeses > 5) {
+        // Menos de 1 año: proporcional de los días pactados
+        diasVac = (totalMeses / 12) * diasPactadosOverride;
+      }
+    } else {
+      // Mínimo legal (Art. 177 CT)
+      if (years < 1) {
+        // Proporcional: solo si > 5 meses (Art. 179)
+        if (totalMeses > 5) {
+          diasVac = (totalMeses / 12) * 14;
+        }
+      } else if (years < 5) {
+        // 14 días de salario ordinario
+        diasVac = 14;
+        diasVac += (months / 12) * 14;
+      } else {
+        // 5+ años: 18 días
+        diasVac = 18;
+        diasVac += (months / 12) * 18;
+      }
+    }
+
+    const diasRestantes = Math.max(0, diasVac - diasDisfrutados);
+    return diasRestantes * salarioDiario;
+  }
+
+  // ── CÁLCULO REGALÍA PASCUAL (Art. 219) ──
+  function calcRegalia(salarioMensual, mesInicio, mesSalida, anioInicio, anioSalida) {
+    // La regalía = duodécima parte del salario ordinario del año en curso
+    // Si la terminación es en el mismo año, se calcula proporcional
+    const hoy = new Date(anioSalida, mesSalida, 1);
+    const inicioAnio = new Date(anioSalida, 0, 1);
+    const mesesTotalesAnio = 12;
+    
+    let mesesTrabajadosEsteAnio;
+    if (anioInicio < anioSalida) {
+      // empezó antes del año actual
+      mesesTrabajadosEsteAnio = mesSalida; // meses completos en año actual (0-indexed)
+      if (mesesTrabajadosEsteAnio === 0) mesesTrabajadosEsteAnio = 1; // al menos 1
+    } else {
+      // empezó este año
+      mesesTrabajadosEsteAnio = mesSalida - mesInicio;
+      if (mesesTrabajadosEsteAnio <= 0) mesesTrabajadosEsteAnio = 1;
+    }
+    // Cap a 12
+    mesesTrabajadosEsteAnio = Math.min(mesesTrabajadosEsteAnio, 12);
+    
+    const regalia = (salarioMensual / 12) * mesesTrabajadosEsteAnio;
+    return { monto: regalia, meses: mesesTrabajadosEsteAnio };
+  }
+
+  // ── MAIN CALC ──
+  function calcular() {
+    const ingreso  = document.getElementById('fechaIngreso').value;
+    const salida   = document.getElementById('fechaSalida').value || new Date().toISOString().split('T')[0];
+    const salario  = parseFloat(document.getElementById('salario').value) || 0;
+    const divisor  = parseFloat(document.getElementById('jornada').value);
+    const preavisoOtorgado = document.getElementById('preaviso').value;
+    const vacsDisfrutadas  = parseInt(document.getElementById('vacsDisfrutadas').value) || 0;
+    const participacion    = document.getElementById('participacion').value;
+    const beneficiosNetos  = parseFloat(document.getElementById('beneficiosNetos').value) || 0;
+
+    const diasPagados = parseInt(document.getElementById('diasPagados').value) || 0;
+    const diasVacPactados = parseInt(document.getElementById('diasVacPactados').value) || 0;
+    const nombreTrabajador = document.getElementById('nombreTrabajador').value.trim();
+    const causaEl = document.querySelector('input[name="causa"]:checked');
+
+    // Validaciones
+    if (!ingreso) { alert('Por favor ingrese la fecha de ingreso.'); return; }
+    if (!salario || salario <= 0) { alert('Por favor ingrese un salario válido.'); return; }
+    if (!causaEl) { alert('Por favor seleccione la causa de terminación.'); return; }
+
+    const causa    = causaEl.value;
+    const start    = new Date(ingreso + 'T00:00:00');
+    const end      = new Date(salida  + 'T00:00:00');
+
+    if (end < start) { alert('La fecha de salida no puede ser anterior a la de ingreso.'); return; }
+
+    const tenure   = getYearsMonthsDays(start, end);
+    const totalMeses = tenure.years * 12 + tenure.months;
+    const salarioDiario = salario / divisor;
+
+    // ── Determinar qué aplica ──
+    const esCesantia    = ['desahucio_empleador','despido_injustificado','dimision_justificada'].includes(causa);
+    const esPrAviso     = esCesantia;
+    const esDespJust    = causa === 'despido_justificado';
+    const esRenuncia    = causa === 'renuncia';
+    const esMuerte      = causa === 'muerte_incapacidad';
+
+    let lineItems = [];
+    let total = 0;
+
+    // Tenure display
+    const tenureStr = `${tenure.years} año(s), ${tenure.months} mes(es) y ${tenure.days} día(s)`;
+
+    // 1. PREAVISO
+    let montoPreaviso = 0;
+    let diasPreaviso = calcPreaviso(totalMeses);
+    if (esPrAviso && preavisoOtorgado === 'no') {
+      montoPreaviso = diasPreaviso * salarioDiario;
+      lineItems.push({
+        label: 'Indemnización por Omisión de Preaviso',
+        sub: `Art. 76 & 79 CT · ${diasPreaviso} día(s) × ${fmt(salarioDiario)}/día`,
+        amount: montoPreaviso
+      });
+    } else if (esPrAviso && preavisoOtorgado === 'si') {
+      lineItems.push({
+        label: 'Preaviso Otorgado (trabajado)',
+        sub: `Art. 76 CT · ${diasPreaviso} día(s) — ya incluido en nómina`,
+        amount: 0,
+        zero: true
+      });
+    }
+
+    // 2. CESANTÍA / ASISTENCIA ECONÓMICA
+    if (esCesantia || esMuerte) {
+      if (esMuerte) {
+        const montoAsist = calcAsistenciaEconomica(tenure.years, tenure.months, salarioDiario);
+        if (montoAsist > 0) {
+          lineItems.push({
+            label: 'Asistencia Económica',
+            sub: `Art. 82 CT · Aplicable a muerte/incapacidad/jubilación`,
+            amount: montoAsist
+          });
+          total += montoAsist;
+        }
+      } else {
+        const montoCesantia = calcCesantia(tenure.years, tenure.months, salarioDiario);
+        if (montoCesantia > 0) {
+          // Calcular días para mostrar en sub
+          const tm = totalMeses;
+          let dias = 0;
+          if (tm < 6) dias = 6;
+          else if (tm < 12) dias = 13;
+          else if (tenure.years < 5) dias = tenure.years * 21 + (tenure.months > 0 ? Math.round((tenure.months/12)*21) : 0);
+          else dias = tenure.years * 23 + (tenure.months > 0 ? Math.round((tenure.months/12)*23) : 0);
+
+          lineItems.push({
+            label: 'Auxilio de Cesantía',
+            sub: `Art. 80 CT · ~${dias} día(s) × ${fmt(salarioDiario)}/día`,
+            amount: montoCesantia
+          });
+          total += montoCesantia;
+        } else {
+          lineItems.push({
+            label: 'Auxilio de Cesantía',
+            sub: 'Art. 80 CT · No aplica (menos de 3 meses)',
+            amount: 0, zero: true
+          });
+        }
+      }
+    }
+
+    total += montoPreaviso;
+
+    // 3. VACACIONES
+    if (!esDespJust) {
+      const montoVac = calcVacaciones(tenure.years, tenure.months, salarioDiario, vacsDisfrutadas);
+      if (montoVac > 0) {
+        let diasBase = tenure.years >= 5 ? 18 : 14;
+        lineItems.push({
+          label: 'Vacaciones No Disfrutadas',
+          sub: `Art. 177 CT · Proporcional · Días tomados: ${vacsDisfrutadas}`,
+          amount: montoVac
+        });
+        total += montoVac;
+      } else {
+        lineItems.push({
+          label: 'Vacaciones No Disfrutadas',
+          sub: 'Art. 177 CT · Sin saldo pendiente o menos de 5 meses trabajados',
+          amount: 0, zero: true
+        });
+      }
+    } else {
+      // Despido justificado: solo vacaciones proporcionales del año
+      const montoVac = calcVacaciones(tenure.years, tenure.months, salarioDiario, vacsDisfrutadas, diasVacPactados);
+      if (montoVac > 0) {
+        lineItems.push({
+          label: 'Vacaciones Proporcionales',
+          sub: `Art. 177 CT · En despido justificado se pagan vacaciones proporcionales${diasVacPactados > 0 ? ' · Días pactados: ' + diasVacPactados : ''}`,
+          amount: montoVac
+        });
+        total += montoVac;
+      }
+    }
+
+    // 4. REGALÍA PASCUAL (Art. 219)
+    const regalia = calcRegalia(salario, start.getMonth(), end.getMonth() + 1, start.getFullYear(), end.getFullYear());
+    if (regalia.monto > 0) {
+      lineItems.push({
+        label: 'Regalía Pascual (proporcional)',
+        sub: `Art. 219 CT · ${regalia.meses} mes(es) en el año · Salario/12 × meses`,
+        amount: regalia.monto
+      });
+      total += regalia.monto;
+    }
+
+    // 5. PARTICIPACIÓN EN BENEFICIOS (Art. 223)
+    if (participacion === 'si' && beneficiosNetos > 0) {
+      // 10% de beneficios netos distribuido entre empleados
+      // Tope: 45 días (< 3 años) o 60 días (≥ 3 años)
+      const topeDias = totalMeses >= 36 ? 60 : 45;
+      const tope = topeDias * salarioDiario;
+      // Proporcional: meses trabajados en el ejercicio / 12
+      const mesesEjercicio = Math.min(totalMeses, 12);
+      let partic = (beneficiosNetos * 0.10) * (mesesEjercicio / 12);
+      partic = Math.min(partic, tope);
+      if (partic > 0) {
+        lineItems.push({
+          label: 'Participación en Beneficios',
+          sub: `Art. 223 CT · 10% benef. netos · Tope ${topeDias} días · Proporcional ${mesesEjercicio} mes(es)`,
+          amount: partic
+        });
+        total += partic;
+      }
+    }
+
+    // 6. DÍAS PAGADOS (nómina parcial)
+    if (diasPagados > 0) {
+      const montoDiasPagados = diasPagados * salarioDiario;
+      lineItems.push({
+        label: 'Días Trabajados Pendientes de Pago',
+        sub: `Nómina parcial · ${diasPagados} día(s) × ${fmt(salarioDiario)}/día`,
+        amount: montoDiasPagados
+      });
+      total += montoDiasPagados;
+    }
+
+    // ── Causa label ──
+    const causaLabels = {
+      desahucio_empleador: 'Desahucio del Empleador (Art. 75 CT)',
+      despido_injustificado: 'Despido Injustificado (Art. 88 CT)',
+      renuncia: 'Renuncia del Trabajador (Arts. 96-101 CT)',
+      dimision_justificada: 'Dimisión Justificada del Trabajador (Art. 97 CT)',
+      despido_justificado: 'Despido Justificado — Causa Probada (Art. 88 CT)',
+      muerte_incapacidad: 'Muerte o Incapacidad del Trabajador (Art. 82 CT)'
+    };
+    const jornadaLabel = divisor === 23.83 ? 'Ordinaria (Divisor 23.83)' : 'Intermitente (Divisor 26)';
+    const printDate = new Date().toLocaleDateString('es-DO', { year:'numeric', month:'long', day:'numeric' });
+
+    // ── RETENCIONES ──
+    const aplicarRet = document.getElementById('aplicarRetenciones').value === 'si';
+    const salarioAnualInput = parseFloat(document.getElementById('salarioAnual').value) || (salario * 12);
+
+    // Tasas vigentes empleado
+    const tasaAFP = 0.0287;
+    const tasaARS = 0.0304;
+
+    // Monto gravable = dias pagados + vacaciones (no preaviso ni cesantia)
+    // Identificamos los montos gravables de lineItems
+    let montoGravableSalario = 0; // dias trabajados pendientes
+    let montoGravableVac = 0;     // vacaciones
+    let montoGravableRegalia = 0; // regalía (puede tener exención)
+    let montoGravablePartic = 0;  // participación en beneficios
+
+    lineItems.forEach(li => {
+      if (!li.zero && li.amount > 0) {
+        if (li.label === 'Días Trabajados Pendientes de Pago') montoGravableSalario += li.amount;
+        if (li.label.includes('Vacaciones')) montoGravableVac += li.amount;
+        if (li.label.includes('Regalía')) montoGravableRegalia += li.amount;
+        if (li.label.includes('Participación en Beneficios')) montoGravablePartic += li.amount;
+      }
+    });
+
+    // ISR escala progresiva DGII (base anual 2024-2025)
+    function calcISRAnual(baseAnual) {
+      if (baseAnual <= 416220.00) return 0;
+      if (baseAnual <= 624329.00) return (baseAnual - 416220.00) * 0.15;
+      if (baseAnual <= 867123.00) return 31213.35 + (baseAnual - 624329.00) * 0.20;
+      return 79776.95 + (baseAnual - 867123.00) * 0.25;
+    }
+
+    // ISR proporcional sobre salario (efectivo mensual)
+    const isrAnualNormal = calcISRAnual(salarioAnualInput);
+    const isrMensual = isrAnualNormal / 12;
+
+    // AFP+ARS sobre dias pagados y vacaciones
+    const afpDias  = montoGravableSalario * tasaAFP;
+    const arsDias  = montoGravableSalario * tasaARS;
+    const isrDias  = montoGravableSalario > 0 ? (isrMensual * (diasPagados / 23.83)) : 0;
+
+    const afpVac   = montoGravableVac * tasaAFP;
+    const arsVac   = montoGravableVac * tasaARS;
+    // ISR vacaciones: se trata como ingreso proporcional al período equivalente en meses
+    // Equivalente de días de vacaciones expresado como fracción mensual (divisor 23.83 = días laborables/mes)
+    const diasVacGravables = montoGravableVac / salarioDiario; // días de vac. gravables
+    const fraccionMensualVac = diasVacGravables / 23.83;       // equivalente en meses
+    const isrVac   = montoGravableVac > 0 ? isrMensual * fraccionMensualVac : 0;
+
+    // Regalía: exenta hasta RD$15,507.23/mes × 12 = 186,086.76; exceso tributa 10%
+    const exencionRegalia = 186086.76;
+    const exceso = Math.max(0, montoGravableRegalia - exencionRegalia);
+    const isrRegalia = exceso * 0.10;
+
+    // Participación: ISR 15% fijo
+    const isrPartic = montoGravablePartic * 0.15;
+
+    const totalAFP = afpDias + afpVac;
+    const totalARS = arsDias + arsVac;
+    const totalISR = isrDias + isrVac + isrRegalia + isrPartic;
+    const totalRetenciones = totalAFP + totalARS + totalISR;
+    const totalNeto = total - totalRetenciones;
+
+    // ── RENDER pantalla ──
+    const container = document.getElementById('resultContainer');
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-header green">
+          <span class="card-icon">✅</span>
+          <span class="card-title">Liquidación Calculada</span>
+          <span class="card-art">§ Resultado</span>
+        </div>
+        <div class="card-body">
+          <div class="tenure-badge">⏱ Antigüedad: ${tenureStr}</div>
+          <p class="section-title">Desglose por Concepto</p>
+          ${lineItems.map(li => `
+            <div class="line-item">
+              <div>
+                <div class="li-label">${li.label}</div>
+                <div class="li-sub">${li.sub}</div>
+              </div>
+              <div class="li-amount ${li.zero ? 'li-zero' : ''}">${li.zero ? '—' : fmt(li.amount)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="total-box">
+        <div class="total-label">Total a Recibir</div>
+        <div class="total-amount">${fmt(total)}</div>
+        <div class="total-note">Conforme al Código de Trabajo (Ley 16-92)</div>
+      </div>
+
+      ${aplicarRet && totalRetenciones > 0 ? `
+      <div class="ret-box">
+        <div class="ret-box-title">✂️ Retenciones sobre Conceptos Gravables</div>
+        ${montoGravableSalario > 0 ? `
+        <div class="ret-section-label">Días Trabajados (Nómina)</div>
+        <div class="ret-line"><span>AFP (2.87%)</span><span>- ${fmt(afpDias)}</span></div>
+        <div class="ret-line"><span>ARS/SFS (3.04%)</span><span>- ${fmt(arsDias)}</span></div>
+        <div class="ret-line"><span>ISR proporcional</span><span>- ${fmt(isrDias)}</span></div>` : ''}
+        ${montoGravableVac > 0 ? `
+        <div class="ret-section-label" style="margin-top:8px;">Vacaciones</div>
+        <div class="ret-line"><span>AFP (2.87%)</span><span>- ${fmt(afpVac)}</span></div>
+        <div class="ret-line"><span>ARS/SFS (3.04%)</span><span>- ${fmt(arsVac)}</span></div>
+        <div class="ret-line"><span>ISR proporcional</span><span>- ${fmt(isrVac)}</span></div>` : ''}
+        ${isrRegalia > 0 ? `
+        <div class="ret-section-label" style="margin-top:8px;">Regalía Pascual (exceso)</div>
+        <div class="ret-line"><span>ISR 10% sobre exceso de RD$186,086.76</span><span>- ${fmt(isrRegalia)}</span></div>` : ''}
+        ${isrPartic > 0 ? `
+        <div class="ret-section-label" style="margin-top:8px;">Participación en Beneficios</div>
+        <div class="ret-line"><span>ISR 15% (fijo sobre participación)</span><span>- ${fmt(isrPartic)}</span></div>` : ''}
+        <div style="border-top:2px solid #FECACA;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:#7F1D1D;font-size:13px;">
+          <span>Total Retenciones</span><span>- ${fmt(totalRetenciones)}</span>
+        </div>
+        <div style="font-size:10px;color:#9CA3AF;margin-top:4px;">Preaviso, Cesantía y Asistencia Económica: exentos de AFP, ARS e ISR (Art. 86 CT)</div>
+      </div>
+
+      <div class="neto-box">
+        <div class="neto-label">Total Neto a Recibir (después de retenciones)</div>
+        <div class="neto-amount">${fmt(totalNeto)}</div>
+        <div class="neto-note">Bruto: ${fmt(total)} · Retenciones: - ${fmt(totalRetenciones)}</div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-header gold">
+          <span class="card-icon">📌</span>
+          <span class="card-title">Plazos Legales</span>
+          <span class="card-art">Art. 86</span>
+        </div>
+        <div class="card-body">
+          <div class="line-item">
+            <div><div class="li-label">Pago de prestaciones</div><div class="li-sub">Art. 86 CT — plazo máximo</div></div>
+            <div class="li-amount">10 días hábiles</div>
+          </div>
+          <div class="line-item">
+            <div><div class="li-label">Notificación desahucio</div><div class="li-sub">Al Departamento de Trabajo · Art. 75 CT</div></div>
+            <div class="li-amount">48 horas</div>
+          </div>
+          <div class="line-item">
+            <div><div class="li-label">Regalía Pascual — pago</div><div class="li-sub">Art. 219 CT — en diciembre</div></div>
+            <div class="li-amount">Hasta el 20-dic</div>
+          </div>
+          <div class="line-item">
+            <div><div class="li-label">Mora por retardo</div><div class="li-sub">Art. 86 CT — si no paga en plazo</div></div>
+            <div class="li-amount">+ 1× el monto</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>⚠️ Nota importante</strong>
+        Este cálculo es una estimación orientativa. El salario de navidad nunca se pierde sin importar la causa (Art. 219 CT). Las indemnizaciones por preaviso y cesantía <strong>no pagan ISR ni son embargables</strong> (Art. 86 CT). Para casos con salario variable, horas extras o beneficios adicionales, el promedio del último año modifica la base de cálculo (Art. 85 CT).
+      </div>
+
+      <button class="btn-print" onclick="imprimirPDF()">
+        🖨️ Exportar a PDF / Imprimir
+      </button>
+    `;
+
+    // ── RENDER documento imprimible ──
+    document.getElementById('printDoc').innerHTML = `
+      <!-- Encabezado -->
+      <div class="pd-header">
+        <div>
+          <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAFGAtMDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAcIAQIGBQME/8QASRAAAQMDAgMFBQMICQMEAgMAAQACAwQFEQYhBxIxCBNBUWEUInGBkRcyoRUjNkJSVJLBFiQzVWJyc7HRU3SCNKLh8ENEJTXx/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAUGAQMEAgf/xAA2EQACAgIBAwMCBQIFBQADAAAAAQIDBBEFEiExBhNBMlEUFSJhcSNSFjNCU4EHJDSRwaGx0f/aAAwDAQACEQMRAD8AuWiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgB6LUkeK2PRaO8z4boYZ+G+XCmtdrnrqhwbHE0ucSvz6SuDrrp2kuLhgzsLvlk4UY9oPUnd0kNhhf70x5pgD0b5Lv+GH6CWkeHs4WiNvVPpRLX8dKnAhkS/1P/4dJFsML6L5sGHn4L6LeyJS0kgiIhkIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCZWHdFq3OBkoDZx2X4rzWRUFsmq5nBscbC5xPgF+tw2OSVEfaB1GYKCGxU8pa6c803Kf1R4H4rVdYqoOTO7jcOWZkxpj8kO6su8t8vtTcZiS58hDR5NB2Vl+GuRoO0EeNO1VVeBzbAeAVrOF++hbUDvinao/An1WNl59ZUxx8SmuPhP/wCHTMOTjyWywAFlSp83QREQyEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQGHbBah3QLZ33SvmcAn0CfI/c+Fyq4qKinq5nBscTC4kqpusbzPfNRVVfK7IkeWxjyYOhUw8f9TGitcdlgk5X1Y9/B3a1QOMdB+qMKKzr+p9J9L9FcYqa3lWr6vA/5VreF36DWv/QaqpH+atbwu/Qa1/6DV44362Y9c/8Aj1/ydOFlYCypg+ahERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAWASsrXZAHE8hK/LX1TKOjmqpnAMiYXOPwX6XnDeqizj9qV9usrbTSv/PVJxJg7taV4tn0QbOvAxJZuTGiPyyG9c3t+o9S1dxc8uYXEQjwDBtheIfD0WSW4PIOUZ2+CxkKtTn1SbPuePjqmmNKXaIP81a3hd+g1r/0GqqR/mrW8Lv0Gtf8AoNUhxv1spnrr/Ir/AJOoCIOiKYPmgREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEReTfNQW6zSxsr5u6En3XHosN6PUISm+mK2z1kXMnW2nw7Ht0Zxsd1n+m2n/AN/j+q8K2D+TpeBkr/Q//R0qLmXa2sA6V8f1WP6b2H9+j+qz7kfuPwOR/Y//AEdOtdlzX9NrD+/R/VBrawEb1sf8Sw7oL5H4HJ19DPbr6plJTSzyYDI2FzifIbqq2vb5Nf8AUlVXPfmLnLIx6DopS4wa5pZNOOobXUB0tSeVxaejfFQcMb56f7eqjeRvXRqJf/R3FulvItjp+EBjx3W0sEkBHfNLS8czQV6ekbRNfNRUltgBzI9rifJuV7fF2ijt2rX0cYAbHC0DC4VS/b6y1vPX4tYy862zjj/NWt4XfoNa/wDQaqpf8q1vC/8AQa1/6DV2cb9TKr67/wAiv+TqB0RB0RTB80CIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAuZ4haap9S2Z9JIMSgZid4grplo/PNnwXmUepaNtN0qZqyHlFPb1ba20XGairO8jlidgjJ3HgV+APLhkySfVWM4xaLbf7a6vomgV0DcjA+8q6VET4JHxyNLJYzyuafNV/Ix7a5+ex9g4PlKuSoUtLqXlDmP/Uk+qcx/bk+q1ByMotOp/cnPZ12cEbcx/bk+qBxByXyfVannHgHpnzD1jc18hURaa6UZLnuP3yCDkBx8CsOBLTjqmxOCHnOy9DT1snu96paCNvvVEgBaP1W5WYqVklFmLboY9LlLtol3s+adMVLNfqhnvTO5YDjo1chx3bjXkuP+k3P4qwmn7dDabVTUMDQI4mBgx8FX/j5+nUv+mz/YqWyq1XQoo+d8DnSy+Yna/lMj1Wt4X/oNav8At2qqStbwv/Qa1f8AbtWjjPqZ3euv8iv+TqB0RB0RTJ81CIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCHZFq8kDZDDejOVnK0aStljuE9mcrU5ysuK1yVh9kN9zV7CdsDB6qE+NehXMdLfrXAHAHM0bRuduoU3ZO4JX5K9kFVE+nncwxuBBBXi2v3Y6aO/juSlx9ynF6+5TgluXDmGR4LODkjHRd5xb0edOV/tkBiNDO48vL+ofJR/3sbRl0oz4qFnh5HV+mLZ9fx+dxLqI2Oev+T39G2OC/wBzdQTVTaeQbtJOzlIjeCdU4ZF0Z0UO01xZS1MUkE5ZNGch4PVWG4bcS7JcrE38p3OOGqpxyyc23P8ABSOLx1mv6kGVL1D6i9iali3rRzT+CVYAQLk0ldTw54ajTN4kuM8rJ3loaw/srov6e6S8b1TfVZGvtJHYXmm+q61x3S9qLKjf6ryMmp1zsTTOlaA3GDnGyrjx9I/p7Kzx7pjvwIU4Qax01UPayK8UxcenvKCuOlTTVWt3TUszJmGJoLmnK5+SrnGruiX9Ezrs5HSf+lnBDcgeZVreF/6C2k+dO0qqY2cD5HKtTwueJNA2hzOhgauLjPqZY/XMX+Gql+51QOQs5WjSBvlbZ8lLnzJMyiwChQDO6ysJ4LO0O5lERDIREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBETKAIixzBAZWHnATmHmvzXGvpKCnM9XOyGNvUudhEnLtE8ylGK3I+/N8MLV0jW7k7KKdY8ZbDany01vPtVQ0bBvQ/NRBqvitqa8SgwVDqNm+AxSuNw99+trREZPMVVb0yzV41ZYrY2T2u4QscwZLebdR7c+OunY+9ioo5JJmkhuRsVW2tq6itqHy1NVPLK7cuc/ZfDMjm7GPywOpU3V6frgt2Mhredsn2giXqzjtqKR0jIqSnY0khpI3C4u9a+1Rc6oyyXSeEHqInYC5+ioKuqfyU9JLKTtgMJ3Xv2nh/qi4v5I7ZNE0n3XOGAV1Rpwcfzo5J3Zl6+Tx7hqC83Cn9nq7pU1MPNzBkhzuvO5nFw5iRgEklStQ8ENVTjMkkULSPE7r8ut+GH9FbKyatrxLUSuw1g/FeZ5/HUrbaJDDwOWyHHHi33Iy90j72yzlw5eSQtaOmDheq21sOwPRdtwp4eQapvEjKguFLAPfcPNckfUGE3qHf8A4JfL9E8tj0ud/j+SOCXcuWuef/JY5nnYufg9feVn5+Dmi6CnMlTM+Ng6uc7CzScH9F1ULZqaR80Z6Oa7YrZLnsVvWiE/Icvo6vCKxMlnjA7qR7COh5l7Fvlkmp+8mldLITuSc7Kxf2L6Txnkk38yom4m6bpNLakdbqA/mTGHY+KgPUPK03YvTCPcvf8A06426nlVKcu2mcsOb9XHrnyXu6b4qal05TC203dSU8HuNEnQDrgLwcA7HopBs/BeS+6dpLtDViOWoj5yx2+PJQ3pz2FZJWlv/wCpUb5YlTqfyLNx3uzaprbhSwGEn3uQbruaDjhpiadkUkc8TnbZPRRxXcC9UQuc6CeGRoGwHVc3dOGuqbeC426eY/rcu4VwliYVv0yR8ZhkZdK1KLZaO3ay0/WhhgutMS8bN5hle5HPHKA5rgWkbEFUeltd6tkneyU1TTPacg4IwvfsXEXVFpnY4XGWRjdu7kdkLlt4aLX9OWzrr5mcfriXEa7bYhbg5CgLS3HZj5mw3yk7sdO8YNipW0zrbT17haaOvh5ndGFwBUZdx11HdxJKjkarfk6lFo2RpaCCMEZC25guPZILuZRah4PQpz74Qw2kbImUyFjZkIiLICIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiA1Cz6LDtgtXO5W9cFY3t6Mdkts2dnw6r89ZUx0sJnqJo4o29XOdgBcvr7Xtm0rSOdU1DJKggiOJrskn18lW7XXEm/aoqHxSyGlpCAWwsOQ7fxKk8Dibcp78Iic7l6sZdPlkw6/wCNFqtLpKGzEVdYw4yfu48d1Beqta3/AFJUSGurpAx+4gDsNXg0tNU10vd09PJOecN9xhduVJmkODN+uc8b7jimpHN5u8P3h8lYoY+Hgx/X5K/PIysyX6fBFvM085BAdzcoadzle5ZdJX261EUFPbqrEnR5aeVWS0lwh01aaPu6unZXT8/N3rxupBo6KmpImxQRMYxowAB0XFkc8kumo68bg3J9VpXKwcCLvU1LPyvNHDT4yeQ7qRtO8GtM2ycTzRNqXAYHOpQAasOaPDGFEXcpkT8smquLx4fB49u01ZqAD2W308WNwQwL0xEAwAAYHkF9QB4rWQHoDgLhdk5PcmdsceuPZI+cr44o3SuPKGDdVl4ualkvuqp2RPzTUrzG0Z2JzglTNxj1FHp/SkwY8e01R7uIf7qtDsl5cSS49SfFROfk9ulH0P0XxXubybF47IBnNIG4JcHYAHirB6FZQaF0VHV3B7IZZGd7KCdznwUEWSWnpblDVVPvxwu5mj19V+3VOpK7UNWZKmQ9zH7rY+gx8Fy401Wtln5vj7uRnGuP0fJ7nELiBW6jq3xROfHb2nADTgvXr8HNcG0VkdnrZXPo5T+bc47sJ8FGQAB2+Q8lkEt3BLT+0Oo9V4WXL3tm+zgcOeJ+Gii5kErKiFssbg5rt2kKvHaCGNbg+cDf5ro+C+uy9zLDcpxzt2je7yx4rne0ERJrSNzenszST57qRyZxtp2Uz09gTwOYVdi7aeiOCrWcL/0GtX/btVU/L4q1vC79BrX/ANu1c/G/Wzv9bveNXr7nTFaOYD4Df0W5GVkBS6bTPmsoJrueZcLNb69vLV0UMwxj3mhcrf8Ahbpa6wGP8nxQPP68YwV3pwsYC3wyLYfSznniVT+pEAal4CuZBz2Ovc5/7EnRR7fNB6u0tWRTCllc4bh9OTt9FcHbOCvlNDC/+0Y13xC7q+Xtj/md0cNnEVN7r7Mq3pfi3qXT0rqW6P8Aamh4y2Ue+xvkFNWi+KOm9R/mm1Qpp2tBIlON1+/UfDzS18NRLUW2NtTKzHfNGCPVRDqvgjc6CJkun6l1US73mk4OPiupzw816a6WcvRmYPdPqRYmFzXND2lpaRkEHqsuDy4Y6KsOnuImrtD1b6G+Us9RTsPI1zwdgPVTtozXFl1PSCW31bXPwMxuODlR2TgTqfUntEjjclXb5Wv5OsJKA7rXOTsQshw5sfRcLaXk70m+6N0RFk9BERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQAkDxTIxnK+cjgG5IX5K6tpqKldUVUjYY2DLnOOAEjuT6V5PE5qC6peD9U80UUTpJZGsYBu4nAChXixxdit3fWvT0jZKoZa6YbhvquU4t8Ua2/VTrPpsujgBLTI3fvR44C/FoDhBeL+9lbeC6npX4dn9ZynMTCqoj7t7/4IPKzLL37dK7Ef8t51NdHuEc9XVyuy4jLhv/spU0FwSr62NlRej7HHkHus5Lh/JTVpHRlk05TNZQ0cYfgB0mNyumZgHGMeSZPMP6aVpHnE4dN9dz2c5pnRdgsEfLQUEbXHq5zckroAz3gA3AHl0X2RQtlk7Jbk9k7XTXWtRRoB7xwNh4LI+C2Ra1FI2GAh6rKw5ejDRhaTOa1hc4gAblbZwQuK4v6jbYdLzFjgKic93F55IXiT6Yts34tDyLY1x8tkL8YNQuvmqZY43h1LRksiGdi7xK4sgg4PVZkc50jnuOXOJJPqtVW7pqyfUz7rgYkcTHjTH4Rk8jdvA+awQ7my7HKeuPNZA90vHLt0Dl72kNK3TUVa1kELmszmR5Gx+CQhOT7HrJvjiVuyUtaPAzvjxTbx8VOt44TUf9FnR05/rkLedrvF2N8fNQdW00tHXTUlQwtmjdggjott1MoR3o4eO5rF5BtV+UKeWWGRskLuSVnvc4K9TU99nvs1PLU7yRRBhPmvHRaYzaWjudFbtVuu6Hl8Va3hd+g1r/0GqqXiPirWcL/0Gtf+g1SHG/WymeuO2PUv3OoCz4oOiKYPmmjDvgmMrKIZ0a43QjPgtkQxpLwaHONhlY5c+novoixoaPDv+mrPfaUwXKijlbnOeXBUN6t4SXay1brzo+qkbK1/P3IdgfRWAwhGxXVRlWVdt7RyZGFXd57EH6C4rVdNVMsmtKd1JVNcW984YDj4ZUz0lRBURRzQyNex45muacgrmda6Ks2pqZzK2jjEwB5JGjfPhlRtRO1Xwpq2x1HfXjT5du/q6Mk9PgFtsjXctx7P7GmudlL6X3RPCZHmvI03fbdfqBtZbalk8TuuDu0+RXpNOXrhnuD0yQhJTW0fVERD0EREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREARF+evqoKOklqql4ZFEOZxPkgPz3m5Ulqt8tbXSsigiaXPcT0Cr1rLUOoeKN3/I9gjljtLHYcW7c488rq7vR3vipfDETJQ6ZpX7eBqj/AMKTdL6dtmnreykt8EcQa3l5gNypKqVeLHrfeZE2RtyZ9K+g4vhxwltGmY4qqsYK24NJ/OOGwz6KTIo2xNaxrQ0DoB0RmOoyD6rcnC4bb7LnuZ3U49dP0gjHisNxzDzWSOZAMOWlJa2bnvZsiIvR6CIiALDt1lYPVAfKV4jy9xwAq08aNRC+6mkhhkzT0pMbWg7F3i5TNxb1C2waXnma7E8o7qMep8VWKQh8r5HnL3Ekk+JUZyGRr9CL56L4pTnLKmuyMYwcdPUo1r3ODQ3JJ2A8V96CnqKypbSwRmaR3RoHRTRw14Yx07YrneG88hbzCI/q+ij6MV2MuPK85VgJyl5+Dk+HfDWtvc8dXc2uipWbtGN3qfbJZaCz0cdLRQNjYxuOm5X66aGKGIRxMDGNGwA6L7AHO5U7VTGtHyjk+Yv5Gxyk9L7Gsg2wen8lE/GPQbLhSm62uMNqGZc5oH31LLxsvm9jJIixwy1wwtk642R0cmDn24Vysh4KZva9rsFpBBLSD1BCxnfCljjJoR1BO+9WxmInn88wDZvqonIxy+e4Krt1XtzaPs/GclXn0KyH/I8R8Va3hd+g1r/0GqqXl8Va3hd+g1r/ANBq7ON+tlX9cf5Ff8nUDoiBFMHzUIiIAiIgCIiAIUQoD5loIwvnVU0NRTvimjZJG4btcMgr7HcbLJ2avKbT7GJRjJdyKrppC5aOuRvej8mjPvVFvJ2dvuQu40tqOjv9CKimPLI3aWI/ejd5Fe05oIwclcrdtPuoa83qxNENSCTPE3pMPHbzXR7isWpeTmdcofR4OrY7PXqt151juMVypWzMHI8bSRnqx3kV6K1S7M3we0ERFg9hERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBeBqOzm8yxQTyObSRu53sB+/6L318y3fz3WYvR4mto+dDSwUtMyGnjbHG0Ya0DAC++B5I3osrD7mYrSCIiHoIiIAiIgCIiAL5ykNy4nGy3J3wuR4q6ii07peoqebE8jeSJo6kleZy6Vs20VO6xQXyQvxq1Kb3qY0sMgFFRAtac/ed4rmdL6duN/q2U1LA57cgvkxs1dHobQdx1JXirrYnMpS/meXfr53yFYHT2n7dZaBlNRQNZgbuxuVFxxXdPrZ9Fzeap4fGhiYr29d/5Od4faDt2n6cSOibLUuGXyOHUruWNa1oAGMLDQAMeC3HRSkYKK0j57k5VmRY52PZjCyiL0c4WMBZRAfnrqWGqpZIJ42vY8YcCM5VbOK2jJdO3Q1NNC51DM4lhA+4T5qzT+i8vUNopbxbZaOqYHseMbjoubJoVsNExw3LT469S/0vyU/GRkc3Mc7nzVrOF/6D2v8A7dqrprvTFRpm8PpHRuNMTmKTG2PX1Vi+F+2h7WD17hq4sCLrnKLLV6vyasjDqsrflnUNWVq3qVspbWj56wiIgCIiAIiIAiIgCIiAIQPJEOfBAeXU0Xs9X+UKXDXHaRo6EeJ+K/fTPbKwSMzhw6FfQjIweiMaGtwAAPRAZREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREATKFalAbZRaZ9VkfFBs2RYWHHbqgNsotCceK2B8kGzKLAWDnPVDDZsi1G3is5QyjKZWCQtR165QwzdMrUn1WMjzQbRvlMrTI805h5oNo3ymVpzDzTmHmm0No3ymVpzDzTmHmm0No3RaZHms+mUM7Rsi1bnxKyfjhAzKHC0JweqZHmg7G6IOiIAiwMoeiDZnKZWmR5pkeaGNo3ymVpzDzTOehTsNo3RfPnHRbt+KBNMHqFx2pdKR6g1DBX3FxfSUgwyDwc4+K7HxQjKw1vybarZVS6on46OCKkijp4I2xMYMAAeC/Uwgjqslo8kDQAspJLSNfdtuT8mMeZW46LGyFDCMosbrJQyEWBlOYIY2H7haEe71W5wdljAxhO4b32Oa1zpmm1HaH0krG96R7j8dCv26Nt0ln01Q26Y80lPFyZ+BXsANxhOUYwvCglLeje8icq1W32RkdVla+PVZBXrZoMosdEysmdmUWMplDGzKLUfFZ+axsyZRYPogysmNmURD0QyEWPmnTfKxsGUWBnzWBnKA2RYGcrKyYTCIsE7oZMogKbrGwEysZWN1kxs2RY8EBQbMomUyhnYRYJ2TfHVDGzKLDc+JWUMhEWMoY2ZRa5OVnKMJ7MosZRBsyiIeiGTBOBlYJ2R2A3dfCWpjjbl7gweZKGVGT8H1Jz4LI5fNc3dtZWC3uMdRXsY4eRXP1vFawQktikMhHjhapXVx+Ttq4zJu7xrZIhIHUocEdVFp4w2cdWuO/kvQouKunZiBJMWZ9F5/EVfc3S4TMitutkg5atmkLmrVrLT9wPJT3GMuPgTjC9+mnimZmKRrx6FbYzjLwcFmPZU9Si0foWjsZ3O62HRfmramCka6WZ4a0DJyVl6+TUlJtKK7n32CyDtlcFcuJ2n6JzwaoSFpwWt3Xlx8X7O+XcOaw9CVqd9SetknDh82a2oMlDmC0YADnK4638RbBWcoZVMyfAldVTVlPVxh8MjX58AV6VsX9JyXYeRj97Is/WcHxWNlrM4RxF7jhrRkn0XLS8QNNRvLH18QcHFuMo5xj9R5qxrLu8I7OqwEwFyn2haZ/f4vqn2haZ/f4vqse9X9zb+XZH+2zq8BMBcp9oWmf3+L6p9oWmf3+L6rHvV/cfl2R/ts6vATAXKfaFpn9/i+qfaFpn9/i+qe9X9x+XZH+2zqyWjCzkHdci/iFprIxXRn5r1bBqO23sv8AYJ2y8mzseC9xtjLsjxZg31x6pRaR7WQThYeWjqsHxx1Xg3zVdntFUKetq445HDIaTuvUpKHdmuuqdr6a1tnvDHgmy5NnELTXKM10QPllbw6/03K/lZXRlxIA381r96v7nQ+PyF5gzrG9FlaxPbJG2Rhy1wyD6LY9FtOPWjUHxTOxToPivPvdzpbVTGrrJRHCwjJKHqMHOWkfv2WNlyv2g6Z/f4vqn2haZ/f4vqtXvV/c6fy/I/22dVgJgLlPtC0z+/xfVPtC0znHt8W/qse9X9x+XZH+2zqwBnotm9V4Vv1TZ65/JBWRE4z95ezTyMkBcx4eD4grZFxfdGi2iyp6lHR9SshYBCdCvRrMrBxn4LK/JcK6mooXzVMrY42DJLjhZSbekeJyjFbkfqGMZT4KKdT8adO2twjpSas5x7i8CLj/AG/vuWS3SBq7Y8dkSW0jilyWPF62ToXADqhcPNcFpnifpq9d3GyrZBO/9RxXdRua+MOBy0jIPoVy202U/WjpqyK7voZvzb4TI9V42qdQUGnbYbjcZBHA0hoK5H7YtIfvp+i9VYlti3BbPNmZVW9SZI+Qmyjj7YtIfvp+ifbFpD99P0W38vyP7TV+YUfckfIHROqjj7YtIfvp+i9PTPEnTmoLtHbKCoMlRICQPgvE8O+tdTjpHuGbTY+lM7LHkVnmA2zug648cLydU3yg05a33K5SFkDTgn1XOuqbUYnQ+mCcpHr/ABTIUcDjFpAAf1079Nk+2HRpIDq/BP8AhXV+ByF/pORchj/ckckYz4Jt5ri7bxI0pXSNjgucZc7YB2y6ymqYaqISQyMkYdwWnK02U2V/UjdVkVW/Sz7gb9VkkLRxDGlx6AKP67i3pSjrZqOapcyWGQxvBHQg4WK6bLu0EZturp7zZIRPiFleFpHUlt1LbnVdslEsLXljj5Fe8AvEoyrl0s2QmrIqSMoeiIehQ9moGNysOIwvI1XqO3aZtnt9zmEcXMG59VyLOMGkZHhjaoucTgDHUrdDHtsXVFdjnnkVQfQ33ZIvMGnGVnmGdyvJu97oLXY33mrkLKVjA8uPk5cWeMOjycitIaCQNvJYrx7bdtLwYtyq6tJskoHdbBfis9ZBcaCGvp3l0U7A9mfIr9oWppp6Z0KSkk0Fq7GVsvm77xWG9Ge3ybAjwWcryLzfrZaYTLXVcUbR1y4Lhr7xl0vb2f1ef2lw/VaF0V4l1q/Sjlszaa+zZKBWpcB4qDZuP9vH3LfIR4L9+kONEN/1LQ2eG3vjdVSFuT4bLdPjr4x6mvBphyVMpqKfkmTORsmR4rSWRsUTpHnDWNLiVHk3F/SUchY6rOQ4t6Lnqx7LfoWzpuyK6ddb8kj5CZHko3+2LSH76fosfbHo/wDfT9Fu/A5H9po/MKPuSQ5wAzhAcjyUb/bFo/8AfT9FkcYNIvcA2rJJOwWHg5H9plchQ+yZI7SPNbFfCiljqKeOoiOWSNDm/Nfc9Fyd/DOxNNbRg4HVYyAV8aueGniMk72sY0ZLicYUc6r4w6btDjHTye1SN2PKehW6vHtueoI0W5NVXeTJMBCZCglnaAo3PLX0DgMrs9L8VtN3cRxvqWwTPOORx/FdE+NyK11NHPDkseculMkMYx1RaQyskibIxwc1wyCPEIuLUju6om2Ttnqsc55STjZYAweYlcXxP1lTaYtTmtcHVUoIjbnfJ6FeZ2KC7nRjYtmTbGuvu2fp13rW36bpCZJGyTY92Np3UF6s4g3u9yPY2c08BPuhuxXNXi41d0rpausne+Z5yRnIaPRfjByPe3x0Kh8jMlL6WfVuH9L1YsFK1bkfWaead3NNK+R3m4r5lziMEnHksH1WcHpgqOc5SeyzwrVa6UjIcRnG2fJYDnDxKYPkUIx1TbPX/CN4JpYiTFI9juocDuFMHZ7uV0rbhXsqKmSaGKJvLzHOHEqHMgAu8lOnZqpWx2W51OMufO1oPyC78GcnYkVX1XVVXx8p679iVLhWRUFFNVVDwyOJvMXEqt/ETX9fqGukio53Q0jXcrQ3YuA2yV3/AGiL7LT2qnstPJyOqzzSkHcMH/KgfId74HKD934eC6M+9p9MWRHpHhITr/F2rf2Njlryc7+JTmz1GVrggHO+Oq+jIJ3t5mNLm+YCif1Pui/NwqXbRrG5zXhzPcI/ZXRad1rfLHUNdFVukZ5SHK597CzAcCCvngczGPBzn+a9Rssg18HNkYlOTS+pJ9mWut93luehHXSWPkM1G5/L5ZaVVSbDqiVxaDzSOO6s1qWYWjhPK5h5DHb2sHzaB/NVjcHFxOD1ypDPbTiVL0bTGSvmktb/AP6Yw39lMDyWcHyKEEdQQo/qkXaVcUtdjGB5JgeSIm5eQ64RWtDA8ljlHl+K2wfAZTld5FeXKZn2YfGjAAAxjqpv7NtPy0VymI370N/AKEg1xwOU+JyrA9nmjdT6RfVO/wD2JubPyA/ku/AUnatlV9XuuHHtJ99kkVMjYKeSZ7sNaMn4eKqjr27m96rrq0nmj5jHH6NG38lYDjHfG2PRlRIHYmqPzTADvv4qsQzjB6+J8yt/I2NNJMhfRXHbhLJmu3hGOVviFvA4MnjeBjleCcHyWFgjI5Qeu+VF9T2fQZ1R14Le6SqzV6at0+2XU7M4+AXqcxyQuS4RVQqtBW1wIJZHyH5bLrQFZanuKZ8Hzq3Xkzj9pME+9jyUb9oGcQ6JczO8srB+KkhwwSfRRB2kqg/kq3UwP3pi4j4Ba75dNTZ3cFV7nIVx/cg7b9kLGB+z+KL6U0Tp6mKFn3pHho+ZVe3J9kfa3CuK20aFo8GfHdagDPvNGPDdSHPwqvQphUwkStcAeTK5i76VvFpjMldRPjiDsc2NltlTbojKOUwbf0praPLhq6mFwdBPJGR+yV3mgOJVys9VFTXGXvqRzg3J+8PXKj09cDp4ICAXDxLSErvnW/J0Z3GY+VXpxT2XKoKqKspI6qnc17JWhzSPFfpG43UQdnjUMlXQTWeeYvNOMxcx35cKXwVPU2e5DqPi/JYM8HJlRLyj8lzrYaCimq6iRscUTS5znHYAKqfFTiPcNU3OSGjndFQMcQ1rDjmA81JHah1JLTW6k07SylhrD3k5adwxvh81AFnoKm63Ont9GwmWeQAADJwrXw+FGNTvsRSOYzJTtVNbPzRB7yGsj5XOyeuSR6LD2yMjLpRJGD4uCtDong/YbdRQS3KnM9b1eSdgV01z4d6ZuFOIpLdGABjYLqlz1UJdKXY5Vwlli6myn1vaX1kDYXlkj3MaHNO+7sK8dkidDaKWFxJLIWjJ69FCeqeDRor5R3Kw/wDp4p4y6E/5hlTxE3la0Y6ABRXL5deTGLgvuS3EYlmPKXV+xEfail5NDQRnGJapoP0yqyP5G4I6HoVP/awrnez2a3DpI98hHw2UT8LLLT6g1vbrXVxmSnc7MjR4gdVL8R004TskRHK7sy+iJy/u82C5uPinueY+qtoOD2jdj7Aenmtvse0Z/d5+q8R5+pL6T1+SXPvsqTmMfrD6qTezXC2XiQyQAO7une7bw8FM7uDujSP/AOvP1XtaS0Fp/TNe6ttdJ3UzmchOfBc+bzNd9Lgo9zow+ItpuUmzq2jDfgFFPadmbHoARF2O9qWNx5jxUrAbnKgjtZ1ThQ2ekDvde97iPgBhQ3GR6sqCZM8rLpxZFfgMguwOjSd0a4gAjbO/Vevou3Q3TVdsoJ4y+OWoa1+D+rlWZ+x3R7sH2Jx+auGdyNeJYlJFRw8GzKrbiyqMb3h/MxxbJ15wd13PDbiRd9MXKE1FU+poHuDJGvOS3J6hSZxB4KUUlGajT2YJYY3EsO/Oq9VEU1NPLTPi5JI/dc0+GF4onRyMZLXwZvjfgST322XotlfT3S2U9bTSCSCdoc0jxBCqJxkom0HEe80zWcsbpednzAP+5KmHsv391XYqyyTSF/sb+eHmO4jPRcB2maRsXETvQMd7SsefU5I/koji6/w+c65Etydv4jCjYv8Ak7bsn1LXWi8UwP3J2v5fLLd1OXgq29lGuEWprpRudgTU4eAfEh2FZPbCjeZh0Zk9Epw8+vFiAUPQrBOF8qqZkFLLPIQGRtLiT5BRi7vRJt6TZXvtT6gbLcaLT0bsiEd/KB67AFcFwasDNQa/t9JLEXwxP76YjoA0ZXla6vT9Q6suN1zkS1BazPgwbYU29lrT7qeyVt9nZ79W/kicR+qPL0VwsisLj/3kioUzeZn9vCZ0faGcKfhdXQxnka90ceB5ZB/kqqMa17w0jGTgAepVlu1JUmHQ9NADtNVtB+SrnY4fab1RwYJ56iNu3j7ycPWvwspP9zXy9jWWoouroun9l0pbId8spI2kH/KF7G/gvhQtayljjGwY0D6BfSV7GMLnOAaBkknoFUpvc2W+tagv4NKmojp4XSyyNYxoy5x6AKD+KPGllJJLbNPgSS/ddN1HyXhcdOJc1wq5NP2OYsgheWzytP3j5D0UMkjnLmOcXu6g+asnF8OnH3bvBW+S5hqXt1eT0rzfbvdpnS1tXLJzHLjzbY+C80OLI+YYGTscqQNCcKb/AKi5ppYnUtOWZbI4Yz8lMOnuCWm6Sia24h1XOR77ugJUhfymPjfpgjgp47Iyl1SZV/MhOW8zxnGQepUh9n23zVXEulkex5FOx0jiR0PRT5S8LNIUzGtZbQcHIyV7dm0zaLPVOqaGjZA/lwXNG5Cj8nnI21Sgl5R30cNOqyMj76qnMGmbnODju6Z7gfg0qj8ji+pe475cXfMq4/FevZbuHl4lccZpnsGfEkKmrQXuIwSXEBe/Tlf9OdkvB49RW7sjXHyCGjfAx0IzuCse55j6q0mneEmk57NQ1E9C7vZKdjpMu6khel9j2jP7vP1XQ+eqi9dJzw4a6a3sqUOTzH1X67NC2ovFFAC089QwYJ/xBWqHB7Rn7gfqt6bhNpGkq4aqKhLZInh7TnxC1287VOLiom2vhbYTUmzubfGIKSGJmzWMDQPgErKplPTvmkeGMYC5zj0AHVfZgwA3yGyiTtKamfaNJstNNLyT1xw5zTuGjc/VVmil33KK+SyX2rHocn8Ea8YuJ1fqCsltloqDFb2O5S5mznn4+Si6Que/c++dz5kr7UlPPW1bKSkYTNK8MiAGc5VkOHnB210VqgmvUXfVjsOdnw9FcLLKeOhFa7lPqrv5KUu/YrX3MwaXPa4g+JGFq3mEgkjy1zNuZrt8f/6rl13D7S9ZAIX2yMNDcZaMKL9f8EYeeOq0450bY8OfETnm3XPHnK7YuMkdE+EsoacX8kv6Ha8aOtHeOLnmkjLifMtCL0rNTmmtFJTuaGmOFrCPgEVVnLcmy0QraikZuVSyioZ6qUgNjYXFVU13fptQ6inrnHmi5iyJvkApq473x9t02KGJ3LJVnk5s/dHmq8dCS3Yn/wClQnIW9+lH1H0XxqrreVJbb8GRsVk5Jzt8+ixgnYdV2nC3RTtWV4knLm2+F35x2PvEeC4KKXN6Lln50MOn37HpHj6V0ndr/MBQQOMWcOe8bD4KSLBwc5SRcql7/Ecpxj0UuWez0dqpm09LExjGj9UYyvQaMHHgpirDgl3PmWf6ryrZv2npMi/7HLL4yTZ9XLyb3wbhMZ9gqHNef2t1M+PVC3bqtrxYNeCNr9Q58Jb6ytN54Xait0YliDKkhw91o6hSvwOttVbtI8lXB3Mz5nOc1d65gJ6A5QNbG0iMBoz0CVY8an1I95vqHIzKPZsK4ceauSo12Ys+5DEG/wC6j5py0Lu+OML4tfVB3/Osa4D03/4XCDG+OmVB5TfuvZ9S4SCjxlfR9j9tkt77tdqW3Ru5TPIGn1Cs3YdF2O32uGmNJDI5rRzEt6lVx0NWx2/V1srJh+bjmwSfVWxppGVEDJ4HNcyRocCPJd/HRi49ypetci6u2EK3qOjk79w8sF3gwaZtO8dHMGFD9/4c3O0XymZE11RSyVDGud5DmyrI4PL5LWanjlAEjWuGQRkeIXbZRCfx3RWMHncrFTXVtNaPHv1jhvWnTaJzywvYGO+AXGfY3Yv+tP8AxqTTGS0DPQrfHxXuymM33OOjksnH3GqWkRa/g5YwwkTTnb9tcxxH4eWvT+m5rhDJKZGuaBzO23wFPDxhqjDtE1Hd6Phgzgyzj8Fz20VwrbJniOVzLs2qtzb2yvvgPRYHXcZGD/sngB5LLWmR7WAbucB+Kg5NtpH12xrfU/3Jm0Rwutd403R19VJK2SWMOODhe59jVj/60/8AGu70pSiksNDTt2bHTsH4L1eX4qfrxodK2j4xlc7mO6bjNpbZFknB6ysHMJagkDpzLutL2em0/Y4LXSg91EPH1XsEfFeffq2O22iqrJCGtijLsnz8FujXCv8AUjguzcnN1VZLe2QV2gb97fqKG1Qu5o6Qe/jwceqjFpDW5O4GwX67xWSXC61lbI7Lp5S7PzX5w0uDWBucuAx/t+KgLpuyzR9k4rEWDhqn4S2/5MZacOBwQc4WAABgdF0uu7EyzG2txyyTUgkft4+S5papxcZdLOzFvjkQ9yPhlhezxVCbRj4M7w1BB+ak1nT5qGOzRUt9nu9KTuJWvA9MKZwMAqexHupHxz1HX7XJXL9zJUD9pCod+W7dTDoIXOKnYuVd+0FUifWLIwd4YQD8yvGc+mpnZ6Qr6+Si/smyN17GioBU6rtcDhkPqmA/DK8Zdbwhp/adfW9hGzC5/wBAVD0/Wj6hyk+jEsl+z/8A0WfgjbHExjGjlDcL8l6tlNcqKSmqIWPY4HIIX7oxhuOZJASW+Wd1ZFqS1o+E+5OqfXF9ypOtbQ+x6lq7e5uGsdzRDyYei8YqQePbo3a4/NkHEADiPPPRR8q7bWvckj7lw987sKucvJ2HButdQa7ocPwybmid8wrQNIIbjfZVI0Tz/wBLbZyA59pZv5bq2sLeVg38ApPj3/TaKD64h05sZ/LXcql2iqmWp4m1Y7zDII2NDfkvR7Mdriq9cT10rOZtLTlzP8JdsvM7RFMYOJlVIQfzsTHD6L9/ZmvEdv1vJQzvDBWwcrcnq4Hovo09/liVf2PiUWlyW5/ctE3oPULLQcdVq04aD1A2K+gBx5KjuO+7Lsnrsh8Qs+qwc7Jn3URllbO1TUF+q7fTg/2dNzH5leZ2ZaYS8RRIRtDTSOz6uXy7SVQZuJUjAdoqWNv13Xudk+n57/dZSPejpoxn4lXGX9Pil/BTU/c5Pt9yxzMlx8lvha43WfmqcuyLn5YPos74WMeqyBhZMGrhthVy7V9QDfLVTZ3ZCXf+5WNcfBVa7T9S2o1/HE0/2NI0H4kkqX4OPVloh+cl04rR4nAqmbVcTbWwtzyF7z8grfMGx8MqrvZkphNr2SYjJhpyR89laTqFt9QT68lL7GngI9NDf3NCD0O4VRuPNshtnEisbA0NZUFsmB8Fbgv94t6Y2JVTe0NWMquI9Y1mCYGNZseuw/5WPTzcch6fYeoNOhbR6fZkqnw6/fT/AKtRSuaf/Houg7WNAxs1ouLW/nJeaFx9BuuY7NMEsnEVrmjLYoHc58sqSO1NTCXRdDVcvvRVjcnyBBXfky6OVicWPDr4yRFPZ+q/Z+JtvOdpRIz6hW3B6qlHDarNFriz1LfdHtMbT6AnCuq05PoQCuT1DDWRGX3Ov07PqokvsbkKOuPuoHWXQVVHBJyVFXiGPfz6qQ+bbJGMqsfaZ1Ayu1VDaYX5ioWHvMH9c9FxcVj+/kqP2O3l8n2Mdv7kVUdO+sr4qaEHnkkEbQP1i4q7OjLTFY9MW+1RD3aeENPxxuq0dnnTpvOu4Z6iMGCgiEzj1HP4BWvaC1o3yu/1BlKc1Un2icHAY3TF2v5IJ7WNa0UVotw6mR0x+mFEfC6n9q1/ZYP2qpp+m6kDtVTl+qrbD17umx9STlcpwHpHVPE21loz3JdIfkFJYSdfGtkXmas5FIt20BrcDAxjP0UVdoTWrrBYo7VRSgV1b7uQfusUozysggkkeQAxpJz5DxVNOKGoX6l1pX17z+abIYomZ+6G7Z+aguHxPxV234RPcvl/hqdLzo5lxfn33F0hJPN5nKnPgfws9p7vUV/hD2daeneNnepXEcFNI/0p1bEyVv8AU6T85MSMjzA+atvR08cFOyKNoYxg5WtHgApbmc72v+3rfgiuGwPd/r2LyIImwwtjijDA0YDR0Hovs3ON1kNwMAoBhVPvvbLakktJBY8wskLGMHqjM7Iw7R84h4aVMfjJMxo/iVX7RGZbvRwkZL6mNny5gFYztUVHdaOo4Mf2tYPwHMoJ4a0vtuurPTO3DqoZPwIKuHE/owZS/kpnLfrzki6NvjEVJBE3oyNrfoF+rC+bG4AA2wt/mqe3ttlxgtRSBGyAeqOGR1WOgKJbM7BG4VZe1PUF+s6Km8IqTP1Ks1nZVl7U1O5mtKSc9JKTA+RUxwaTzEiH51tYjaPF7PNrZcuIlO6VnNHTRum+Dh0VsmnGR5KpPAC8x2niDTCd4ZFVMMOT+0egVtY3ZbnzWzn3N5PfwafT7isfpXk2BQjJBQDfOy2AUIlondbXcwiBEPZXjtCXAVmp6eja73aeLJHqozXU8VJO913cXZzyyNHwwFy423VeypbtmfbuCpVOBUkfSlgfU1MVNF9+VwY34lWr0DY4rFp6komMa1zYx3hHi7Cr3wltn5R11QsI5hC4ykH0VpIwBgAdF28bX+nqZTfXGa/ehjxfbybnH1WMt5seKw87H0UP654oVli1ZV26npmSsgwMuOBuu+2xVrbKbg4Nuba66ltkxbeSx7pUC/bVc/3CD+NPtquec+wQfxrSsyH3Jj/C/I/2E9DA6LDSDkhQRFxluck7P6hHu4N912eqm+0Tmqt0NS5vK6VgcR5bLbVcrV2I3kOKycHpdy1siTtD2KR8FPfYGe9EeSU/4T0UJHHQeGyuHfrfBc7dLSVDA9kjcYIVWtb6drNPXuSlliJYXExSY2IKj87G2+pF69H8rGyl4tj7rweC0czgC7lDTzA+qmfgxrtrhHY7pNyu6QvJ6+ihccuPcBA9VvBJLDO2anJa9m4I8Co7HvlVIs/LcbVyVDqa7/DLmsIc3mByCF9fBRVwY1wy70bbRcZcVsLcAuP3h4KUR5NO+xKsldisjtHxjOwrcK902Luj6IiL2chh/wB1Q32lZh7BbafO/el34KZT0Vf+0dPz6joYA4/m4CSM+ZXJmvVTLD6Wr9zkq/22yKl+2xxd9eKOLH3p2D/3BfiXvaDgNTrC1RAZ/rLHH4A5UHBdUkfWsyfRjyn9ky19vbyUkTP2WAfQL9C0j229FurNHsj4NJ7bZrIcNyOqivtCXs0mn47VE8tkqyAcfsjqpSqHBjC8+AVX+Lt9N61hVkOzFTnuo99sDqfxXNl2qutr7lh9Lcf+Lz05fTE47LT93p4LouHVnN71bR0h3jEjXvH+Fpyue5Q0tA6Hqpl7OVmJdW3iRnu/2cRI8PH8VE4tfXNNn0jnsxYeBOW+77I/D2i6ZsNytj2gAGItHwyonCm/tK0v9StdZj7jnRn5jZQidtkzY9NzOf0rb7nGwf8AJJXZ4rBDq6op8+7LBuPXKsQOiq3wfqPZ9e0WNg4uB9chWjadvkFJce+qko/rGn2+Q6v7kYI8SqucXqn2nX1yyfuyhjfk3KtJIcNPwVRdazGfV10kd19pcAvPJP8Apo6fRFXVlWT+yPHxnZSBwBhMuvopTjkZA47/ADUfnONl6Fnu1wtFQ+W3zCFxGOfyUTVLompfY+h8pRLIxZ1R8tNFvyYxuXN+q8jU19obHbpKqona3DSRv1VbHa51QWu//lCdl5l3vt0u7WCvrHygD7hOylHyKa7FCx/RlvWnZNNGdTXaS93mouMpPNK8+75Dw/BeYsjocYz/ALrABccBhY7GfiVDycpSbXyfRK6a6YRr3pI6zhPRurNdW5gGWseXn5BWlGO7HoFDvATS09KyS91sXLLKAI8jw8wpjbvlT2FU4Vdz5L6qzY5Oc1F7S7EEdqixPkprffaeIYiJjmcB4HooGt9VUUFfBV0shZNE8Pa8eBHh9FdrVllpr/p+ptVW0Fk7S3p0PgVTbWFgrNN3+e11rCwsJ7txGzh4H6K88HkRup9ibPlnNY8qLvegi03CbXVJrGytIcGV0LQ2eMnx813IyAqQaO1HcNN3eK5W1zgGvxK3P3grb8PNX0OrLJDXU0je8wGyszu13iovl+LeLY5Q+kk+J5WORWoz8nUk7LB+4s42wtJnBsLnHoGkqFXcmpdtsptxgrXVnEi8yE57uoMI/wDEKVOyfSFlJd7i7YSPbEPkoT1lMKjVl0mJyH1cjs/NfSwapv1jpnUtruDoI3O5yOmVesjDnfhxrj+xRaMtU5bsZd8OaNsrPM3zVMftE1j/AH0/6rLeImsg4YvT/qoP8gu+5O/n1a8ouc0g9Csqs/ArVWqr7xApKauuL6imZE50jM/irLA+A8FF5WLLGs6JEriZUcmvriH4G6p1xtqXVXEu8ucciOURD5D/AOVcSbZhPkCqUcRZ/atc3mbxdVPUv6dhu+T+xD+op6qiiR+ynATqO61R+62ma358yscXtb1PVUn0pqy7aYNQ62ShnegZHmV6lVxK1lNK97rmY2u8Aei6c3iLMrIc0zkw+Uhi46gyyXEnXNr0raZ5ZJ2Pqw3EMAPvFxGyqJdq6puVynr6p5fUTvLnE+pzj5dFm63SsudS+puNRJUzuwA8nPwXV8NtA3TVF2haad8dva4PmlcPvfBdmHj1cbW5T8nFl328halHwSh2WrBNDb6/UFQzldUERQnza3xXcccqBlw4bXQEZMMffN/8V1mn7XTWez09upIwyGBgYwAL8mtaRtZpW50xGeelkGPkqxPKduYrf3LPHFVeH7SKT0kzoKyGdhw5kge3/wAXBXlsM3tNmo6hx3kha4/RUWeAyU8vVhIwrncLK0V/D+zVGcl1Mxp+ICmvUENwhYRHp6fTOdZ7d6r4bbaqmvmOI6eNzz8hlUk1HcX3W/11zlBeamd0jvTB91WP7St/Nq0a23QuImuDwzY9Gjqq36ets13v9HbadpdJUytbgeWd04On2qZXsxzd3vXKhFkezXp82zR/5SmjLai4P7w5/Z8FLR6L8FkoY7dbqejibysgjEbQPQL9z/un4KvZVvv3OT+SwYdXsUqJVXtJVfe8SpYCdoaZmPnlfr7LtL3uu5qj/pUjz9SAuZ421za7iZdnsORHKI8/AALveybAHXC8VA6thazPxKtl39LitfdFWpSt5P8A5JT4x3d9k4f3KsjP52SPuWfE5Cp4S0nmP6oy/wCPj+Ksj2qq80+laCgYTmoqOYgeQx/yq7WmlNZd6WiAyKieNjvm7C18DV7eJKz5PfOWe5lKstH2fNNtsuh46qVuKmvHeyO8ceCk1mMH47r8lko46C001FH92CJsY+QX7G9FVsm53XSm/ktOLSqaoxRlERaToC1K2WqxLwCAO1lXZfZ7cD+1KfrhR1wNp3VHE60kD3WSOcfkF1PamqC/WdHC3fuqYZHxOVFloulbaq9lbQT9xUAdc9Fd+Px5WYHRH5RSM/IVec5P4L2B7Qc56rbmb5hUw+0TWP8AfT/qs/aJrH++n/VQv+H7l8kx+fVp6Zc17m42wnhlU2puIGs5aiKNt4e4ueBjPqrgWlz322m7w5k7lhcfM4C4M3AliNdR34ebHKTcT9Q6BQ12oLD7bpenvbG4lonkPP8AhPRTMNl+G+W+lu1qqLfWMa+CdhY8EZ6rTi5DoujYvg35VCvpdb+Si9PK6CpjkY8xyMcHNeP1T4FWr4Ja+h1VYo6WqkbHcqcckjCd3gdHKunEPSdXpPUM9umae75iYJCPdMa8uxXetsl0juNve9skRDhg45h5FXPPx68+hTh5Kbg3zwb3GXgvS05yQMLK4fhfrek1dZmTseG1cYHfx56Lt29M5zlUm2qVUumRdaboXR6omQThFkdEWs27Kk8QnE61u2evtT2heB8V7/EWMs1zdQentDnLwD0KrN21bPZ924r/AMOn+CRuz7vrs58Kd6sRHkYz5nKrDwhujbbrqjL9mTOMZPxVnhylvpnIUzgSTq7HzX1pVKHIqcvDRs5zRkEHCqdxDqBUa1urw/OahwOfTorXVTXOppGxH3y04Vcrtw61XUXKqqBTsIlmc8E9dymdXKyKUTZ6OyacbInZbJLt2I/wPMfRYH/3ZdHqTSF6sNF7Xco2tjyAMea57pkeRUHOudb0z6hj5cMivrre0fe2ML7pSsaOYumYMfFwCuFRRdzSRRAY5Y2j8FVTh7TNq9a2mBwyHVAJ+W6tk1uGYUrxkf0tnzv11a3dVD7LZgg+6Mrl+ImlafVFjlpS0MqGjmjeOoK6pu+xWocS5wxuFJyj1dmUjGvnTYra3pruU8vVtqrVcpqCsZySxfQj0X4zjGAceoVgeM2i2Xi3OutEwCrg3cAPvBV/e3le5vKW4OMHwVdyqHXNr4Ps/BcxDkMfqX1fJ+i019RbbjDW0zy2SFwcCP1vQq1Whb/DqHT1NcIvvOYBIPEFVLUx9m66OFTcLY55LZAJ2Anp4YXVgWuMuj4IX1fx8bMX30v1RJw5lstB0K3CmT5cYecNKrVx3nM2vJhnaONjQFZV+7VVXitVis13cpGnIa/k+my4eQf9LRb/AEXX1Z7n9kcsNyB5rtuCcAqNfUZIyI2uf+C4kHDgfVSX2eacSaumlx/ZwKKxlu1RPoHPz9nj7NfbRYVgIJJW4cFgb5WOg+CsfwfD/g53iPeI7LpStrHOw/uy2P8AzFVRe90kjpHu5nuJc4+p3Uw9om+MlmpLHHJsD3koB+ihwY3wMbqEz5uU9fY+r+j8D8Phu6a7yNmskkw1oy5x5APUq1fDm0izaRoqQMDXlgc/4ncqtGkPYW6ko5Lg7kp2P7x58MjoFYGn4maTiiEZrPujC2cekk5SZw+s1kZHRVVFteTy+0XHz6Phkx7sVS1x+GVX07E5U1cVtaafv2lZqKjqg+TmaQPmoUG+60504zsWiT9I121YPtzWntnqaSqnUep7dUMOOWdgd9d1bqJ4fG1w6OaCqZ073RTxyN+8x7Xfirg2KQVNmo5h+vC0/gF1ca9RlH7EF67p1Omxeddz73GdsNBPMejI3O/BVBvMnf3ernO4fM9/1OytZrOYU+lrhKTjFO//AGKqSXODnk78x/3KxyT/AExibfQtelbP/g1J5QT5AlbRRP5HPblwBAcQMjcZWB94ZGRkZU38EtL0lbpR9TXUzHd9M4guHgNlwY1fuyaLbzHJR4/HVsvuQgTk4zj1AWMuLjk9Nuimni9w8p4LWLpZoQx0P32NGxHmoVHvYefvEYIS2l1+RxXJ1cnT11dmvJ+6z0E9zr2UVOWCWQ4aXnAUxaG4TshqI628PErm792NxlQlHM+CRsrJXRFpzzt6g+CsPwU1a+/2g01VNzVlOPez1cPArowVXKWpeSF9WTzKKt1v9Pz9yQ6SnjpoWxQtDY2jDWjwX3aNlhp2+a2b4qb0fKG3J7fyYIcTjbCj7jDoCm1daJJI2MFwhYTE/pn0KkNavwtlVsqZdcWar6I3R6ZFD7pQVVtuM1JVxPhqITyFmPvDzXR8L9X1WktRsqopCaSQhs8Q6Y8x6qceO/DyO/2yS722JrLjTt5jyj77R1CrFJlrnB0To3tIy09R6K7YuTXnY3RLuykZVFmFkdUfBeu0XOnudtgrqV/PFMwOaR8M4+K2vEzYLRVzPOGshcSfgCoe7L+pPa7TWacqJHOlpHd7ESerSpF4oVD6bh7epweVwo3Y+OFUbsX2sl1/uW6rJ93FVnzoppXO724TyE/fkec/Fdrpvhbqi/WSlulE2F8NQ0lnMcHA81wrQXloP3nOV0+G1ELdoi0Un3eSmZt55Gf5q1cpmzw64dHkq3G4UMuyXX4K6/YprL/o0/8AEsjgprMHIhp/4lazG/Qpj4qF/Psn7omvyOj9yFOBHDy/aV1RUV92ijbG6nLGFpzvkKbQMfRYZs7G63UZlZM8mzrn5JXExoY9fRHwfnuMzYKSSZ33WNLj8ACVRq+TiqvNbVA57yd7/kXbK6Wu5/ZtH3efOC2kkwfXlKpA/JcIwfHc/ip/03HTnIrnqWf0xOjsWib/AH22NuNBR97AXubn4dV5t5sN1szj+UaOaBudi5uxKtPwCoTScL7Y2UDnfzyHbrly9zW+lrdqayTUNTCwlzT3bsbtd4FZXOyqyXCXhPRmXCxsx1NedFM7ZUR0lygmqYxJDHIDI3HUK6Ghau01+mqSrs8bI6eSMEBoG3mCqZX+3VNmu1XbK1hElO90YHmAdipx7LGoCYq3Ts0uQPz1Pk9Aeo+q385Ur8dXQOfhbHRkOqZPo3G3RfGogE0MkTx7r2lp+BC+rNgAtiqfFtFxkkyi+qqH8n6pudCBgw1b2Hy2JVlezVXPquHDY5Dl1PUPY30HgFBfGul9j4l3aPlxzy95/EMrveAGporPoHUUkzg0UYM49XOBx+KuPJQeTgVyXkpnG2LHzpqXg5jtFahN313LSRPLqegYGMA8XH7y9Tsw2E12qZ7xLEDFRNAaT+2VFFyqZauvqKyV5fJNK6Qn/MrX8BtOiwaGpefIqKz+sSbb79AmfJYeAqo+WesGDzM92vwiRMHIWsnuscT0AW6/NdJO5ttTL+xE530BVPiu5cJ9otlI9aSd5q+7zE55q2Qn4B3/AApz7KFD3dku1cBtLOIwf8o3VfbnN7Tcaud2/eTPk+pP/CtF2aKU0/DdshGDNUPf/srhy8vbwVBfsU7iV7mc5P8Ac4ntY1LhcrLB+r3T3n6qL+GcQm13ZIngHmq2Z/kpK7WTD+W7O7wNO/H8Sjfhe8M4hWVx6Nqmf7rdx2lxz/hmnkOp8gt/dF0WnDcDzX0C0Azn45W7VRk/Gy8paZlEWCstmRlY6bLOFq7rnyWPIKndoypM/E2tjB92KKNnzwD/ADXOaI0TeNXipFqhjlFPylznnH3un+y34sVrrhxCvE+c4qHR/wAO38lMPZPpJI7Pd6x+zZJmsbj0H/yrxZfLDwIzh5KPCmOZnuM/BwX2J6z/AOjT/VY+xTWf/Rg+qtd59Vj6qE/Psn7om/yPH3vuVfsXBjVUN6o5quGAU8czXSe94A7qz9PH3cbGDYNGMeiyDvtlbjYgdcrgzM2zLadnwd+HhV4yfQHDJC+bmEjqvqi4teTu+Uzi+KGiaTV9ikppWNFSxpMUnjnyVStQ2eust2kt9dEYZo3Yz+q4eYV53eDfNRtxo0BBqmyvqKVjWXGAc0bgPvDqQp7h+TeNNQn4ZX+Y41Xwc4eStWiNTV2l79DcaGQtj7wd8zOzmeKuTpW9Ut9s1NcaR/NHMwO+B8lSCtglpquSmqojE6NxY5p6hTj2WtQSNlrNOzzczeUTUwJ8vvBSPOYkLa/egRvC5U6rPZmywgcMbFFqwDlGNkVP2y5disXGigfQ66q3uGGzgSN9fNcUfJTh2ibM+ooqO8wxF3ce7I4eDSoQ8M+CgM2DjbI+y+mstZPH1vfg+lLPLS1UVTB/axODm481aTh9qWl1FYIKiOQGRrQ17c7gqqx5gMtOD4Fe3pLUtw03cPaaF57pxy6LOyziX+0+n4NXqPh/zOpOP1RLat5j0wMJJkDPUqK7Jxgtc8eK2B0EgG5Pit7vxgtNNEXU0D53DoApZZUNb2fNZcFnOXQoH4+0fWNisdJTYz30m488KDTgucfHK6jiBrGp1XVxPli5IISeRvjkrlh1LionJtVk+x9U9PYM8LAVdi7na8FacVHECgy3Pd8zvhsrLVlVBSND5pGsBIG56lV87PUJfrl8nLkR0zjnyJ6LvO0HWSUulYWskfG987S0tODt1XfifopbKZ6nqeVzEaF9kiR438/K9hDgfJfTLQScbhQTw64pvoyygvOXxk8ol8APDKmK2agtVypmy0tXE8O/xLrqyI2LyVvP4XIwLJRku33PSlYySEh4HK4EFVK1pDHTatuUMQAjZUvAA+Ks7qi/W+0WiermqogA33RzZ3VU7pWOuN1qa14Le+kc/f1K4eRlFpaLb6Homp2Ta0j8/jsu94DVDodeRxAnEsDh8lwXKQ0HwPRST2e6H2nVM1WG59mjIB9CuHE37yLX6glFcbbssUBsshaefxW4KsR8UNJ3ckL3eQJVPtTy99qK4S5zz1Mhz81bi9yCK01b845YXn/2lU7q3mSqme7q5+T+Ki+Tl+mKL96Gguu2X7I+XxUw9mmkcay51rhkNY1gPr4qHX/dz6hT72c4e709WSkY72odg+YC5sGO7yw+rrenjppfLRKzV+e5VDKajlne7DWNLj8l9x6+S4LjffBadHvZE8d/VO7tgHUjxKmbJdMG2fKcLHd98Kl8sgLWV1kvepa2vkJLZJMM+A2C8kHBcS3OepWM58c7reGN00zIIziSRwaPn0Vd6nZPZ91xqY41cYP6Yo0wCPdIIODv5rLjkknkyeqlal4PXOSlikfURhzmAkEdFuODVxz/AOpiXR+Etfghn6l4+T/VPwRHsHHIwT4hbfLClWu4QXCno5pXVTTyMLwB5jwUVnPMeY5OcEjxWq2mVfeRI4HJ4/IdXsfBj18VarhdX/lDR1umzn81g/JVVVjOAVW2bRIi5v7GVzF1cbL+rJFY9bVqWLCf2Z7HFqc0+gbk7O/dYz8ThVcPi3wVjOPlaKbQz4c+9PIyP+armeuU5GW7Io9eiKf+zsl92YwDseitBwdhMGgba1w3LCT8yqwBWy0JCYNJW5nLg9w04+ScbHUmzT67s1j11/uexXU0dXQzU0rQ5kjS0g+KqdrWzmx6mrbeW8rGyF0f+U7q3DgcDAUJdouyFoo73HFtzd1K4eGemfouvPh1V9S+Cu+kc72Mz2d6UiGwun4Y3s2TV9LUE4jmeIpPLBXLjcZ8FlrnA+6cE9D5eOVDw3XNSR9Szcb8ZRKqX2LnQPbLEHtOQd8r6g9VynC+8MvGj6OpDwXtjDH/ABC6OvrIKCjkrKmRscMTeaR56NHmrJB9SWj4Tk1ui2Vcvg/SsEZ8F8aSrgq4GTU8rZI3gOa5p2IX25gvUo/DNMZKXdGr2NeCHDIxjfyVTeP+nI9P64mfTgMp65hna0DYHm3VsyQfFVy7V9RA+92uma4GVkJJPlkqZ4Gco5SXwQvPVxeK5Pyc52cq6Sn4m08H3W1Mb4/iAMgKdOOtUKThjdXv/XaGfV2FAHZ/jll4o2xwBIjc9xP+HlxlTF2n65sPD9lNzDmqKqNuPMDcrs5KvfIxS+dHDx1uuOm38FZqJhmroYhuXSNaPmcK8lkiENnoosY5IWDHwaFSjSELp9UWuLl5i+siGP8AzCvDA0Nia3oGgAJ6laUoRPXpxPplI+u2VnAWoOOqzzKsbSLPptGcDOUWOYDqUyPNZ2ho4/jPVeycN7xLnGYeX6kBU1DSSB4PJP12/kFa/tIVzafhpUwg+9UyMjb675VVaZpfVRMG573p6ZVw4GOsaUv3KZz8t5UY/sXS4aU/sug7LCW4Io48/HG66EtHkvyWOMQ2ejhaMBkLAPoF+3w6KpWyUrG/3LdTFqqK/Yrh2n9NGlvlLqKliHLVDuZttg7GzlHPC+9nT+uLZXh5jjEvdT/4gdv91aPjBYG6j0PX0Q2mZGZoz4gt3VOnZDjz+7I0jPo4FW/ibFl4cqpfBUeVreLlxsj8l8qZ7ZadkkbuYObzNPovr4LhuCmoG37QdFK92ZqVvcSHPUhdyCMZVSurddji/gttE1ZWpIq32nrcaXXrK7Pu1dO1wHmW7FRxR3OqpLZV2yNzmxVmO8A8QOgU19rGiw6y14GwEkQ9TjOFArXODdznO4Ku/EzVmJFMo3LQdeXJo9/h3ZTftX262CPvGSzB0o/wZGR9FdSjgZT00UEbQ1sbQ0AeQCgDssWFrqyvvskRLWYiheRsSeuFYTcEfFV7ncj3sjpXhFj4OhVUKb8s3Xg8Q6w2/RN3rAcGKlec/LC97K4jjlUCDhheN95Iu7+pUXjx6rYr90SuTLppk/2ZTx2HPfjbmO3oDv8A8q3/AANiEXDG17Y52F/1KqAPeOTtkBv4YV1uHdH+T9EWmiaN46VmR8RlWb1E+mqMf3/+FX9OrqucmRb2r6EG3We5cueSUxOPk0j/AJUE6aq3W2+W+4c2O4mjkefPB3VqePVmkvHDysZFEZZYB3zAOvu9VUYYDtzlo/nst3CS93DcDXzMfby+svjbKqOsoIamE5ZLG17SPIhfqCi7s9ashvejYbbNIG1dCO5LCfeLR0cpQjOW5zlVPIpdVriy14tytqjJGyx4pkZxndYyM9Vzs6AXY8l8p5CyJ7idg0uXOa91jatKW2Sqq5mGflPdxZ3cfJfSlur6zQYu07O6fNROmLT+rkEgLeqpdm15OaVyakk/BTvU8pm1LdJc5ElTI7Pnk7qy3Znpu44cskLcOlqHuJ8x0H4KrlU8yTyyO+85zyfqrecEYRBw1tIAxzxc5+atHOv28OESscJFzy5SO6wEwsNcCOqzlVDaLhpmcIAAsAoSB4rKaBkrA64yvhcaynoaKarqZBHDCwvkcejQOpXztlxo7lSsqaOdk0TwC1zTnIK9dL1s8OaT02fqd94L5uG789ML6F45sLDiD4ZHivHlo9a0nv5KwdpfTjbXqmG6wRhsNcw95gbF4/8AoXMcFqk0fEu0SNeWh0hjdjxBHRSj2sqqD8n2akBHemV7i3xAxsfwUS8JInz8Q7O1rSf600/grtiTdvGS6/gpOTBVcilH5ZdBv3QiAYACKmbRdEno82+Wymu9ploZwO7kaW4Kqxq+w1WnL1NQ1UbsB57l2Ni3zVtcAtHkuX4gaRpNTW18cgDahrT3cg6g42+S48vH91Fk9Oc0+Pu1L6GVaPRYGxXt6n0xdrBUviqqd/dA4bIBsV4mCc46jzUDKucPJ9cxsurLXVWzJd5LGSepWo3PLkgrLQebGCV5619jel+wWQM5HmMI1r3k8oz6DqvWs+nbxdJI/YqR5DiPecNgvcYOfhGm7JpoXVOXgkvs1UzfabpVvHvNaxgP1X7e0pUj2S20mfec8uI9F0vB/SdVpq3VLax7XSVDmuwPABeXxu0fcdQGG4ULwXU8Zb3Z8dzupmMZLHaPmH46m7nPfm/07K/jB2zgdQV+ykuVXSDMFXM30adlpWUNXQSGCrgfE9gwQ4dfVfFpBBc0gZ8FC/1K9n1Byx8uO1po/RV3Ovq4zHNVyvBOcOOy/KULXDcnI8kaCRkYA6AeJKxKU5+TNUK64qEdJA4zkEnbAHqrAdnyySUGn5rlOzkkrX8wBHRoUY8ONGVuobnFJJC6KkhcHSkj73oFZe30cNFRxU0DQ1jGhoHopXAx2n1SKD6w5eEofhan/J9x1IW3gUA970QjZSq7s+ey7HP8Rav2LRlzqAd2wHCqaXcxLj1JVm+NdR7PoCv3GZeVgB9Sqxvbyu2yojknqa/g+nehoxjjzm18/wDwHYKyPAemEehoJSMGR7nfiq3tzzA8uytVwyovYtF22Ibfmg459d1549P3NmfW98fwsIry2dJOeVod5KunHW/flTU7KGF+YKIYcP8AEp61XcorRYau4TOAbFGcfHGyqRcaiSurp6yQuL55HPd8108haow6SF9GYXuXSyZf6fB8G/dz5kldfwls77vrKk/N88NOTJLt9FyHvEnDT8fAKdeztafZ7PV3d7TmpIDMj9Uf/OVH4lcpWJly9S5n4TBlZF932/8AZLsO0Tfgt91qzotlYD4xvZ+S6s57fUMx1jP+yp5XRdzXTxdOSVzfxVx6r3oZG+bSFUTU8Jg1JcYvKpkx9Sovk0+mOi/ehJr3bY712PNU39m6qDrdcaIndkvPj0Kg/fyUpdnOp7rUlZA8lpmg+6fQrlw59N29Fj9VVKzi5P5Oj7R8wbZaCn8Xzc30BUFKY+0pI509rhaQSA55+ChwZzuFjOn/AFux59J0tcXGSlp9z70EJqK+ngHWSVrfqQrgWaEU9upoANmRNaPkFVDRkHf6ptkZBOaln4HKttTjljjHkF2cbF6bZXPXdid1cN77H3PRczxJtAvWkq2i5cvMZcz/ADAZC6YjK+czQ5vKeh6qRlHqTRR6bnTYrF8FMZY3xSyMeOVwdgjyI2P4rToQT0zuus4sWR9k1nVsH9lUOM0fpnquTwc9Mqt3QlCb+x91wsqN2PXfF+US72cr0Iamqsj5Mh/5yME/LC7XtAVzqHhjcMOLXTcsOR/iKgfRV2fZdS0NewABkoa71B2U4ccbXX6l4eFlrb3jzIyUN8wN1YOGtjOUFL7nyj11hui+dla7SRC/DjinddLzilq3OqreHYbk5IU+2LiRpi6UkUgr4onyDPI44IVP66jqaWeSmqI308kZ5XNeOvqvkx7mFrmhzCPI7q+ZPEUZP64M+R4/K5GMumS7Fw9TcR9OWagnl9vimmjblsbTkkqrOt9R1WqtR1N2qAQwnMLD4AnYLxJpXyyuc/me9wx7xXsaR05dNSXmK30ELnOLh3pxtG3zys4mDTx79xsxk51ueuhIlTsrWOWW7V98fEfZ4m9zE4jqepXqdrKYtobNCD7ple8j5KWND6eptNabprXStwI2+8fFzvElQf2ravvL9bKEAksgc8gepURjZH4rk1Z8EvkUfhuN6CPeFclBDr61VFxlEcMUpkc49BjcK0X2jaQBx+Wqf8VTcBwdzNDg4EHIWeeXAGX7eqm8/i45c1Jy8ELhclPEi4peS5H2j6P/AL6p/wAVj7SNH/31T/iqcc8vm/6pzS+b/quD/D0P7ju/P7PsXH+0fR/99U/4r9dn1npy71raGgusM1Q/JaxvUqlvPL+08fNST2b4H1HEqGSXLmxU8jx8cYXNlcJCimU9+DoxOanbdGLXYkXtXSOGlrVAw456skj4NUAaWpXV2orbSMGXS1EbT8MhTP2r6p4dZabOQA+THjnooz4N0/tHEmyx7ACYEg9Tjdd3HNU8c3vzs4uRTt5Fduy0XJpWCOFkY/UaB+C+q1jxjPmtlTi6LWlo+NQwPa5hAIcMEHyVOeLFgdp3XVfScmKeR5liOPA7/wA1cpw3JUF9qiwGS30d/haT3J7qbH7J8VL8Jk+zkqL8Mh+bxvdocl5R4HZav/s19rdPzy+5VM72IE9HDqrJDZqo/o66TWLVFvuEezop25d4cp6q6ttq2VlDDVQuDo5mB7D6EZW3n8dQyHOPyaOByeun2mvBF/aet5qtDQ1YGTSVQd8ne6qyMa4yBsbeZzyGMarf8bqR9Zw2vDWgENja8f8AiQSq4cHbCb/r+hpXtJigd3smPADcKR4W+NeHNyfg4OXx5TzIpfJZfhNYf6PaKt1EWBsvd88vq5267E9Fo1gYA1oxgLc9FVbbHZNyZaaKlVBRMHoou7S9X7Pw0nYDh01RGwD5qUR0Kg7tW1ZZY7VRj/8ANOXFv+ULp4xdWTDf3Obk5OONLX2K/wBth9ouFPTjfnma38QrzWeEQW2mix92FjfoFSfR0Jm1Xaovu89bFnP+YbK8EIwwfBTHqOe5xiiH9Ow1GUmj51sLKilkhkaHMe0tcD4g9VTfijpiXSurKmhkjPs0shfA/G2D4K55C4jixoil1dYzFy4rIhzQvHUnyPoo3i814tvfwyR5XC/EV7Xkqro7UVfpe8xXKhkc2RpwW52eM9FZnR/FvTV5twfWVbaGpG0kbvNVgv8AZLpYrg+iuVM9kjCdyPdO/ULz+eRrctceu5HirPk4OPnxU2+5WsfOyMFuGuxct3EPSLRk3qA7dAo915xtoKP2ii0+3vps8omPTp1VdWyvG4keD6rMQkkkDccznHAGMl60UcHi1S3N7Ruv5vKsjqCPUvV9uuoLuJrrWOmdJLktzsCcdFajW7xa+DtUYzyujtrWN+JaFBHDThfer7cqesqqc0tJHI17uYYJb6Ka+Pk7KXhlWwghrXhsQ3+i4uRlVLIrpq8JnXxytjjztt8tFTR7xGT1G6tdoTWulLVpC10M15p2uipmNIweuFVIBwIPIchbGSYuBLpNugzsFM8hgLLhGO/BEYWbPFm2l5LjniNo8Ha9U/4p9o+kP77p/wAVTjnl/af9U5pfN/1Ub/h2H9xIfn9m32Lj/aPpD++6f8VlvEXSTjht5gcfJU355fN/1X67Mx1ReKKCRx5X1DG+8dvvBeZcBCMW+rweo87ZJpaLecUquJvDS81LXc0T6N2HDxDgq38NeI910jUxxue+poTjna452HkrE8TLTV1/DCsttsbzSinaxjP2gPBVFuVBWUFQ6mq4ZKeRmxY8dCevyWjh6arYTrmbuXvtqnCcC2unOJ2mLvb4qiStjpnybd284IX677r3TVroZJ33CKUsZzCNjt3Km5DmdCdsEOBW0r55nF7nPJIwXF3QeS6n6er6tp9jjXqC3o00dLxK1dUaw1HJXuyIm+5TsPg3/wCldd2aLD+UtavuxY7uLbGQCejnuO30UdWKzXC93CKjoIHSSyHkaWj7ufE+it7ww0lTaR0xBb4wDORzTyeLnL1yeRDEx1RB+T1xmPPLv9+a8HVtzhFluwwip/Si57NBgtGyEAjoiL0jD+Uefc7XRXGIw1cDJGnpkdFwl84TWaundNE8wOPTl6Ii0W1xflEjx+dkU/RNo8Ko4MRF2GXQtHwK+1PwWpdu+ubnAeQKItLor14JeXL5vT/mM6awcMLDbnBxZ3zvNy62gtdBQM7unp2MAHgERdFVUEuyIPLzci1/rm2fvYABsMLWQA5BAIRFt6V4OLfhng33Slnu0UgqaVheRjnxuuCquDltlc51NVmEHoMdERc1lcW/BOYHI5VKahNo/C3gzEJDzXUn5FezY+ElnpJ45aiV07mHO/REXmNUPsduRyuZKHex/wD4JGtltpLfEIKaJsbW7jAX7HHAHqiLqS0uxWpTlOe5PbMgrPgiLJq8s8LWdhptR2g26qe5kbnA5b1GFw7uDdjIz7ZVfxIi02wjJ90S2JnZGPDpqm0jT7HbEDj2qod6F2yk61UkdDQwUkf3IYwxvwCIsVwjGXZHjOy7shL3ZbPM1rYYNSWg22pmliic4E92cZ+K4R/B6xF/L7VVADp7yIvNtcZJNo94WbfRDprk0jZvB2w84Bqaojr95SBpe2UtqtTLbShwhp/cGep8URbIQjHwjGZm33xUbJNo9dnRZRFsI0+bt3EEKNb3wtslyvE9ZLUVLXzvMjg12wJOURarop9Oztwsi2iTdctH5GcHLE7P9aqev7S9bSXD+1aauf5Upp6iSUNLcPdt1RFmFMFPwdt/JZVkHGc20fs13oe3aorYqmske0xx8jQ0+q553BywjH9bqv4kReJVQc+6PGPyGTTWoQm0j9tg4X2a1XanuMM9Q+WnkD2hztieikdpwQPiiLZVFKPY5cy+y+W7Htn0WkpwW+pRFsRxeTjte6HtmqJoKmsfJG+JpALDjIXM/Y9YSRiqqhn/ABIi0OuL3tEvj8hk1VqMJtJB3BuxF/L7XVeeeZSRaqFlvt8VDG98jI2hoLzk9ERZjCMEulHPm5d2RFK2WzntYcPtPalgeKmkZHMf/wArRgqO6jgFRuyae7uY3wBB2RFK0Zd0FqMit5ONU33ifW28A7e2UPr7o+dg/VaCFJuktMWbTUTaK20jWOEeXSke874lEXjJyrZrUpHvGxqo6aidED1Ue684bWfV12juNfU1TJGw92Ax3hlEXNjTlB9UX3OjMhGVbTR4Q4D6Zxn2yt/jWPsI0x++Vv8AGiLsWbf/AHHA8WlpfpM/YRpn98rf4k+wjTH75W/xoiz+NyP7jH4Sn+0x9g+mD/8AuVv8a6PQPDOy6Qur7nQTTySmIx4kORgoi125d04NSl2N1ONVGaaifbiFw6tOs6ynqbjPPGYI+RojOPHK87R/CWwabv0F3pJZ5Joc8veHOEReI32Kvo32Pc6K3dvXckmP7q2RFykijBXi6ustJqKy1VorG5hnbgny9UReqm09o03rcWmRw/gVplsYb7VVjPk7opL0za47JZqW0xSOljgZytc87keCIt2RfZZFdT2c2JTCE5dKPrfKCK62arts/wDZ1ELmO+BXG8MuHtu0ZU1dZBIZ5pQG8zvAIi8RsnGmaTPdkIyvrbRIaZ2RFq+DrB3XGcRNBW3WppPyjLLH7MXFpjODuiL3VJwnuJquipQ0znrFwY05arvTXGKeplkp5BI0SOyMgqUWdSPQIi2X2zsacns1YlUIRfSjYbrV5AcBhEXOzrj3PB1ZpOzaipzDcqVjyW4DwPeCi+v4CW2SRxo7k+Bh6NIzhEUhjZNtf0yIrKx6pS7o+FJwCpmvzUXcyDyDSuz0lws03YsySQNq5ebIc8Z5fgiLbfmXzjqUjTRi0xl2id/DDHBGGRMaxo2AAxsuf17pej1hYRba1zmRCUP93zCIoyuclYnvuS1tcfaa0cI3gRpl3Wsrf4lj7BtM/vtb/EiKQ/G3/wBxGLFpa+k2HAbTOD/Xa3+JY+wjTH75W/xoifjsj+5iWJT/AGj7CNM/vlb/ABL9Nt4IacorhBWMqamR8Mge1r3ZGQURYebe1rqMwxKd/SSm0BrAwDYbLmNUaJsOo2yx1tHGJXDeVo3RFx12ShJuLO6yqE0lJEb13AK3ulIpLo+Jg8CCVrRcAqAS8tVdZJWeQBCIpFZt/T9REvEp6/pJO0foyyaXhbFQ0zTLy470jfC6ZmMEAYwURRtlkrJNyeybqqhXFKK0bIiLwbT/2Q==" style="height:70px;max-width:220px;object-fit:contain;display:block;margin-bottom:8px;" alt="GSTAR Services"/>
+          <div class="pd-title" style="font-size:15pt;">Liquidación de Prestaciones y Derechos Adquiridos</div>
+          <div class="pd-subtitle">República Dominicana · Código de Trabajo · Ley 16-92</div>
+        </div>
+        <div class="pd-logo-area">
+          <strong>GSTAR Services</strong>
+          Generado el ${printDate}<br>
+          Documento orientativo
+        </div>
+      </div>
+
+      <!-- Resumen de datos -->
+      <div class="pd-summary">
+        <div class="pd-sum-item">
+          <label>Fecha de Ingreso</label>
+          <span>${new Date(ingreso+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'})}</span>
+        </div>
+        <div class="pd-sum-item">
+          <label>Fecha de Salida</label>
+          <span>${new Date(salida+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'})}</span>
+        </div>
+        <div class="pd-sum-item">
+          <label>Antigüedad</label>
+          <span>${tenureStr}</span>
+        </div>
+        <div class="pd-sum-item">
+          <label>Salario Mensual</label>
+          <span>${fmt(salario)}</span>
+        </div>
+        <div class="pd-sum-item">
+          <label>Salario Diario</label>
+          <span>${fmt(salarioDiario)}</span>
+        </div>
+        <div class="pd-sum-item">
+          <label>Jornada</label>
+          <span>${jornadaLabel}</span>
+        </div>
+        ${diasVacPactados > 0 ? `<div class="pd-sum-item">
+          <label>Vacaciones Pactadas</label>
+          <span>${diasVacPactados} días (convenidos)</span>
+        </div>` : ''}
+        ${nombreTrabajador ? `<div class="pd-sum-item" style="grid-column:1/-1">
+          <label>Nombre del Trabajador</label>
+          <span>${nombreTrabajador}</span>
+        </div>` : ''}
+        <div class="pd-sum-item" style="grid-column:1/-1">
+          <label>Causa de Terminación</label>
+          <span>${causaLabels[causa]}</span>
+        </div>
+      </div>
+
+      <!-- Tabla de conceptos -->
+      <p class="pd-section-title">Desglose de Conceptos</p>
+      <table class="pd-table">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Referencia Legal</th>
+            <th>Monto (RD$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lineItems.map(li => {
+            const parts = li.sub.split('·');
+            const art = parts[0].trim();
+            const det = parts.slice(1).join('·').trim();
+            return `
+            <tr class="${li.zero ? 'zero-row' : ''}">
+              <td>
+                ${li.label}
+                ${det ? `<span class="pd-art">${det}</span>` : ''}
+              </td>
+              <td>${art}</td>
+              <td>${li.zero ? '—' : fmt(li.amount)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <!-- Total -->
+      <div class="pd-total">
+        <div>
+          <div class="pd-total-label">Total a Recibir por el Trabajador</div>
+          <div style="font-size:8pt;color:rgba(255,255,255,0.5);margin-top:2px">Conforme al Código de Trabajo (Ley 16-92)</div>
+        </div>
+        <div class="pd-total-amount">${fmt(total)}</div>
+      </div>
+
+      <!-- Retenciones en PDF -->
+      ${aplicarRet && totalRetenciones > 0 ? `
+      <p class="pd-section-title">Retenciones sobre Conceptos Gravables</p>
+      <table class="pd-table">
+        <thead><tr><th>Concepto</th><th>Base</th><th>Monto (RD$)</th></tr></thead>
+        <tbody>
+          ${montoGravableSalario > 0 ? `
+          <tr><td>AFP 2.87% — Días Trabajados</td><td>${fmt(montoGravableSalario)}}</td><td>- ${fmt(afpDias)}}</td></tr>
+          <tr><td>ARS/SFS 3.04% — Días Trabajados</td><td>${fmt(montoGravableSalario)}}</td><td>- ${fmt(arsDias)}}</td></tr>
+          <tr><td>ISR proporcional — Días Trabajados</td><td>${fmt(montoGravableSalario)}}</td><td>- ${fmt(isrDias)}}</td></tr>` : ''}
+          ${montoGravableVac > 0 ? `
+          <tr><td>AFP 2.87% — Vacaciones</td><td>${fmt(montoGravableVac)}}</td><td>- ${fmt(afpVac)}}</td></tr>
+          <tr><td>ARS/SFS 3.04% — Vacaciones</td><td>${fmt(montoGravableVac)}}</td><td>- ${fmt(arsVac)}}</td></tr>
+          <tr><td>ISR proporcional — Vacaciones</td><td>${fmt(montoGravableVac)}}</td><td>- ${fmt(isrVac)}}</td></tr>` : ''}
+          ${isrRegalia > 0 ? `<tr><td>ISR 10% — Regalía (exceso exención)</td><td>${fmt(exceso)}}</td><td>- ${fmt(isrRegalia)}}</td></tr>` : ''}
+          ${isrPartic > 0 ? `<tr><td>ISR 15% — Participación Beneficios</td><td>${fmt(montoGravablePartic)}}</td><td>- ${fmt(isrPartic)}}</td></tr>` : ''}
+          <tr style="background:#FEE2E2;font-weight:700;"><td colspan="2">Total Retenciones</td><td>- ${fmt(totalRetenciones)}}</td></tr>
+        </tbody>
+      </table>
+      <div class="pd-total" style="background:#1A7F4B;">
+        <div>
+          <div class="pd-total-label">Total Neto a Recibir (después de retenciones)</div>
+          <div style="font-size:7pt;color:rgba(255,255,255,0.5);margin-top:2px">Bruto: ${fmt(total)}} · Retenciones: ${fmt(totalRetenciones)}}</div>
+        </div>
+        <div class="pd-total-amount">${fmt(totalNeto)}}</div>
+      </div>
+      ` : ''}
+
+      <!-- Plazos Legales -->
+      <p class="pd-section-title">Plazos Legales de Cumplimiento</p>
+      <div class="pd-plazos">
+        <div class="pd-plazo-item">
+          <span class="plab">Pago de prestaciones (Art. 86 CT)</span>
+          <span class="pval">10 días hábiles</span>
+        </div>
+        <div class="pd-plazo-item">
+          <span class="plab">Notificación desahucio (Art. 75 CT)</span>
+          <span class="pval">48 horas</span>
+        </div>
+        <div class="pd-plazo-item">
+          <span class="plab">Pago Regalía Pascual (Art. 219 CT)</span>
+          <span class="pval">Hasta 20-dic</span>
+        </div>
+        <div class="pd-plazo-item">
+          <span class="plab">Mora por incumplimiento (Art. 86 CT)</span>
+          <span class="pval">+ 1× el monto</span>
+        </div>
+      </div>
+
+      <!-- Nota -->
+      <div class="pd-nota">
+        <strong>⚠️ Advertencia Legal</strong>
+        Este documento es una estimación orientativa generada a partir del Código de Trabajo de la República Dominicana (Ley 16-92). Las indemnizaciones por preaviso y cesantía no están sujetas al Impuesto Sobre la Renta ni son embargables (Art. 86 CT). Para salarios variables, horas extras o beneficios adicionales, la base de cálculo debe ser el promedio del último año (Art. 85 CT). Para disputas o casos complejos, consulte al Ministerio de Trabajo o a un abogado laboralista certificado.
+      </div>
+
+      <!-- Firmas -->
+      <div class="pd-firmas">
+        <div class="pd-firma-box">
+          <strong>Firma del Empleador</strong>
+          Nombre y Cédula / RNC
+        </div>
+        <div class="pd-firma-box">
+          <strong>Firma del Trabajador</strong>
+          Nombre y Cédula
+        </div>
+      </div>
+
+      <!-- Pie de página -->
+      <div class="pd-footer">
+        <span>Calculadora de Prestaciones Laborales y Derechos Adquiridos · RD</span>
+        <span>Generado: ${printDate}</span>
+      </div>
+    `;
+  }
+
+  function imprimirPDF() {
+    window.print();
+  }
+</script>
+</body>
+</html>

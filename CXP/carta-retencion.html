@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carta de Retención · CXP · Gstar</title>
+<script src="../auth/auth.js"></script>
+<script>if(window.Auth) Auth.requireAuth();</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ========== VARIABLES ========== */
+:root{
+  --bg:#EEF2FF;--bg-card:#fff;--bg-form:#F1F5F9;
+  --text:#0F172A;--text2:#64748B;--border:#E2E8F0;
+  --blue:#2563EB;--blue-lt:#DBEAFE;--blue-dk:#1D4ED8;
+  --radius:10px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+}
+[data-theme="dark"]{
+  --bg:#060D1F;--bg-card:#0F1E3A;--bg-form:#091528;
+  --text:#E8F0FE;--text2:#7E94B8;--border:#1A2E55;--blue-lt:#1A2E5F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;height:100vh;overflow:hidden;transition:background .3s,color .3s}
+
+/* ========== TOPBAR ========== */
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);
+  padding:11px 20px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;box-shadow:var(--shadow);gap:12px;z-index:10}
+.tb-left{min-width:0}
+.tb-title{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+.tb-title i{font-size:17px;color:var(--blue)}
+.tb-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.tb-actions{display:flex;gap:8px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+  font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;
+  transition:all .15s;white-space:nowrap}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--blue-dk)}
+.btn-outline{background:var(--bg-card);color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+
+/* ========== SPLIT ========== */
+.split{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ========== FORM PANEL ========== */
+.form-panel{width:370px;flex-shrink:0;background:var(--bg-form);
+  border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.form-panel::-webkit-scrollbar{width:5px}
+.form-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.fp-header{padding:13px 18px 11px;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;
+  letter-spacing:.6px;display:flex;align-items:center;gap:6px;
+  position:sticky;top:0;background:var(--bg-form);z-index:5}
+.fp-body{padding:14px 16px;flex:1}
+.form-sec{margin-bottom:18px}
+.sec-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:5px;
+  padding-bottom:5px;border-bottom:1px solid var(--border)}
+.sec-label i{font-size:13px;color:var(--blue)}
+.frow{display:grid;gap:9px;margin-bottom:9px}
+.frow-2{grid-template-columns:1fr 1fr}
+.frow-1{grid-template-columns:1fr}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label{font-size:11px;font-weight:600;color:var(--text2)}
+.fld input,.fld select{background:var(--bg-card);border:1px solid var(--border);
+  border-radius:7px;padding:6px 9px;font-size:12.5px;font-family:inherit;
+  color:var(--text);transition:border-color .15s;width:100%}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.fld input[type="number"]{font-family:'Courier New',monospace}
+.fld-auto input{background:var(--blue-lt)!important;color:var(--blue)!important;font-weight:600}
+[data-theme="dark"] .fld-auto input{background:#1A2E5F!important;color:#93C5FD!important}
+.auto-hint{font-size:10px;color:var(--blue);margin-top:2px;font-weight:600}
+.fac-card{background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:11px;margin-bottom:9px}
+.fac-head{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.fac-num{font-size:12px;font-weight:700;color:var(--blue)}
+.btn-del{width:22px;height:22px;border-radius:5px;border:none;
+  background:#FEE2E2;color:#DC2626;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s}
+.btn-del:hover{background:#FECACA}
+.fac-sep{height:1px;background:var(--border);margin:8px 0}
+.add-btn{width:100%;padding:9px;border:2px dashed var(--border);
+  border-radius:var(--radius);background:none;color:var(--text2);
+  font-size:13px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:all .15s;font-family:inherit}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+
+/* ========== PREVIEW PANEL ========== */
+.preview-panel{flex:1;overflow-y:auto;background:#B0B0B0;
+  display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+.preview-panel::-webkit-scrollbar{width:7px}
+.preview-panel::-webkit-scrollbar-thumb{background:#888;border-radius:4px}
+
+/* ============================================================
+   CARTA — replica exacta del Word original
+   Ancho: 794px (A4 @ 96dpi), márgenes 70px lados
+   ============================================================ */
+.letter-paper{
+  background:#ffffff;
+  width:794px;max-width:100%;
+  box-shadow:0 0 20px rgba(0,0,0,.4);
+  padding:52px 70px 0 70px;
+  font-family:'Times New Roman',Times,serif;
+  font-size:14px;
+  line-height:1.5;
+  color:#000000;
+  display:flex;flex-direction:column;
+  flex-shrink:0;
+}
+.ltr-main{flex:1;padding-bottom:28px}
+
+/* ── HEADER ── */
+.ltr-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:38px}
+
+/* Logo real GSTAR SERVICES (imagen del Word) */
+.ltr-logo-img{width:230px;height:auto;display:block}
+
+/* Fecha / Ciudad */
+.ltr-date-col{text-align:right;padding-top:85px}
+.ltr-date{font-weight:700;font-size:14px;line-height:1.4}
+.ltr-city{font-weight:700;font-size:14px}
+
+/* ── DESTINATARIO ── */
+.ltr-addr{margin-bottom:18px}
+.ltr-addr p{margin-bottom:2px;font-size:14px}
+
+/* ── SALUDO ── */
+.ltr-salut{font-weight:700;margin-bottom:16px;font-size:14px}
+
+/* ── CUERPO ── */
+.ltr-body{margin-bottom:20px;text-align:justify;font-size:14px}
+
+/* ── TABLA ── */
+.ltr-table{
+  width:100%;border-collapse:collapse;
+  font-family:'Arial',Helvetica,sans-serif;
+  margin-bottom:22px;
+  table-layout:fixed;
+}
+.ltr-table colgroup col:nth-child(1){width:11%}
+.ltr-table colgroup col:nth-child(2){width:6%}
+.ltr-table colgroup col:nth-child(3){width:13%}
+.ltr-table colgroup col:nth-child(4){width:11%}
+.ltr-table colgroup col:nth-child(5){width:9%}
+.ltr-table colgroup col:nth-child(6){width:9%}
+.ltr-table colgroup col:nth-child(7){width:11%}
+.ltr-table colgroup col:nth-child(8){width:11%}
+.ltr-table colgroup col:nth-child(9){width:11%}
+
+.ltr-table thead th{
+  background-color:#ffffff;color:#000000;
+  text-align:center;vertical-align:middle;
+  padding:6px 3px;font-size:9.5px;font-weight:700;
+  line-height:1.3;border:1px solid #000000;
+  word-break:break-word;
+}
+.ltr-table tbody td{
+  border:1px solid #000000;
+  padding:6px 4px;
+  text-align:center;
+  vertical-align:middle;
+  font-size:11px;
+  color:#000000;
+  background-color:#ffffff;
+}
+.ltr-table tbody td.num{
+  font-family:'Courier New',Courier,monospace;font-size:10.5px;color:#000000;
+}
+.ltr-empty td{
+  border:1px dashed #cccccc;color:#aaaaaa;
+  font-style:italic;padding:16px;text-align:center;font-size:12px;
+}
+
+/* ── CIERRE ── */
+.ltr-closing{margin-bottom:30px;text-align:justify;font-size:14px}
+
+/* ── FIRMA ── */
+.ltr-sig-attn{margin-bottom:24px;font-size:14px}
+.ltr-stamp{margin-bottom:12px}
+.ltr-stamp img{width:110px;height:110px;object-fit:contain}
+.ltr-signer{font-size:14px}
+.ltr-signer strong{font-size:14px;font-weight:700;display:block}
+
+/* ── FOOTER ── */
+.ltr-footer{
+  padding:9px 0 14px;
+  margin-top:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:0;
+}
+.ltr-footer-logo{flex-shrink:0}
+.ltr-footer-logo img{width:130px;height:auto;display:block}
+.ltr-footer-sep{
+  width:1px;background:#888;align-self:stretch;
+  margin:0 18px;flex-shrink:0;
+}
+.ltr-footer-info{
+  font-family:'Arial',Helvetica,sans-serif;
+  font-size:8.5px;line-height:1.65;color:#333333;
+}
+.ltr-footer-info div{display:flex;align-items:flex-start;gap:4px}
+.ltr-footer-info .fi-ico{flex-shrink:0;margin-top:1px}
+
+/* ========== PRINT ========== */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{height:auto;overflow:visible;background:#fff}
+  .topbar,.form-panel{display:none!important}
+  .split{display:block;overflow:visible}
+  .preview-panel{padding:0;background:#fff;display:block;overflow:visible}
+  .letter-paper{box-shadow:none;width:100%;max-width:100%;padding:18px 52px 0;margin:0}
+  @page{margin:6mm;size:A4 portrait}
+}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:1000px){
+  .split{flex-direction:column;overflow:visible}
+  .form-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);
+    overflow-y:visible;height:auto}
+  body{height:auto;overflow:auto}
+  .preview-panel{padding:16px 6px}
+  .letter-paper{padding:28px 26px 0}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOPBAR ===== -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="tb-title"><i class="bi bi-file-earmark-text-fill"></i> Carta de Retención a Proveedores</div>
+    <div class="tb-sub">Cuentas por Pagar · Gstar Services</div>
+  </div>
+  <div class="tb-actions">
+    <button class="btn btn-outline" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    <button class="btn btn-primary" id="btnPDF" onclick="exportPDF(this)"><i class="bi bi-file-pdf"></i> Descargar PDF</button>
+  </div>
+</div>
+
+<!-- ===== SPLIT ===== -->
+<div class="split">
+
+  <!-- ===== FORM ===== -->
+  <div class="form-panel">
+    <div class="fp-header"><i class="bi bi-pencil-square"></i> Datos del formulario</div>
+    <div class="fp-body">
+
+      <div class="form-sec">
+        <div class="sec-label"><i class="bi bi-person-vcard"></i> Datos del Proveedor</div>
+        <div class="frow frow-1">
+          <div class="fld"><label>Tratamiento</label>
+            <select id="f-trato" oninput="renderPreview()">
+              <option value="Señor">Señor</option><option value="Señora">Señora</option>
+              <option value="Dr.">Dr.</option><option value="Dra.">Dra.</option>
+              <option value="Lic.">Lic.</option><option value="Ing.">Ing.</option>
+              <option value="Lcda.">Lcda.</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow frow-1">
+          <div class="fld"><label>Nombre completo del proveedor</label>
+            <input type="text" id="f-nombre" placeholder="Ej. Ramon Andrés Ávila Concepción" oninput="renderPreview()">
+          </div>
+        </div>
+        <div class="frow frow-1">
+          <div class="fld"><label>RNC del proveedor</label>
+            <input type="text" id="f-rnc" placeholder="001-0564307-6" oninput="renderPreview()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="sec-label"><i class="bi bi-calendar3"></i> Período y Emisión</div>
+        <div class="frow frow-2">
+          <div class="fld"><label>Mes de retención</label>
+            <select id="f-mes" oninput="renderPreview()">
+              <option value="enero">Enero</option><option value="febrero">Febrero</option>
+              <option value="marzo">Marzo</option><option value="abril">Abril</option>
+              <option value="mayo">Mayo</option><option value="junio">Junio</option>
+              <option value="julio">Julio</option><option value="agosto">Agosto</option>
+              <option value="septiembre">Septiembre</option><option value="octubre">Octubre</option>
+              <option value="noviembre">Noviembre</option><option value="diciembre">Diciembre</option>
+            </select>
+          </div>
+          <div class="fld"><label>Año</label>
+            <input type="number" id="f-anio" value="2026" min="2020" max="2099" oninput="renderPreview()">
+          </div>
+        </div>
+        <div class="frow frow-1">
+          <div class="fld"><label>Fecha de emisión de la carta</label>
+            <input type="date" id="f-fecha" oninput="renderPreview()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="sec-label"><i class="bi bi-receipt"></i> Facturas</div>
+        <div id="fac-list"></div>
+        <button class="add-btn" onclick="addFac()"><i class="bi bi-plus-circle"></i> Agregar factura</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== PREVIEW ===== -->
+  <div class="preview-panel">
+    <div class="letter-paper" id="letterPaper">
+      <div class="ltr-main">
+
+        <!-- ── HEADER: Logo real + Fecha ── -->
+        <div class="ltr-hdr">
+          <img src="assets/logo-gstar.jpeg" class="ltr-logo-img" alt="GSTAR SERVICES">
+          <div class="ltr-date-col">
+            <div class="ltr-date" id="lv-fecha">&nbsp;</div>
+            <div class="ltr-city">Santo Domingo, D. N.</div>
+          </div>
+        </div>
+
+        <!-- ── DESTINATARIO ── -->
+        <div class="ltr-addr">
+          <p><strong>Señores:</strong></p>
+          <p><strong>DIRECCION GENERAL DE IMPUESTOS INTERNOS (DGII).</strong></p>
+          <p><strong>Asunto:</strong> Constancia de Retención de impuestos<strong>.</strong></p>
+        </div>
+
+        <!-- ── SALUDO ── -->
+        <div class="ltr-salut">Distinguido Señores:</div>
+
+        <!-- ── CUERPO ── -->
+        <div class="ltr-body">
+          En cumplimiento de las disposiciones establecidas en la ley 11-92 y sus modificaciones la cual nos otorga la
+          faculta de actuar como Agente de Retención, en el periodo <span id="lv-periodo"><em>__________</em></span>,
+          hemos retenido al <span id="lv-trato">Señor</span>&nbsp;<strong><span id="lv-nombre"><em>__________</em></span>,
+          RNC <span id="lv-rnc"><em>__________</em></span>,</strong> a realizar las siguientes retenciones:
+        </div>
+
+        <!-- ── TABLA ── -->
+        <table class="ltr-table">
+          <colgroup><col><col><col><col><col><col><col><col><col></colgroup>
+          <thead>
+            <tr>
+              <th>FECHA<br>FACTURA</th>
+              <th>No.</th>
+              <th>NCF</th>
+              <th>MONTO</th>
+              <th>ITBIS</th>
+              <th>Ret. ISR<br>10%</th>
+              <th>ITBIS Ret.<br>100%</th>
+              <th>NETO<br>PAGADO</th>
+              <th>FECHA DE<br>PAGO</th>
+            </tr>
+          </thead>
+          <tbody id="lv-tbody">
+            <tr class="ltr-empty"><td colspan="9">Complete el formulario para ver las facturas aquí</td></tr>
+          </tbody>
+        </table>
+
+        <!-- ── CIERRE ── -->
+        <div class="ltr-closing">
+          La presente se expide a petición de la parte interesada a los <span id="lv-dia">__</span> días del mes de
+          <span id="lv-mes-c">__________</span> del <span id="lv-anio-c">____</span>,
+          para los fines de lugar.
+        </div>
+
+        <!-- ── FIRMA ── -->
+        <div class="ltr-sig-attn">Muy atentamente,</div>
+
+        <!-- Sello real extraído del documento Word -->
+        <div class="ltr-stamp">
+          <img src="assets/sello-gstar.png" alt="Sello GSTAR SERVICES">
+        </div>
+
+        <div class="ltr-signer">
+          <strong>Lic. Gilbert Sanchez</strong>
+          Depto. De Cuentas por pagar
+        </div>
+
+      </div><!-- /ltr-main -->
+
+      <!-- ── FOOTER: La primera + datos de contacto ── -->
+      <div class="ltr-footer">
+        <div class="ltr-footer-logo">
+          <img src="assets/logo-laprimera.png" alt="La primera">
+        </div>
+        <div class="ltr-footer-sep"></div>
+        <div class="ltr-footer-info">
+          <div><span class="fi-ico">&#9742;</span><span>(809) 262-1001</span></div>
+          <div><span class="fi-ico">&#9993;</span><span>www.lotodom.com.do</span></div>
+          <div><span class="fi-ico">&#9968;</span><span>City Tower, Acrópolis Center</span></div>
+          <div><span class="fi-ico">&nbsp;</span><span>Avenida Winston Churchill</span></div>
+          <div><span class="fi-ico">&nbsp;</span><span>Piso 16, local A-B</span></div>
+          <div><span class="fi-ico">&nbsp;</span><span>RNC: 131-75101-6</span></div>
+        </div>
+      </div>
+
+    </div><!-- /letter-paper -->
+  </div><!-- /preview-panel -->
+
+</div><!-- /split -->
+
+<script>
+/* ======================== STATE ======================== */
+var facts = [];
+var uid   = 1;
+var MESES = ['enero','febrero','marzo','abril','mayo','junio',
+             'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+/* ======================== INIT ======================== */
+(function init(){
+  var now = new Date();
+  document.getElementById('f-fecha').value = now.toISOString().split('T')[0];
+  document.getElementById('f-mes').value   = MESES[now.getMonth()];
+  document.getElementById('f-anio').value  = now.getFullYear();
+  addFac();
+})();
+
+/* ======================== FACTURA CRUD ======================== */
+function addFac(){
+  facts.push({id:uid++,fd:'',no:'',ncf:'',monto:'',itbis:'',
+              isr:'',ritbis:'',neto:'',fp:'',
+              autoIsr:true,autoRitbis:true,autoNeto:true});
+  renderForm(); renderPreview();
+}
+function delFac(id){
+  facts = facts.filter(function(f){return f.id!==id;});
+  renderForm(); renderPreview();
+}
+function getF(id){ return facts.find(function(f){return f.id===id;}); }
+
+/* ======================== SETTERS ======================== */
+function setSimple(fid,key,val){ var f=getF(fid);if(!f)return; f[key]=val; renderPreview(); }
+function setMonto(fid,val){ var f=getF(fid);if(!f)return; f.monto=val; calc(f); renderForm(); renderPreview(); }
+function setItbis(fid,val){ var f=getF(fid);if(!f)return; f.itbis=val; calc(f); renderForm(); renderPreview(); }
+function setManual(fid,key,autoKey,val){ var f=getF(fid);if(!f)return; f[key]=val; f[autoKey]=false; renderPreview(); }
+function calc(f){
+  var m=parseFloat(f.monto)||0, i=parseFloat(f.itbis)||0;
+  if(f.autoIsr)    f.isr    = (m*0.10).toFixed(2);
+  if(f.autoRitbis) f.ritbis = i.toFixed(2);
+  if(f.autoNeto){  var r=parseFloat(f.isr)||0; f.neto=(m-r).toFixed(2); }
+}
+
+/* ======================== RENDER FORM ======================== */
+function renderForm(){
+  var list=document.getElementById('fac-list');
+  list.innerHTML='';
+  facts.forEach(function(f,idx){
+    var c=document.createElement('div');
+    c.className='fac-card';
+    c.innerHTML=
+      '<div class="fac-head"><span class="fac-num">Factura #'+(idx+1)+'</span>'+
+      (facts.length>1?'<button class="btn-del" onclick="delFac('+f.id+')" title="Eliminar"><i class="bi bi-x-lg"></i></button>':'')+
+      '</div>'+
+      '<div class="frow frow-2">'+
+        '<div class="fld"><label>Fecha factura</label>'+
+          '<input type="date" value="'+f.fd+'" oninput="setSimple('+f.id+',\'fd\',this.value)"></div>'+
+        '<div class="fld"><label>No. de factura</label>'+
+          '<input type="text" value="'+f.no+'" placeholder="109" oninput="setSimple('+f.id+',\'no\',this.value)"></div>'+
+      '</div>'+
+      '<div class="frow frow-1">'+
+        '<div class="fld"><label>NCF</label>'+
+          '<input type="text" value="'+f.ncf+'" placeholder="B0100000109" oninput="setSimple('+f.id+',\'ncf\',this.value)"></div>'+
+      '</div>'+
+      '<div class="fac-sep"></div>'+
+      '<div class="frow frow-2">'+
+        '<div class="fld"><label>Monto (RD$)</label>'+
+          '<input type="number" step="0.01" value="'+f.monto+'" placeholder="0.00" oninput="setMonto('+f.id+',this.value)"></div>'+
+        '<div class="fld"><label>ITBIS (RD$)</label>'+
+          '<input type="number" step="0.01" value="'+f.itbis+'" placeholder="0.00" oninput="setItbis('+f.id+',this.value)"></div>'+
+      '</div>'+
+      '<div class="frow frow-2">'+
+        '<div class="fld'+(f.autoIsr?' fld-auto':'')+'"><label>Ret. ISR 10%</label>'+
+          '<input type="number" step="0.01" value="'+f.isr+'" placeholder="0.00" oninput="setManual('+f.id+',\'isr\',\'autoIsr\',this.value)">'+
+          (f.autoIsr?'<span class="auto-hint">Auto · 10% del monto</span>':'')+
+        '</div>'+
+        '<div class="fld'+(f.autoRitbis?' fld-auto':'')+'"><label>Ret. ITBIS 100%</label>'+
+          '<input type="number" step="0.01" value="'+f.ritbis+'" placeholder="0.00" oninput="setManual('+f.id+',\'ritbis\',\'autoRitbis\',this.value)">'+
+          (f.autoRitbis?'<span class="auto-hint">Auto · igual al ITBIS</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="frow frow-2">'+
+        '<div class="fld'+(f.autoNeto?' fld-auto':'')+'"><label>Neto pagado</label>'+
+          '<input type="number" step="0.01" value="'+f.neto+'" placeholder="0.00" oninput="setManual('+f.id+',\'neto\',\'autoNeto\',this.value)">'+
+          (f.autoNeto?'<span class="auto-hint">Auto · Monto − Ret. ISR</span>':'')+
+        '</div>'+
+        '<div class="fld"><label>Fecha de pago</label>'+
+          '<input type="date" value="'+f.fp+'" oninput="setSimple('+f.id+',\'fp\',this.value)"></div>'+
+      '</div>';
+    list.appendChild(c);
+  });
+}
+
+/* ======================== RENDER PREVIEW ======================== */
+function renderPreview(){
+  var trato  = document.getElementById('f-trato').value;
+  var nombre = document.getElementById('f-nombre').value;
+  var rnc    = document.getElementById('f-rnc').value;
+  var mes    = document.getElementById('f-mes').value;
+  var anio   = document.getElementById('f-anio').value||'____';
+  var fecha  = document.getElementById('f-fecha').value;
+  var dp     = parseDateParts(fecha);
+
+  document.getElementById('lv-fecha').textContent =
+    dp ? dp.dia+' de '+dp.mes+' del '+dp.anio+'.' : '';
+  document.getElementById('lv-dia').textContent    = dp?dp.dia:'__';
+  document.getElementById('lv-mes-c').textContent  = dp?dp.mes:'__________';
+  document.getElementById('lv-anio-c').textContent = dp?dp.anio:'____';
+  document.getElementById('lv-trato').textContent  = trato;
+  document.getElementById('lv-nombre').innerHTML   = nombre?esc(nombre):'<em>__________</em>';
+  document.getElementById('lv-rnc').innerHTML      = rnc?esc(rnc):'<em>__________</em>';
+  document.getElementById('lv-periodo').innerHTML  = (mes&&anio)?esc(mes+' '+anio):'<em>__________</em>';
+
+  var tbody   = document.getElementById('lv-tbody');
+  var hasData = facts.some(function(f){return f.fd||f.no||f.ncf||f.monto;});
+  if(!hasData){
+    tbody.innerHTML='<tr class="ltr-empty"><td colspan="9">Complete el formulario para ver las facturas aquí</td></tr>';
+    return;
+  }
+  tbody.innerHTML = facts.map(function(f){
+    return '<tr>'+
+      '<td>'+fmtDate(f.fd)+'</td>'+
+      '<td>'+esc(f.no)+'</td>'+
+      '<td style="font-size:10px">'+esc(f.ncf)+'</td>'+
+      '<td class="num">'+fmtN(f.monto)+'</td>'+
+      '<td class="num">'+fmtN(f.itbis)+'</td>'+
+      '<td class="num">'+fmtN(f.isr)+'</td>'+
+      '<td class="num">'+fmtN(f.ritbis)+'</td>'+
+      '<td class="num">'+fmtN(f.neto)+'</td>'+
+      '<td>'+fmtDate(f.fp)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* ======================== HELPERS ======================== */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(iso){
+  if(!iso) return '';
+  var p=iso.split('-');
+  return p.length<3?'':p[2]+'/'+p[1]+'/'+p[0];
+}
+function fmtN(v){
+  var n=parseFloat(v);
+  if(isNaN(n)||v===''||v===null||v===undefined) return '';
+  return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function parseDateParts(iso){
+  if(!iso) return null;
+  var d=new Date(iso+'T12:00:00');
+  if(isNaN(d)) return null;
+  return {dia:String(d.getDate()).padStart(2,'0'),mes:MESES[d.getMonth()],anio:d.getFullYear()};
+}
+
+/* ======================== EXPORT PDF ======================== */
+function exportPDF(btn){
+  btn.disabled=true; btn.innerHTML='<i class="bi bi-hourglass-split"></i> Generando…';
+  var paper=document.getElementById('letterPaper');
+  html2canvas(paper,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,imageTimeout:8000})
+  .then(function(canvas){
+    var {jsPDF}=window.jspdf;
+    var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var W=210,H=297,ratio=canvas.height/canvas.width,imgH=W*ratio;
+    if(imgH<=H){
+      pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,W,imgH);
+    } else {
+      var pxMm=canvas.width/W,pgPx=H*pxMm,pages=Math.ceil(canvas.height/pgPx);
+      for(var i=0;i<pages;i++){
+        if(i>0) pdf.addPage();
+        var sy=i*pgPx,sh=Math.min(pgPx,canvas.height-sy);
+        var sc=document.createElement('canvas');
+        sc.width=canvas.width;sc.height=sh;
+        sc.getContext('2d').drawImage(canvas,0,sy,canvas.width,sh,0,0,canvas.width,sh);
+        pdf.addImage(sc.toDataURL('image/png'),'PNG',0,0,W,sh/pxMm);
+      }
+    }
+    var nombre=(document.getElementById('f-nombre').value||'proveedor')
+                 .replace(/[^\wÀ-ÿ\s]/g,'').trim().replace(/\s+/g,'_');
+    var mes=document.getElementById('f-mes').value;
+    var anio=document.getElementById('f-anio').value;
+    pdf.save('Retencion_'+nombre+'_'+mes+'_'+anio+'.pdf');
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-file-pdf"></i> Descargar PDF';
+  }).catch(function(e){
+    console.error('PDF error:',e);
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-file-pdf"></i> Descargar PDF';
+  });
+}
+
+/* ======================== THEME SYNC ======================== */
+(function syncTheme(){
+  try{
+    var t=window.parent.document.documentElement.getAttribute('data-theme');
+    if(t){document.documentElement.setAttribute('data-theme',t);return;}
+  }catch(e){}
+  document.documentElement.setAttribute('data-theme',localStorage.getItem('gstar-theme')||'light');
+})();
+window.addEventListener('storage',function(e){
+  if(e.key==='gstar-theme')
+    document.documentElement.setAttribute('data-theme',e.newValue||'light');
+});
+</script>
+</body>
+</html>
