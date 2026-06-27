@@ -15,6 +15,74 @@
 
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/styles.css">
+<style>
+/* ---- Data view ---- */
+.corte-cell { max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11.5px; }
+.data-status-sel { font-size:11px; padding:3px 6px; height:auto; min-width:0; width:auto; }
+
+/* ---- Document preview container ---- */
+.doc-preview { background:var(--bg-soft,#f8fafc); border-radius:var(--r-lg); padding:20px; min-height:300px; }
+
+/* ---- Document paper ---- */
+.doc-page { background:#fff; border:1px solid var(--brd); border-radius:10px; padding:32px 40px; font-family:'Inter',sans-serif; color:#334155; }
+
+/* ---- Doc header ---- */
+.doc-header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:18px; border-bottom:2px solid #e2e8f0; margin-bottom:20px; }
+.doc-logo { height:58px; object-fit:contain; }
+.doc-header-right { text-align:right; }
+.doc-empresa { font-size:15px; font-weight:700; color:#0f172a; }
+.doc-sub, .doc-fecha { font-size:11.5px; color:#64748b; }
+
+/* ---- Title block ---- */
+.doc-title-block { border-left:4px solid #2563eb; padding-left:13px; margin-bottom:18px; }
+.doc-title { font-size:21px; font-weight:800; color:#0f172a; margin:0; }
+.doc-subtitle { font-size:12.5px; color:#64748b; margin:3px 0 0; }
+
+/* ---- Corte tag ---- */
+.doc-corte-tag { background:#eff6ff; color:#1d4ed8; padding:6px 14px; border-radius:6px; font-size:12.5px; font-weight:600; display:inline-block; margin-bottom:18px; }
+
+/* ---- Balance grid ---- */
+.doc-balance-grid { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:18px; }
+.doc-bal-row { display:flex; justify-content:space-between; align-items:center; padding:9px 16px; border-bottom:1px solid #e2e8f0; font-size:13px; }
+.doc-bal-row:last-child { border-bottom:none; }
+.doc-bal-label { flex:1; }
+.doc-bal-val { font-weight:600; text-align:right; min-width:140px; }
+.doc-bal-val.neg { color:#dc2626; }
+.doc-bal-total { background:#f8fafc; }
+.doc-bal-total .doc-bal-label, .doc-bal-total .doc-bal-val { font-weight:700; }
+.doc-bal-highlight { background:#eff6ff; }
+.doc-bal-highlight .doc-bal-label, .doc-bal-highlight .doc-bal-val { font-weight:800; color:#1d4ed8; font-size:13.5px; }
+
+/* ---- Tipo tag & doc table ---- */
+.doc-tipo-tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#64748b; margin-bottom:8px; }
+.doc-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:22px; }
+.doc-table th { background:#2563eb; color:#fff; padding:8px 12px; text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; }
+.doc-table th.r, .doc-table td.r { text-align:right; }
+.doc-table td { padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+.doc-table tfoot td { background:#f1f5f9; font-weight:700; border-top:2px solid #cbd5e1; }
+
+/* ---- Signatures ---- */
+.doc-signatures { display:flex; gap:56px; margin-top:38px; padding-top:12px; }
+.doc-sig { flex:1; }
+.doc-sig-line { border-bottom:1.5px solid #94a3b8; height:36px; margin-bottom:7px; }
+.doc-sig-label { font-size:10.5px; color:#64748b; text-align:center; }
+
+/* ---- Estado de Cuenta specific ---- */
+.ec-consorcio-head { margin-bottom:18px; }
+.ec-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#64748b; margin-bottom:4px; }
+.ec-name { font-size:20px; font-weight:800; color:#0f172a; }
+.ec-balance-cards { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+.ec-bal-card { flex:1; min-width:140px; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0; }
+.ec-bal-card.blue { background:#eff6ff; border-color:#bfdbfe; }
+.ec-bal-card.red  { background:#fef2f2; border-color:#fecaca; }
+.ec-bal-card.ok   { background:#f0fdf4; border-color:#bbf7d0; }
+.ec-bal-card.warn { background:#fffbeb; border-color:#fde68a; }
+.ec-bal-lbl { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#64748b; }
+.ec-bal-val { font-size:15px; font-weight:800; color:#0f172a; margin-top:4px; }
+.ec-corte-section { margin-bottom:22px; }
+.ec-corte-header { background:#1e3a8a; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:10px; }
+.ec-tipo-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#64748b; margin-bottom:5px; margin-top:10px; }
+</style>
 
 <!-- Librerías empaquetadas localmente: la app funciona 100% sin internet -->
 <script src="assets/vendor/xlsx.full.min.js"></script>
@@ -66,6 +134,19 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7"/><path d="M3 19h18"/></svg>
         Reportes
       </button>
+      <button class="nav-item" data-view="data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+        Data
+      </button>
+      <button class="nav-item" data-view="solicitud-pago">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+        Solicitud de Pago
+      </button>
+      <button class="nav-item" data-view="estado-cuenta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        Estado de Cuenta
+      </button>
+
       <div class="nav-section">Sistema</div>
       <button class="nav-item" data-view="config">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V20a2.06 2.06 0 1 1-4.12 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H4a2.06 2.06 0 1 1 0-4.12h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1.03-1.55V4a2.06 2.06 0 1 1 4.12 0v.1a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1.03H20a2.06 2.06 0 1 1 0 4.12h-.1a1.7 1.7 0 0 0-1.55 1.03Z"/></svg>
@@ -516,6 +597,226 @@
       </div>
     </section>
 
+    <!-- ===================== DATA ===================== -->
+    <section class="view" id="view-data">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Data — Historial de Compensación</h1>
+          <p class="sub">Base de datos histórica de cuentas por cobrar y pagar</p>
+        </div>
+        <div class="topbar-actions">
+          <input type="file" id="dataFileInput" accept=".xlsx,.xls" style="display:none"
+            onchange="if(this.files[0]) DataModule.importFile(this.files[0])
+              .then(r=>{ UI.toast(r.count.toLocaleString()+' registros importados correctamente','ok'); DataModule.render(); })
+              .catch(e=>UI.toast(e.message,'err'))
+              .finally(()=>{ this.value=''; })">
+          <button class="btn btn-accent" onclick="document.getElementById('dataFileInput').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Importar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-kpi" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi">
+          <div class="lbl">Total registros</div>
+          <div class="val" id="dSumTotal">0</div>
+          <div class="delta">Todos los tipos</div>
+        </div>
+        <div class="kpi indigo">
+          <div class="lbl">CXC</div>
+          <div class="val" id="dSumCXC">0</div>
+          <div class="delta">Por cobrar</div>
+        </div>
+        <div class="kpi red">
+          <div class="lbl">CXP</div>
+          <div class="val" id="dSumCXP">0</div>
+          <div class="delta">Por pagar</div>
+        </div>
+        <div class="kpi" style="--kpi-color:#d97706;">
+          <div class="lbl">CXP Pendientes</div>
+          <div class="val" id="dSumPend">0</div>
+          <div class="delta">Sin pagar</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding-bottom:12px;">
+          <div class="filters-bar">
+            <div class="field">
+              <label class="f-label">Consorcio</label>
+              <input type="text" class="input" id="dfConsorcio" placeholder="Buscar…"
+                oninput="DataModule.setFilter('consorcio', this.value)">
+            </div>
+            <div class="field">
+              <label class="f-label">Tipo</label>
+              <select class="input" id="dfTipo" onchange="DataModule.setFilter('tipo', this.value)">
+                <option value="">Todos</option>
+                <option value="CXC">CXC</option>
+                <option value="CXP">CXP</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Corte</label>
+              <select class="input" id="dfCorte" onchange="DataModule.setFilter('corte', this.value)">
+                <option value="">Todos los cortes</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Año</label>
+              <select class="input" id="dfAño" onchange="DataModule.setFilter('año', this.value)">
+                <option value="">Todos los años</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Estado</label>
+              <select class="input" id="dfEstado" onchange="DataModule.setFilter('estado', this.value)">
+                <option value="">Todos</option>
+                <option value="Por Cobrar">Por Cobrar</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagada">Pagada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap" style="max-height:480px;">
+            <table class="t" id="tblData">
+              <thead>
+                <tr>
+                  <th>Consorcio</th>
+                  <th>Fecha</th>
+                  <th>Mes</th>
+                  <th>Corte</th>
+                  <th>Grupo</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th class="r">Monto</th>
+                  <th class="r">Pago</th>
+                  <th class="r">Pendiente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="10"><div class="t-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+                  <div>Importa el Excel del historial para ver los datos aquí.</div>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);justify-content:flex-start;">
+          <div id="dataPagination" class="flex gap8 align-center" style="font-size:13px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOLICITUD DE PAGO ===================== -->
+    <section class="view" id="view-solicitud-pago">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Solicitud de Pago</h1>
+          <p class="sub">Genera el documento de solicitud para el corte seleccionado</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" onclick="SolicitudPago.printDoc()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            Imprimir
+          </button>
+          <button class="btn btn-accent" onclick="SolicitudPago.exportPDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Descargar PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="two-col" style="grid-template-columns:290px 1fr;align-items:start;">
+        <div class="card" style="position:sticky;top:20px;">
+          <div class="card-head"><div><h3>Parámetros</h3><p class="sub">Configura los balances del documento</p></div></div>
+          <div class="card-body" style="gap:10px;display:flex;flex-direction:column;">
+            <div class="field">
+              <label class="f-label">Corte</label>
+              <select class="input" id="spCorteSelect" onchange="SolicitudPago.onCorteChange(this.value)">
+                <option value="">-- Seleccionar corte --</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Balance en Cuenta COMP (RD$)</label>
+              <input type="number" class="input" id="spBalanceComp" value="0" step="0.01"
+                oninput="SolicitudPago.updatePreview()">
+            </div>
+            <div class="field">
+              <label class="f-label">Transferencia entre Cuentas (RD$)</label>
+              <input type="number" class="input" id="spTransferencia" value="0" step="0.01"
+                oninput="SolicitudPago.updatePreview()">
+            </div>
+            <div class="field">
+              <label class="f-label">Saldo en Cuenta Operativa (RD$)</label>
+              <input type="number" class="input" id="spBalanceOp" value="0" step="0.01"
+                oninput="SolicitudPago.updatePreview()">
+            </div>
+          </div>
+        </div>
+
+        <div id="spDocument" class="doc-preview">
+          <div class="t-empty" style="padding:60px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+            <div>Selecciona un corte para generar el documento.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ESTADO DE CUENTA ===================== -->
+    <section class="view" id="view-estado-cuenta">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Estado de Cuenta</h1>
+          <p class="sub">Reporte detallado de compensación por consorcio</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" onclick="EstadoCuenta.printDoc()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            Imprimir
+          </button>
+          <button class="btn btn-accent" onclick="EstadoCuenta.exportPDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Descargar PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="two-col" style="grid-template-columns:260px 1fr;align-items:start;">
+        <div class="card" style="position:sticky;top:20px;">
+          <div class="card-head"><div><h3>Consorcio</h3><p class="sub">Selecciona para ver el estado</p></div></div>
+          <div class="card-body">
+            <div class="field">
+              <label class="f-label">Consorcio</label>
+              <select class="input" id="ecConsorcioSelect" onchange="EstadoCuenta.onConsorcioChange(this.value)">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="ecDocument" class="doc-preview">
+          <div class="t-empty" style="padding:60px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+            <div>Selecciona un consorcio para ver su estado de cuenta.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -642,6 +943,9 @@
 <script src="assets/js/invoices.js"></script>
 <script src="assets/js/dashboard.js"></script>
 <script src="assets/js/exporters.js"></script>
+<script src="assets/js/data-module.js"></script>
+<script src="assets/js/solicitud-pago.js"></script>
+<script src="assets/js/estado-cuenta.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

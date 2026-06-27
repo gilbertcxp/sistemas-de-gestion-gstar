@@ -59,6 +59,9 @@ const App = (() => {
     if(name === 'reportes') renderReportes();
     if(name === 'config') loadConfigForm();
     if(name === 'dashboard') Dashboard.renderAll();
+    if(name === 'data') DataModule.render();
+    if(name === 'solicitud-pago') SolicitudPago.render();
+    if(name === 'estado-cuenta') EstadoCuenta.render();
     window.scrollTo({top:0});
   }
 

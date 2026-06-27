@@ -1,0 +1,289 @@
+/* ============================================================
+   DataModule — importa y visualiza el historial de compensación
+   Hoja "Data" del Excel: 14 columnas, ~2825 filas
+   ============================================================ */
+const DataModule = (() => {
+
+  let _rows = [];
+  let _page = 1;
+  const PER_PAGE = 50;
+  let _f = { consorcio:'', tipo:'', corte:'', año:'', estado:'' };
+
+  // ------ helpers ------
+  function _deriveEstado(tipo, pendiente){
+    if(tipo === 'CXC') return 'Por Cobrar';
+    return (pendiente > 0.001) ? 'Pendiente' : 'Pagada';
+  }
+
+  function _excelDateToISO(val){
+    if(val === null || val === undefined || val === '') return '';
+    if(val instanceof Date){
+      if(isNaN(val)) return '';
+      const y = val.getFullYear(), m = String(val.getMonth()+1).padStart(2,'0'), d = String(val.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+    if(typeof val === 'number'){
+      const d = new Date((val - 25569) * 86400 * 1000);
+      return Utils.toISODate(d);
+    }
+    const s = String(val).trim();
+    // DD/MM/YYYY or DD-MM-YYYY
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    const dt = new Date(s);
+    return isNaN(dt) ? '' : Utils.toISODate(dt);
+  }
+
+  function _parseNum(val){
+    if(val === null || val === undefined || val === '') return 0;
+    if(typeof val === 'number') return val;
+    const n = parseFloat(String(val).replace(/[RD$\s,]/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  // ------ Excel parser ------
+  function _parseDataSheet(wb){
+    // Try to find a sheet named "Data" (case-insensitive), else try all
+    let targetSheet = null, sheetName = '';
+    const dataSheet = wb.SheetNames.find(n => /^data$/i.test(n.trim()));
+    const candidates = dataSheet ? [dataSheet, ...wb.SheetNames.filter(n=>n!==dataSheet)] : wb.SheetNames;
+
+    for(const sn of candidates){
+      const ws = wb.Sheets[sn];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+      let headerIdx = -1, colMap = {};
+
+      for(let r = 0; r < Math.min(aoa.length, 20); r++){
+        const row = aoa[r].map(c => Utils.normalize(String(c||'')));
+        if(row.some(c => c === 'CONSORCIO') && row.some(c => c === 'TIPO') && row.some(c => c === 'MONTO')){
+          headerIdx = r;
+          row.forEach((h, i) => {
+            if(h === 'CONSORCIO')           colMap.consorcio = i;
+            else if(h === 'FECHA')          colMap.fecha = i;
+            else if(h === 'MES LETRA')      colMap.mesLetra = i;
+            else if(h === 'MES')            colMap.mes = i;
+            else if(h === 'ANO' || h === 'AO') colMap.año = i;
+            else if(h === 'CORTE')          colMap.corte = i;
+            else if(h === 'S/N')            colMap.grupo = i;
+            else if(h === 'TIPO')           colMap.tipo = i;
+            else if(h === 'ACCION')         colMap.accion = i;
+            else if(h.startsWith('FECHA DE P')) colMap.fechaPago = i;
+            else if(h === 'MONTO')          colMap.monto = i;
+            else if(h === 'PAGO')           colMap.pago = i;
+            else if(h === 'PENDIENTE')      colMap.pendiente = i;
+            else if(h === 'NO')             colMap.numero = i;
+          });
+          targetSheet = { aoa, headerIdx, colMap };
+          sheetName = sn;
+          break;
+        }
+      }
+      if(targetSheet) break;
+    }
+
+    if(!targetSheet) throw new Error('No se encontró la hoja "Data" con el formato esperado.\nVerifica que el archivo sea el historial correcto con columnas: CONSORCIO, TIPO, MONTO, PENDIENTE.');
+
+    const { aoa, headerIdx, colMap } = targetSheet;
+    const rows = [];
+
+    for(let r = headerIdx + 1; r < aoa.length; r++){
+      const row = aoa[r];
+      const consorcio = String(row[colMap.consorcio]||'').trim();
+      if(!consorcio) continue;
+      const tipo = String(row[colMap.tipo]||'').trim().toUpperCase();
+      if(tipo !== 'CXC' && tipo !== 'CXP') continue;
+
+      const monto    = _parseNum(row[colMap.monto]);
+      const pago     = _parseNum(row[colMap.pago]);
+      const pendiente = _parseNum(row[colMap.pendiente]);
+
+      rows.push({
+        id:        Utils.uid('dr'),
+        consorcio,
+        fecha:     _excelDateToISO(colMap.fecha !== undefined ? row[colMap.fecha] : ''),
+        mesLetra:  String(row[colMap.mesLetra]||'').trim(),
+        mes:       _parseNum(row[colMap.mes]),
+        año:       _parseNum(row[colMap.año]),
+        corte:     String(row[colMap.corte]||'').trim(),
+        grupo:     String(row[colMap.grupo]||'').trim(),
+        tipo,
+        accion:    String(row[colMap.accion]||'').trim(),
+        fechaPago: _excelDateToISO(colMap.fechaPago !== undefined ? row[colMap.fechaPago] : ''),
+        monto,
+        pago,
+        pendiente,
+        numero:    String(row[colMap.numero]||'').trim(),
+        estado:    _deriveEstado(tipo, pendiente)
+      });
+    }
+
+    return { sheetName, count: rows.length, rows };
+  }
+
+  // ------ Public: importar archivo ------
+  function importFile(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+      reader.onload = () => {
+        try{
+          const wb = XLSX.read(reader.result, { type:'array', cellDates:true });
+          const result = _parseDataSheet(wb);
+          if(result.count === 0) throw new Error('No se encontraron registros válidos en la hoja Data.');
+          Storage.clearDataRows();
+          Storage.saveDataRows(result.rows);
+          _rows = result.rows;
+          resolve(result);
+        }catch(err){ reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // ------ Internal load ------
+  function load(){
+    _rows = Storage.getDataRows();
+  }
+
+  // ------ Filters ------
+  function _getFiltered(){
+    return _rows.filter(r => {
+      if(_f.consorcio && !r.consorcio.toLowerCase().includes(_f.consorcio.toLowerCase())) return false;
+      if(_f.tipo && r.tipo !== _f.tipo) return false;
+      if(_f.corte && r.corte !== _f.corte) return false;
+      if(_f.año && String(r.año) !== _f.año) return false;
+      if(_f.estado && r.estado !== _f.estado) return false;
+      return true;
+    });
+  }
+
+  // ------ Populate filter selects ------
+  function _populateSelects(){
+    const cortes = [...new Set(_rows.map(r => r.corte).filter(Boolean))].sort();
+    const años   = [...new Set(_rows.map(r => r.año).filter(Boolean))].sort((a,b)=>b-a);
+
+    const cEl = document.getElementById('dfCorte');
+    if(cEl) cEl.innerHTML = `<option value="">Todos los cortes</option>` +
+      cortes.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('');
+
+    const aEl = document.getElementById('dfAño');
+    if(aEl) aEl.innerHTML = `<option value="">Todos los años</option>` +
+      años.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+
+  // ------ Render summary chips ------
+  function _renderSummary(){
+    const total = _rows.length;
+    const cxc   = _rows.filter(r => r.tipo === 'CXC').length;
+    const cxp   = _rows.filter(r => r.tipo === 'CXP').length;
+    const pend  = _rows.filter(r => r.estado === 'Pendiente').length;
+    const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    set('dSumTotal', total.toLocaleString());
+    set('dSumCXC',   cxc.toLocaleString());
+    set('dSumCXP',   cxp.toLocaleString());
+    set('dSumPend',  pend.toLocaleString());
+  }
+
+  // ------ Render table ------
+  function _renderTable(){
+    const filtered   = _getFiltered();
+    const total      = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if(_page > totalPages) _page = totalPages;
+    const start    = (_page - 1) * PER_PAGE;
+    const pageRows = filtered.slice(start, start + PER_PAGE);
+
+    const tbody = document.querySelector('#tblData tbody');
+    if(!tbody) return;
+
+    if(pageRows.length === 0){
+      tbody.innerHTML = `<tr><td colspan="10"><div class="t-empty">No se encontraron registros con estos filtros.</div></td></tr>`;
+    } else {
+      tbody.innerHTML = pageRows.map(r => {
+        const tipoPill = r.tipo === 'CXP'
+          ? `<span class="pill red" style="font-size:10.5px"><span class="pill-dot"></span>CXP</span>`
+          : `<span class="pill indigo" style="font-size:10.5px"><span class="pill-dot"></span>CXC</span>`;
+
+        const estadoCell = r.tipo === 'CXP'
+          ? `<select class="input data-status-sel" onchange="DataModule.updateStatus('${Utils.jsAttr(r.id)}', this.value)">
+               <option${r.estado==='Pendiente'?' selected':''}>Pendiente</option>
+               <option${r.estado==='Pagada'?' selected':''}>Pagada</option>
+             </select>`
+          : `<span class="pill blue" style="font-size:10.5px"><span class="pill-dot"></span>Por Cobrar</span>`;
+
+        return `<tr>
+          <td>${Utils.escapeHtml(r.consorcio)}</td>
+          <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
+          <td>${Utils.escapeHtml(r.mesLetra||'—')}</td>
+          <td class="corte-cell" title="${Utils.escapeHtml(r.corte)}">${Utils.escapeHtml(r.corte)}</td>
+          <td>${Utils.escapeHtml(r.grupo||'—')}</td>
+          <td>${tipoPill}</td>
+          <td>${estadoCell}</td>
+          <td class="r num">${Utils.fmtNum(r.monto)}</td>
+          <td class="r num">${Utils.fmtNum(r.pago)}</td>
+          <td class="r num"><b>${Utils.fmtNum(r.pendiente)}</b></td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Pagination
+    const pEl = document.getElementById('dataPagination');
+    if(pEl){
+      if(total === 0){
+        pEl.innerHTML = '';
+      } else {
+        pEl.innerHTML = `
+          <span class="muted" style="font-size:12px">${start+1}–${Math.min(start+PER_PAGE, total)} de ${total.toLocaleString()} registros</span>
+          <button class="btn btn-ghost btn-sm" ${_page<=1?'disabled':''} onclick="DataModule.goPage(${_page-1})">‹ Anterior</button>
+          <button class="btn btn-ghost btn-sm" ${_page>=totalPages?'disabled':''} onclick="DataModule.goPage(${_page+1})">Siguiente ›</button>`;
+      }
+    }
+  }
+
+  // ------ Public API ------
+  function render(){
+    load();
+    _populateSelects();
+    _renderSummary();
+    _renderTable();
+  }
+
+  function goPage(p){
+    _page = p;
+    _renderTable();
+  }
+
+  function setFilter(key, val){
+    _f[key] = val;
+    _page = 1;
+    _renderTable();
+  }
+
+  function updateStatus(id, estado){
+    Storage.updateDataRow(id, { estado });
+    load();
+    _renderSummary();
+    // No re-render table to avoid losing scroll position; the select already shows new value
+  }
+
+  function getCortes(){
+    return [...new Set(_rows.filter(r => r.tipo==='CXP' && r.estado==='Pendiente').map(r=>r.corte).filter(Boolean))].sort();
+  }
+
+  function getConsorcios(){
+    return [...new Set(_rows.map(r => r.consorcio).filter(Boolean))].sort();
+  }
+
+  function getCXPByCorte(corte){
+    return _rows.filter(r => r.tipo==='CXP' && r.corte===corte && r.estado==='Pendiente');
+  }
+
+  function getByConsorcio(consorcio){
+    return _rows.filter(r => r.consorcio===consorcio).sort((a,b)=>(a.corte||'').localeCompare(b.corte||''));
+  }
+
+  function getRows(){ return _rows; }
+
+  return { render, importFile, load, goPage, setFilter, updateStatus,
+           getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows };
+})();
