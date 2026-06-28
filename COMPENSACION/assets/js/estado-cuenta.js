@@ -198,14 +198,15 @@ const EstadoCuenta = (() => {
     .doc-sig-line{border-bottom:1.5px solid #94a3b8;height:34px;margin-bottom:6px}
     .doc-sig-label{font-size:9.5px;color:#64748b;text-align:center}
     .t-empty{text-align:center;padding:20px;color:#94a3b8}
-    .ec-det-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:16px 0}
-    .ec-det-table th{background:#1e3a8a;color:#fff;padding:6px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+    .ec-det-table{width:100%;border-collapse:collapse;font-size:12px;margin:18px 0}
+    .ec-det-table th{background:#1e3a8a;color:#fff;padding:10px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
     .ec-det-table th.r,.ec-det-table td.r{text-align:right}
-    .ec-det-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0}
+    .ec-det-table td{padding:10px 16px;border-bottom:1px solid #e2e8f0;white-space:nowrap}
     .ec-det-table tbody tr:nth-child(even) td{background:#f8fafc}
-    .ec-det-table tfoot td{background:#f1f5f9;font-weight:700;border-top:2px solid #cbd5e1;font-size:12px}
+    .ec-det-table tbody tr:hover td{background:#eff6ff}
+    .ec-det-table tfoot td{background:#f1f5f9;font-weight:700;border-top:2px solid #cbd5e1;font-size:13px;padding:12px 16px}
     .ec-det-table td.neg{color:#dc2626}
-    .ec-tipo-pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700}
+    .ec-tipo-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700}
     .ec-tipo-pill.blue{background:#dbeafe;color:#1d4ed8}
     .ec-tipo-pill.red{background:#fee2e2;color:#dc2626}
   `; }
