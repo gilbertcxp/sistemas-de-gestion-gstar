@@ -342,34 +342,43 @@ const DataModule = (() => {
     const pct    = Number(Storage.getSettings().porcentaje) || 0;
     const round2 = n => Math.round(n * 100) / 100;
 
-    // Include ALL consorcios (UD and non-UD), skip only zero-balance rows
-    const newRows = staged
-      .filter(r => r.balance !== 0)
-      .map(r => {
-        const montoBase  = Math.abs(r.balance);
-        const comision   = round2(montoBase * (pct / 100));
-        const montoTotal = round2(montoBase + comision);
-        // balance > 0 = consorcio te debe (CXC), balance < 0 = tú les debes (CXP)
-        const tipo = r.balance > 0 ? 'CXC' : 'CXP';
-        return {
-          id:        Utils.uid('dr'),
-          consorcio: r.excelName || r.consorcio || '',
-          fecha:     desde || '',
-          mesLetra,
-          mes,
-          año,
-          corte:     corteLabel,
-          grupo:     r.isUD ? 'UD' : '',
-          tipo,
-          accion:    '',
-          fechaPago: '',
-          monto:     montoBase,
-          pago:      0,
-          pendiente: montoTotal,
-          numero:    '',
-          estado:    'Pendiente'
-        };
-      });
+    const mkRow = (consorcio, balance, grupo) => {
+      const montoBase  = Math.abs(balance);
+      const comision   = round2(montoBase * (pct / 100));
+      const montoTotal = round2(montoBase + comision);
+      return {
+        id:        Utils.uid('dr'),
+        consorcio,
+        fecha:     desde || '',
+        mesLetra,
+        mes,
+        año,
+        corte:     corteLabel,
+        grupo,
+        tipo:      balance > 0 ? 'CXC' : 'CXP',
+        accion:    '',
+        fechaPago: '',
+        monto:     montoBase,
+        pago:      0,
+        pendiente: montoTotal,
+        numero:    '',
+        estado:    'Pendiente'
+      };
+    };
+
+    // Separar UD de no-UD
+    const udStaged    = staged.filter(r => r.isUD    && r.balance !== 0);
+    const nonUDStaged = staged.filter(r => !r.isUD   && r.balance !== 0);
+
+    // Neto del Grupo UD: CXC (balance>0) menos CXP (balance<0)
+    const udNet = udStaged.reduce((s, r) => s + r.balance, 0);
+
+    const newRows = [
+      // Una sola fila con el balance neto del Grupo UD
+      ...(udNet !== 0 ? [mkRow('Grupo UD', udNet, 'UD')] : []),
+      // Filas individuales para consorcios fuera del grupo UD
+      ...nonUDStaged.map(r => mkRow(r.excelName || r.consorcio || '', r.balance, '')),
+    ];
 
     if(newRows.length === 0) return 0;
 
