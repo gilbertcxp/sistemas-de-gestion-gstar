@@ -225,12 +225,7 @@ const App = (() => {
     const created = Invoices.generateFromStaged();
     if(created.length === 0){ UI.toast('No hay facturas seleccionadas para generar', 'err'); return; }
 
-    // Proceso 2: guardar todos los registros del Excel en Data con Estado=Pendiente
-    const desde = document.getElementById('periodoDesde').value;
-    const hasta  = document.getElementById('periodoHasta').value;
-    const dataCount = DataModule.importFromWeekly(Invoices.getStaged(), desde, hasta);
-
-    UI.toast(`${created.length} factura(s) generada(s) · ${dataCount} registros guardados en Data`, 'ok');
+    UI.toast(`${created.length} factura(s) generada(s) correctamente`, 'ok');
     renderPreviewTable();
     Dashboard.renderAll();
     // Pre-selecciona el lote recién creado para que "Descargar todas en ZIP"
@@ -238,6 +233,23 @@ const App = (() => {
     Invoices.clearSelected();
     created.forEach(inv => Invoices.toggleSelected(inv.numero, true));
     switchView('facturas');
+  }
+
+  // ---------------- Cargar Data (independiente de facturas) ----------------
+  function cargarData(){
+    const staged = Invoices.getStaged();
+    if(!staged || staged.length === 0){
+      UI.toast('Primero carga un archivo Excel', 'err');
+      return;
+    }
+    const desde = document.getElementById('periodoDesde').value;
+    const hasta  = document.getElementById('periodoHasta').value;
+    const count  = DataModule.importFromWeekly(staged, desde, hasta);
+    if(count === 0){
+      UI.toast('No se encontraron registros con balance distinto de cero', 'err');
+      return;
+    }
+    UI.toast(`${count} registros cargados en Data correctamente`, 'ok');
   }
 
   // ---------------- Facturas / historial ----------------
@@ -528,7 +540,8 @@ const App = (() => {
 
   return {
     init, switchView, viewInvoice, openVincular, confirmVinculo, crearDesdeVincular,
-    toggleStagedRow, toggleSelectInvoice, confirmDeleteInvoice, clearPendingVinculo
+    toggleStagedRow, toggleSelectInvoice, confirmDeleteInvoice, clearPendingVinculo,
+    cargarData
   };
 })();
 
