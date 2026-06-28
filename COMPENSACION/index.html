@@ -343,60 +343,80 @@
 
     <!-- ===================== DASHBOARD ===================== -->
     <section class="view active" id="view-dashboard">
-
-      <!-- ACCESS GATE -->
-      <div id="dashGate" style="display:none;align-items:center;justify-content:center;min-height:70vh;">
-        <div class="d-auth-card">
-          <div style="font-size:38px;margin-bottom:14px">🔒</div>
-          <h2 class="d-h2" style="margin:0 0 6px">Panel Privado</h2>
-          <p class="d-sub" style="margin:0 0 22px">Este panel es exclusivo del equipo de desarrollo.<br>Solo acceso autorizado.</p>
-          <div class="field" style="margin:0 0 12px;text-align:left">
-            <label class="f-label">Tu nombre</label>
-            <input class="input" id="dashUser" placeholder="Gilbert o Anthony Santos"
-              onkeydown="if(event.key==='Enter')Dashboard.auth()">
-          </div>
-          <div id="dashAuthErr" style="display:none;color:#dc2626;font-size:12.5px;margin-bottom:12px;text-align:left"></div>
-          <button class="btn btn-accent" style="width:100%" onclick="Dashboard.auth()">Ingresar</button>
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Panel de control</h1>
+          <p class="sub">Resumen ejecutivo de facturación de compensación</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" data-view="cargar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Cargar Excel
+          </button>
         </div>
       </div>
 
-      <!-- MAIN PANEL -->
-      <div id="dashMain" style="display:none">
-        <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;margin-bottom:16px;">
-          <div>
-            <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-            </button>
-            <h1>Centro de Gestión del Proyecto</h1>
-            <p class="sub">Sistema de Facturación de Compensación · Gstar Services S.A.</p>
+      <div class="grid-kpi">
+        <div class="kpi red">
+          <div class="lbl">Facturas generadas</div>
+          <div class="val" id="kpiTotalFacturas">0</div>
+          <div class="delta">Numeración FC-000001…</div>
+        </div>
+        <div class="kpi indigo">
+          <div class="lbl">Monto total facturado</div>
+          <div class="val" id="kpiMontoTotal">RD$ 0.00</div>
+          <div class="delta">Original + 2%</div>
+        </div>
+        <div class="kpi blue">
+          <div class="lbl">Total 2% generado</div>
+          <div class="val" id="kpiTotal2">RD$ 0.00</div>
+          <div class="delta">Cargo administrativo</div>
+        </div>
+        <div class="kpi ok">
+          <div class="lbl">Clientes facturados</div>
+          <div class="val" id="kpiClientes">0</div>
+          <div class="delta" id="kpiClientesTotal">de 0 registrados</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Última generación</div>
+          <div class="val" id="kpiUltimaFecha" style="font-size:17px;">—</div>
+          <div class="delta" id="kpiUltimaHora">Sin actividad</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Facturas recientes</h3>
+              <p class="sub">Últimos movimientos generados</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-view="facturas">Ver todas</button>
           </div>
-          <div class="topbar-actions">
-            <span style="font-size:12.5px;color:#64748b">Sesión: <b id="dashWho"></b></span>
-            <button class="btn btn-ghost btn-sm" onclick="Dashboard.logout()">Cerrar sesión</button>
+          <div class="card-body pad-0">
+            <div class="table-wrap">
+              <table class="t" id="tblRecientes">
+                <thead><tr><th>No.</th><th>Cliente</th><th>Fecha</th><th class="r">Monto orig.</th><th class="r">2%</th><th class="r">Total</th><th>Estado</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="dtab-bar">
-          <button class="dtab-btn active" data-t="resumen"   onclick="Dashboard.tab('resumen')">Resumen</button>
-          <button class="dtab-btn"        data-t="features"  onclick="Dashboard.tab('features')">Funcionalidades</button>
-          <button class="dtab-btn"        data-t="bugs"      onclick="Dashboard.tab('bugs')">Errores</button>
-          <button class="dtab-btn"        data-t="ideas"     onclick="Dashboard.tab('ideas')">Ideas</button>
-          <button class="dtab-btn"        data-t="notas"     onclick="Dashboard.tab('notas')">Notas</button>
-          <button class="dtab-btn"        data-t="feedback"  onclick="Dashboard.tab('feedback')">Opiniones</button>
-          <button class="dtab-btn"        data-t="roadmap"   onclick="Dashboard.tab('roadmap')">Roadmap</button>
-          <button class="dtab-btn"        data-t="versiones" onclick="Dashboard.tab('versiones')">Versiones</button>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Top consorcios facturados</h3>
+              <p class="sub">Por monto total acumulado</p>
+            </div>
+          </div>
+          <div class="card-body" id="topClientesChart">
+            <div class="t-empty">Aún no hay facturas generadas.</div>
+          </div>
         </div>
-
-        <!-- Tab panels -->
-        <div id="dp-resumen"   class="dtab-panel"></div>
-        <div id="dp-features"  class="dtab-panel" style="display:none"></div>
-        <div id="dp-bugs"      class="dtab-panel" style="display:none"></div>
-        <div id="dp-ideas"     class="dtab-panel" style="display:none"></div>
-        <div id="dp-notas"     class="dtab-panel" style="display:none"></div>
-        <div id="dp-feedback"  class="dtab-panel" style="display:none"></div>
-        <div id="dp-roadmap"   class="dtab-panel" style="display:none"></div>
-        <div id="dp-versiones" class="dtab-panel" style="display:none"></div>
       </div>
     </section>
 
@@ -982,23 +1002,6 @@
     </section>
 
   </main>
-</div>
-
-<!-- ===================== MODAL: DASHBOARD CRUD ===================== -->
-<div class="modal-overlay" id="dashModal">
-  <div class="modal" style="max-width:700px;width:95vw">
-    <div class="modal-head">
-      <h3 id="dashModalTitle">—</h3>
-      <button class="modal-close" onclick="UI.closeModal('dashModal')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="modal-body" id="dashModalBody"></div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="UI.closeModal('dashModal')">Cancelar</button>
-      <button class="btn btn-primary" id="dashModalSave">Guardar</button>
-    </div>
-  </div>
 </div>
 
 <!-- ===================== MODAL: VISTA / IMPRESIÓN DE FACTURA ===================== -->
