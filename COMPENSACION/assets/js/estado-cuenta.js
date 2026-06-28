@@ -102,7 +102,8 @@ const EstadoCuenta = (() => {
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Estado de Cuenta — ${Utils.escapeHtml(_consorcioSelected)}</title>
       <style>${_printCSS()}</style></head><body>${content}</body></html>`);
-    w.document.close(); w.focus(); w.print(); w.close();
+    w.document.close(); w.focus();
+    w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
   }
 
   // ------ PDF export ------

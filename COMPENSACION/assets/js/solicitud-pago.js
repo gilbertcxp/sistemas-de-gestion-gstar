@@ -148,7 +148,8 @@ const SolicitudPago = (() => {
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Solicitud de Pago</title>
       <style>${_printCSS()}</style></head><body>${content}</body></html>`);
-    w.document.close(); w.focus(); w.print(); w.close();
+    w.document.close(); w.focus();
+    w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
   }
 
   // ------ PDF export ------
