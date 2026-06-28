@@ -60,6 +60,33 @@ const EstadoCuenta = (() => {
             </div>
           </div>
 
+          <table class="ec-det-table">
+            <thead>
+              <tr><th>Año</th><th>Mes</th><th>Tipo</th><th>Corte</th><th class="r">Saldo</th></tr>
+            </thead>
+            <tbody>
+              ${_rows.map(r => {
+                const isCXP = r.tipo === 'CXP';
+                const amt   = isCXP
+                  ? `(${Utils.fmtNum(Math.abs(r.pendiente))})`
+                  : Utils.fmtNum(r.pendiente);
+                return `<tr>
+                  <td>${r.año||'—'}</td>
+                  <td>${Utils.escapeHtml(r.mesLetra||'—')}</td>
+                  <td><span class="ec-tipo-pill ${isCXP?'red':'blue'}">${r.tipo}</span></td>
+                  <td>${Utils.escapeHtml(r.corte||'—')}</td>
+                  <td class="r${isCXP?' neg':''}">${amt}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4"><b>SALDO NETO</b></td>
+                <td class="r ${saldo<0?'neg':''}"><b>${saldo<0?'(':''}${Utils.fmtMoney(Math.abs(saldo))}${saldo<0?')':''}</b></td>
+              </tr>
+            </tfoot>
+          </table>
+
           <div class="ec-saldo-bloque ec-saldo-${saldoCls}" style="margin-top:16px;">
             <div class="ec-saldo-tag">${saldoTag}</div>
             <div class="ec-saldo-monto">${Utils.fmtMoney(Math.abs(saldo))}</div>
@@ -106,70 +133,34 @@ const EstadoCuenta = (() => {
     w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
   }
 
-  // ------ PDF export ------
+  // ------ PDF export — captura el preview HTML tal como se ve ------
   function exportPDF(){
     _updatePreview();
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const W = 210, M = 20;
-    const cfg = Storage.getSettings();
-
-    const totalCXC = _rows.filter(r => r.tipo === 'CXC').reduce((s,r) => s + Math.abs(r.pendiente), 0);
-    const totalCXP = _rows.filter(r => r.tipo === 'CXP').reduce((s,r) => s + Math.abs(r.pendiente), 0);
-    const saldo    = totalCXC - totalCXP;
-    const saldoTag = saldo > 0.001 ? 'A FAVOR' : saldo < -0.001 ? 'A PAGAR' : 'EN CERO';
-    let y = 20;
-
-    // ---- Header band ----
-    doc.setFillColor(11,20,55);
-    doc.rect(0, 0, W, 30, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.setTextColor(255,255,255);
-    doc.text('Estado de Cuenta', M, 13);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,190,230);
-    doc.text('Compensación de Consorcios — ' + (cfg.empresa?.nombre||'Gstar Services S.A.'), M, 21);
-    doc.text(new Date().toLocaleDateString('es-DO'), W-M, 13, {align:'right'});
-    y = 40;
-
-    // ---- Consorcio ----
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(100,116,139);
-    doc.text('CONSORCIO', M, y); y += 5;
-    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(15,23,42);
-    doc.text(_consorcioSelected||'—', M, y); y += 14;
-
-    // ---- CXC / CXP cards ----
-    doc.autoTable({
-      startY: y,
-      head: [['Por Cobrar (CXC)', 'Por Pagar (CXP)']],
-      body: [[Utils.fmtMoney(totalCXC), Utils.fmtMoney(totalCXP)]],
-      theme: 'grid',
-      styles: { fontSize:11, cellPadding:5, halign:'center', fontStyle:'bold' },
-      headStyles: { fillColor:[37,99,235], textColor:255, fontStyle:'bold', fontSize:9 },
-    });
-    y = doc.lastAutoTable.finalY + 10;
-
-    // ---- Saldo neto highlight ----
-    const isAFavor = saldo > 0.001;
-    const isAPagar = saldo < -0.001;
-    const bandColor = isAFavor ? [21,135,90] : isAPagar ? [214,41,62] : [100,116,139];
-    doc.setFillColor(...bandColor);
-    doc.roundedRect(M, y, W-2*M, 28, 4, 4, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
-    doc.text(saldoTag, W/2, y+9, {align:'center'});
-    doc.setFontSize(18);
-    doc.text(Utils.fmtMoney(Math.abs(saldo)), W/2, y+21, {align:'center'});
-    y += 42;
-
-    // ---- Signatures ----
-    const sigW = (W - 2*M - 20) / 2;
-    doc.setDrawColor(148,163,184);
-    doc.line(M, y+10, M+sigW, y+10);
-    doc.line(M+sigW+20, y+10, M+2*sigW+20, y+10);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,116,139);
-    doc.text('Preparado por', M+sigW/2, y+15, {align:'center'});
-    doc.text('Recibido por', M+sigW+20+sigW/2, y+15, {align:'center'});
-
-    doc.save(`Estado_Cuenta_${(_consorcioSelected||'consorcio').replace(/\s+/g,'_')}_${Utils.todayISO()}.pdf`);
-    UI.toast('PDF descargado correctamente', 'ok');
+    const el = document.getElementById('ecDocument');
+    if(!el){ UI.toast('No hay documento para exportar', 'err'); return; }
+    UI.toast('Generando PDF…', 'ok');
+    html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
+      .then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf     = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.97);
+        const pgW = 210, pgH = 297;
+        const imgW = pgW;
+        const imgH = (canvas.height / canvas.width) * pgW;
+        if(imgH <= pgH){
+          pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+        } else {
+          let yOff = 0;
+          while(yOff < imgH){
+            if(yOff > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, -yOff, imgW, imgH);
+            yOff += pgH;
+          }
+        }
+        pdf.save(`Estado_Cuenta_${(_consorcioSelected||'consorcio').replace(/[\s\/]/g,'_')}_${Utils.todayISO()}.pdf`);
+        UI.toast('PDF descargado correctamente', 'ok');
+      })
+      .catch(() => UI.toast('Error al generar el PDF', 'err'));
   }
 
   // ------ Print CSS ------
@@ -207,6 +198,16 @@ const EstadoCuenta = (() => {
     .doc-sig-line{border-bottom:1.5px solid #94a3b8;height:34px;margin-bottom:6px}
     .doc-sig-label{font-size:9.5px;color:#64748b;text-align:center}
     .t-empty{text-align:center;padding:20px;color:#94a3b8}
+    .ec-det-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:16px 0}
+    .ec-det-table th{background:#1e3a8a;color:#fff;padding:6px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+    .ec-det-table th.r,.ec-det-table td.r{text-align:right}
+    .ec-det-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0}
+    .ec-det-table tbody tr:nth-child(even) td{background:#f8fafc}
+    .ec-det-table tfoot td{background:#f1f5f9;font-weight:700;border-top:2px solid #cbd5e1;font-size:12px}
+    .ec-det-table td.neg{color:#dc2626}
+    .ec-tipo-pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700}
+    .ec-tipo-pill.blue{background:#dbeafe;color:#1d4ed8}
+    .ec-tipo-pill.red{background:#fee2e2;color:#dc2626}
   `; }
 
   return { render, onConsorcioChange, printDoc, exportPDF };
