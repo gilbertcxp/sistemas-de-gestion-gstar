@@ -360,62 +360,25 @@
       </div>
 
       <div class="grid-kpi">
-        <div class="kpi red">
-          <div class="lbl">Facturas generadas</div>
-          <div class="val" id="kpiTotalFacturas">0</div>
-          <div class="delta">Numeración FC-000001…</div>
-        </div>
-        <div class="kpi indigo">
-          <div class="lbl">Monto total facturado</div>
-          <div class="val" id="kpiMontoTotal">RD$ 0.00</div>
-          <div class="delta">Original + 2%</div>
-        </div>
         <div class="kpi blue">
-          <div class="lbl">Total 2% generado</div>
-          <div class="val" id="kpiTotal2">RD$ 0.00</div>
-          <div class="delta">Cargo administrativo</div>
+          <div class="lbl">Total CxC</div>
+          <div class="val" id="kpiTotalCXC">RD$ 0.00</div>
+          <div class="delta">Cuentas por Cobrar</div>
         </div>
-        <div class="kpi ok">
-          <div class="lbl">Clientes facturados</div>
-          <div class="val" id="kpiClientes">0</div>
-          <div class="delta" id="kpiClientesTotal">de 0 registrados</div>
+        <div class="kpi red">
+          <div class="lbl">Total CxP</div>
+          <div class="val" id="kpiTotalCXP">RD$ 0.00</div>
+          <div class="delta">Cuentas por Pagar</div>
         </div>
         <div class="kpi">
-          <div class="lbl">Última generación</div>
-          <div class="val" id="kpiUltimaFecha" style="font-size:17px;">—</div>
-          <div class="delta" id="kpiUltimaHora">Sin actividad</div>
+          <div class="lbl">Total registros</div>
+          <div class="val" id="kpiTotalRegistros">0</div>
+          <div class="delta">Movimientos cargados</div>
         </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h3>Facturas recientes</h3>
-              <p class="sub">Últimos movimientos generados</p>
-            </div>
-            <button class="btn btn-ghost btn-sm" data-view="facturas">Ver todas</button>
-          </div>
-          <div class="card-body pad-0">
-            <div class="table-wrap">
-              <table class="t" id="tblRecientes">
-                <thead><tr><th>No.</th><th>Cliente</th><th>Fecha</th><th class="r">Monto orig.</th><th class="r">2%</th><th class="r">Total</th><th>Estado</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h3>Top consorcios facturados</h3>
-              <p class="sub">Por monto total acumulado</p>
-            </div>
-          </div>
-          <div class="card-body" id="topClientesChart">
-            <div class="t-empty">Aún no hay facturas generadas.</div>
-          </div>
+        <div class="kpi ok" id="kpiDiferenciaCard">
+          <div class="lbl">Diferencia neta</div>
+          <div class="val" id="kpiDiferencia">RD$ 0.00</div>
+          <div class="delta" id="kpiDifLabel">CxC − CxP</div>
         </div>
       </div>
     </section>

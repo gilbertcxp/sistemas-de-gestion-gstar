@@ -184,9 +184,42 @@ const DataModule = (() => {
     set('dSumPend',  pend.toLocaleString());
   }
 
+  // ------ Agrupa todas las filas UD en una o dos filas consolidadas ------
+  function _groupUD(rows){
+    const nonUD = rows.filter(r => r.grupo !== 'UD');
+    const udRows = rows.filter(r => r.grupo === 'UD');
+    if(udRows.length === 0) return rows;
+
+    const agg = [];
+    ['CXC','CXP'].forEach(tipo => {
+      const sub = udRows.filter(r => r.tipo === tipo);
+      if(sub.length === 0) return;
+      agg.push({
+        id:        'ud-' + tipo + '-group',
+        consorcio: 'Grupo UD',
+        fecha:     sub[0].fecha,
+        mesLetra:  sub[0].mesLetra,
+        mes:       sub[0].mes,
+        año:       sub[0].año,
+        corte:     sub[0].corte,
+        grupo:     'UD',
+        tipo,
+        accion:    '',
+        fechaPago: '',
+        monto:     sub.reduce((s,r) => s + r.monto, 0),
+        pago:      sub.reduce((s,r) => s + r.pago,  0),
+        pendiente: sub.reduce((s,r) => s + r.pendiente, 0),
+        numero:    '',
+        estado:    sub.some(r => r.estado === 'Pendiente') ? 'Pendiente' : 'Pagada',
+        _count:    sub.length
+      });
+    });
+    return [...agg, ...nonUD];
+  }
+
   // ------ Render table ------
   function _renderTable(){
-    const filtered   = _getFiltered();
+    const filtered   = _groupUD(_getFiltered());
     const total      = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
     if(_page > totalPages) _page = totalPages;
@@ -211,8 +244,11 @@ const DataModule = (() => {
              </select>`
           : `<span class="pill blue" style="font-size:10.5px"><span class="pill-dot"></span>Por Cobrar</span>`;
 
+        const nombreCell = r._count
+          ? `<b>${Utils.escapeHtml(r.consorcio)}</b> <span class="muted" style="font-size:11px">(${r._count} consorcios)</span>`
+          : Utils.escapeHtml(r.consorcio);
         return `<tr>
-          <td>${Utils.escapeHtml(r.consorcio)}</td>
+          <td>${nombreCell}</td>
           <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
           <td>${Utils.escapeHtml(r.mesLetra||'—')}</td>
           <td class="corte-cell" title="${Utils.escapeHtml(r.corte)}">${Utils.escapeHtml(r.corte)}</td>
