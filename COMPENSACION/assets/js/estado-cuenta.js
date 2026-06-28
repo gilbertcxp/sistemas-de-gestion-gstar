@@ -132,13 +132,9 @@ const EstadoCuenta = (() => {
         </table>
 
         <div class="ec-footer">
-          <div class="ec-foot-note">
-            <span class="ec-foot-ic">${_svg('info')}</span>
-            <span>Los montos incluyen todos los movimientos registrados hasta la fecha de corte indicada.</span>
-          </div>
           <div class="ec-foot-gen">
             <span class="ec-foot-ic">${_svg('calendar')}</span>
-            <span><b>Fecha de generación:</b><br>${fechaGen}</span>
+            <span><b>Fecha de generación:</b> ${fechaGen}</span>
           </div>
         </div>
       </div>`;
@@ -300,10 +296,9 @@ const EstadoCuenta = (() => {
     .ec-tipo-pill.blue{background:#dbeafe;color:#1d4ed8}
     .ec-tipo-pill.red{background:#fee2e2;color:#dc2626}
 
-    .ec-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;
+    .ec-footer{display:flex;justify-content:center;align-items:center;gap:20px;
       background:#eff6ff;border:1px solid #dbeafe;border-radius:12px;padding:16px 20px;margin-top:22px}
-    .ec-foot-note{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:#475569;max-width:62%}
-    .ec-foot-gen{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:#2563eb;text-align:right}
+    .ec-foot-gen{display:flex;gap:10px;align-items:center;font-size:12.5px;color:#2563eb}
     .ec-foot-gen b{color:#2563eb}
     .ec-foot-ic{width:20px;height:20px;color:#2563eb;flex:none;margin-top:1px}
 
