@@ -110,6 +110,7 @@ const SolicitudPago = (() => {
         <div class="doc-signatures">
           <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Preparado por</div></div>
           <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Autorizado por</div></div>
+          <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Autorizado por</div></div>
         </div>
       </div>`;
   }
