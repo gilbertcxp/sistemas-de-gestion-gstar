@@ -120,7 +120,6 @@ const EstadoCuenta = (() => {
           <span class="ec-sec-ic light">${_svg('clipboard')}</span>
           <div>
             <div class="ec-sec-h">DETALLE DE MOVIMIENTOS</div>
-            <div class="ec-sec-sub">Información del período seleccionado</div>
           </div>
         </div>
 
