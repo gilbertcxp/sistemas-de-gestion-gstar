@@ -204,6 +204,51 @@
 .ec-saldo-warn .ec-saldo-tag  { color:#b91c1c; }
 .ec-saldo-monto { font-size:32px; font-weight:800; color:#0f172a; }
 .ec-saldo-desc  { font-size:12px; color:#64748b; margin-top:6px; }
+
+/* ---- Three-column field row ---- */
+.field-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+/* ---- Dashboard: Centro de Gestión del Proyecto ---- */
+.d-auth-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:36px 32px; max-width:420px; width:90%; text-align:center; box-shadow:0 4px 24px rgba(0,0,0,.08); }
+.dtab-bar { display:flex; gap:3px; background:#f1f5f9; border-radius:10px; padding:4px; margin-bottom:20px; overflow-x:auto; flex-wrap:nowrap; }
+.dtab-btn { flex-shrink:0; border:none; background:transparent; padding:7px 14px; border-radius:7px; font-size:12.5px; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.dtab-btn:hover { color:#0f172a; background:rgba(255,255,255,.7); }
+.dtab-btn.active { background:#fff; color:#2563eb; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+.dtab-panel { padding:0; }
+.d-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.d-h2 { font-size:20px; font-weight:800; color:#0f172a; margin:0; }
+.d-sub { font-size:12.5px; color:#64748b; margin:3px 0 0; }
+.d-meta-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.d-meta-chip { background:#f1f5f9; border-radius:8px; padding:5px 12px; font-size:11.5px; }
+.d-meta-chip span { color:#64748b; display:block; font-size:10px; text-transform:uppercase; letter-spacing:.3px; }
+.d-meta-chip b { color:#0f172a; font-size:12px; }
+.d-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:900px){ .d-kpi-grid { grid-template-columns:repeat(2,1fr); } }
+.d-kpi { border-radius:12px; padding:16px; border:1px solid rgba(0,0,0,.07); }
+.d-kpi-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:3px; }
+.d-kpi-lbl { font-size:11px; color:#64748b; }
+.d-progress-card { background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
+.d-progress-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:600; color:#1e40af; }
+.d-pbar { height:10px; background:rgba(255,255,255,.6); border-radius:99px; overflow:hidden; }
+.d-pfill { height:100%; background:linear-gradient(90deg,#2563eb,#0ea5e9); border-radius:99px; transition:width .4s; min-width:4px; }
+.d-actions { display:flex; gap:4px; }
+.d-notes-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+@media(max-width:900px){ .d-notes-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:600px){ .d-notes-grid { grid-template-columns:1fr; } }
+.d-note { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; }
+.d-note-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px; }
+.d-note-body { font-size:13px; color:#475569; line-height:1.5; white-space:pre-wrap; max-height:100px; overflow:hidden; }
+.d-rm-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+@media(max-width:700px){ .d-rm-grid { grid-template-columns:1fr; } }
+.d-rm-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; }
+.d-rm-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.d-rm-name { font-size:15px; font-weight:700; color:#0f172a; margin-bottom:6px; }
+.d-rm-pct { font-size:26px; font-weight:800; color:#2563eb; }
+.d-ver-list { display:flex; flex-direction:column; gap:12px; }
+.d-ver-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; }
+.d-ver-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.d-ver-tag { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; border-radius:6px; padding:3px 10px; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.d-ver-row { font-size:12.5px; color:#475569; padding:5px 0; border-top:1px solid #f1f5f9; }
 </style>
 
 <!-- Librerías empaquetadas localmente: la app funciona 100% sin internet -->
@@ -298,80 +343,60 @@
 
     <!-- ===================== DASHBOARD ===================== -->
     <section class="view active" id="view-dashboard">
-      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
-        <div>
-          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          </button>
-          <h1>Panel de control</h1>
-          <p class="sub">Resumen ejecutivo de facturación de compensación</p>
-        </div>
-        <div class="topbar-actions">
-          <button class="btn btn-accent" data-view="cargar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
-            Cargar Excel
-          </button>
+
+      <!-- ACCESS GATE -->
+      <div id="dashGate" style="display:none;align-items:center;justify-content:center;min-height:70vh;">
+        <div class="d-auth-card">
+          <div style="font-size:38px;margin-bottom:14px">🔒</div>
+          <h2 class="d-h2" style="margin:0 0 6px">Panel Privado</h2>
+          <p class="d-sub" style="margin:0 0 22px">Este panel es exclusivo del equipo de desarrollo.<br>Solo acceso autorizado.</p>
+          <div class="field" style="margin:0 0 12px;text-align:left">
+            <label class="f-label">Tu nombre</label>
+            <input class="input" id="dashUser" placeholder="Gilbert o Anthony Santos"
+              onkeydown="if(event.key==='Enter')Dashboard.auth()">
+          </div>
+          <div id="dashAuthErr" style="display:none;color:#dc2626;font-size:12.5px;margin-bottom:12px;text-align:left"></div>
+          <button class="btn btn-accent" style="width:100%" onclick="Dashboard.auth()">Ingresar</button>
         </div>
       </div>
 
-      <div class="grid-kpi">
-        <div class="kpi red">
-          <div class="lbl">Facturas generadas</div>
-          <div class="val" id="kpiTotalFacturas">0</div>
-          <div class="delta">Numeración FC-000001…</div>
-        </div>
-        <div class="kpi indigo">
-          <div class="lbl">Monto total facturado</div>
-          <div class="val" id="kpiMontoTotal">RD$ 0.00</div>
-          <div class="delta">Original + 2%</div>
-        </div>
-        <div class="kpi blue">
-          <div class="lbl">Total 2% generado</div>
-          <div class="val" id="kpiTotal2">RD$ 0.00</div>
-          <div class="delta">Cargo administrativo</div>
-        </div>
-        <div class="kpi ok">
-          <div class="lbl">Clientes facturados</div>
-          <div class="val" id="kpiClientes">0</div>
-          <div class="delta" id="kpiClientesTotal">de 0 registrados</div>
-        </div>
-        <div class="kpi">
-          <div class="lbl">Última generación</div>
-          <div class="val" id="kpiUltimaFecha" style="font-size:17px;">—</div>
-          <div class="delta" id="kpiUltimaHora">Sin actividad</div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h3>Facturas recientes</h3>
-              <p class="sub">Últimos movimientos generados</p>
-            </div>
-            <button class="btn btn-ghost btn-sm" data-view="facturas">Ver todas</button>
+      <!-- MAIN PANEL -->
+      <div id="dashMain" style="display:none">
+        <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;margin-bottom:16px;">
+          <div>
+            <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </button>
+            <h1>Centro de Gestión del Proyecto</h1>
+            <p class="sub">Sistema de Facturación de Compensación · Gstar Services S.A.</p>
           </div>
-          <div class="card-body pad-0">
-            <div class="table-wrap">
-              <table class="t" id="tblRecientes">
-                <thead><tr><th>No.</th><th>Cliente</th><th>Fecha</th><th class="r">Monto orig.</th><th class="r">2%</th><th class="r">Total</th><th>Estado</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
+          <div class="topbar-actions">
+            <span style="font-size:12.5px;color:#64748b">Sesión: <b id="dashWho"></b></span>
+            <button class="btn btn-ghost btn-sm" onclick="Dashboard.logout()">Cerrar sesión</button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h3>Top consorcios facturados</h3>
-              <p class="sub">Por monto total acumulado</p>
-            </div>
-          </div>
-          <div class="card-body" id="topClientesChart">
-            <div class="t-empty">Aún no hay facturas generadas.</div>
-          </div>
+        <!-- Tabs -->
+        <div class="dtab-bar">
+          <button class="dtab-btn active" data-t="resumen"   onclick="Dashboard.tab('resumen')">Resumen</button>
+          <button class="dtab-btn"        data-t="features"  onclick="Dashboard.tab('features')">Funcionalidades</button>
+          <button class="dtab-btn"        data-t="bugs"      onclick="Dashboard.tab('bugs')">Errores</button>
+          <button class="dtab-btn"        data-t="ideas"     onclick="Dashboard.tab('ideas')">Ideas</button>
+          <button class="dtab-btn"        data-t="notas"     onclick="Dashboard.tab('notas')">Notas</button>
+          <button class="dtab-btn"        data-t="feedback"  onclick="Dashboard.tab('feedback')">Opiniones</button>
+          <button class="dtab-btn"        data-t="roadmap"   onclick="Dashboard.tab('roadmap')">Roadmap</button>
+          <button class="dtab-btn"        data-t="versiones" onclick="Dashboard.tab('versiones')">Versiones</button>
         </div>
+
+        <!-- Tab panels -->
+        <div id="dp-resumen"   class="dtab-panel"></div>
+        <div id="dp-features"  class="dtab-panel" style="display:none"></div>
+        <div id="dp-bugs"      class="dtab-panel" style="display:none"></div>
+        <div id="dp-ideas"     class="dtab-panel" style="display:none"></div>
+        <div id="dp-notas"     class="dtab-panel" style="display:none"></div>
+        <div id="dp-feedback"  class="dtab-panel" style="display:none"></div>
+        <div id="dp-roadmap"   class="dtab-panel" style="display:none"></div>
+        <div id="dp-versiones" class="dtab-panel" style="display:none"></div>
       </div>
     </section>
 
@@ -957,6 +982,23 @@
     </section>
 
   </main>
+</div>
+
+<!-- ===================== MODAL: DASHBOARD CRUD ===================== -->
+<div class="modal-overlay" id="dashModal">
+  <div class="modal" style="max-width:700px;width:95vw">
+    <div class="modal-head">
+      <h3 id="dashModalTitle">—</h3>
+      <button class="modal-close" onclick="UI.closeModal('dashModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="dashModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('dashModal')">Cancelar</button>
+      <button class="btn btn-primary" id="dashModalSave">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===================== MODAL: VISTA / IMPRESIÓN DE FACTURA ===================== -->
