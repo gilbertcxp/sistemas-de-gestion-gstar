@@ -303,26 +303,37 @@ const DataModule = (() => {
       }
     }
 
+    const pct    = Number(Storage.getSettings().porcentaje) || 0;
+    const round2 = n => Math.round(n * 100) / 100;
+
+    // Include ALL consorcios (UD and non-UD), skip only zero-balance rows
     const newRows = staged
-      .filter(r => !r.isUD && r.balance !== 0)
-      .map(r => ({
-        id:        Utils.uid('dr'),
-        consorcio: r.excelName || r.consorcio || '',
-        fecha:     desde || '',
-        mesLetra,
-        mes,
-        año,
-        corte:     corteLabel,
-        grupo:     '',
-        tipo:      r.balance < 0 ? 'CXP' : 'CXC',
-        accion:    '',
-        fechaPago: '',
-        monto:     Math.abs(r.balance),
-        pago:      0,
-        pendiente: Math.abs(r.balance),
-        numero:    '',
-        estado:    'Pendiente'
-      }));
+      .filter(r => r.balance !== 0)
+      .map(r => {
+        const montoBase  = Math.abs(r.balance);
+        const comision   = round2(montoBase * (pct / 100));
+        const montoTotal = round2(montoBase + comision);
+        // Sign convention matches invoices.js: balance < 0 = CXC, balance > 0 = CXP
+        const tipo = r.balance < 0 ? 'CXC' : 'CXP';
+        return {
+          id:        Utils.uid('dr'),
+          consorcio: r.excelName || r.consorcio || '',
+          fecha:     desde || '',
+          mesLetra,
+          mes,
+          año,
+          corte:     corteLabel,
+          grupo:     r.isUD ? 'UD' : '',
+          tipo,
+          accion:    '',
+          fechaPago: '',
+          monto:     montoBase,
+          pago:      0,
+          pendiente: montoTotal,
+          numero:    '',
+          estado:    'Pendiente'
+        };
+      });
 
     if(newRows.length === 0) return 0;
 
