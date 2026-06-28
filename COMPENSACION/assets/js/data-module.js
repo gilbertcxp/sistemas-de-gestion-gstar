@@ -313,8 +313,8 @@ const DataModule = (() => {
         const montoBase  = Math.abs(r.balance);
         const comision   = round2(montoBase * (pct / 100));
         const montoTotal = round2(montoBase + comision);
-        // Sign convention matches invoices.js: balance < 0 = CXC, balance > 0 = CXP
-        const tipo = r.balance < 0 ? 'CXC' : 'CXP';
+        // balance > 0 = consorcio te debe (CXC), balance < 0 = tú les debes (CXP)
+        const tipo = r.balance > 0 ? 'CXC' : 'CXP';
         return {
           id:        Utils.uid('dr'),
           consorcio: r.excelName || r.consorcio || '',
