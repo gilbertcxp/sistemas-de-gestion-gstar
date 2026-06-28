@@ -78,7 +78,6 @@ const EstadoCuenta = (() => {
         <div class="ec-consorcio-row">
           <div class="ec-cons-icon">${_svg('building')}</div>
           <div>
-            <div class="ec-cons-lbl">CONSORCIO</div>
             <div class="ec-cons-name">${Utils.escapeHtml(_consorcioSelected)}</div>
           </div>
         </div>
@@ -87,7 +86,6 @@ const EstadoCuenta = (() => {
           <span class="ec-sec-ic">${_svg('pie')}</span>
           <div>
             <div class="ec-sec-h">RESUMEN GENERAL</div>
-            <div class="ec-sec-sub">Compensación de Consorcios</div>
           </div>
         </div>
 
