@@ -224,7 +224,13 @@ const App = (() => {
     Storage.saveSettings(settings);
     const created = Invoices.generateFromStaged();
     if(created.length === 0){ UI.toast('No hay facturas seleccionadas para generar', 'err'); return; }
-    UI.toast(`${created.length} factura(s) generada(s) correctamente`, 'ok');
+
+    // Proceso 2: guardar todos los registros del Excel en Data con Estado=Pendiente
+    const desde = document.getElementById('periodoDesde').value;
+    const hasta  = document.getElementById('periodoHasta').value;
+    const dataCount = DataModule.importFromWeekly(Invoices.getStaged(), desde, hasta);
+
+    UI.toast(`${created.length} factura(s) generada(s) · ${dataCount} registros guardados en Data`, 'ok');
     renderPreviewTable();
     Dashboard.renderAll();
     // Pre-selecciona el lote recién creado para que "Descargar todas en ZIP"

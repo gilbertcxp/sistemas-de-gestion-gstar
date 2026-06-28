@@ -284,6 +284,55 @@ const DataModule = (() => {
 
   function getRows(){ return _rows; }
 
+  // ------ Public: import from weekly Cargar-Excel ------
+  // staged = Invoices.getStaged(), desde/hasta = ISO date strings from the UI inputs
+  function importFromWeekly(staged, desde, hasta){
+    if(!staged || staged.length === 0) return 0;
+
+    const corteLabel = desde && hasta
+      ? `${Utils.fmtDate(desde)} – ${Utils.fmtDate(hasta)}`
+      : desde ? Utils.fmtDate(desde) : 'Sin fecha';
+
+    let mes = 0, año = 0, mesLetra = '';
+    if(desde){
+      const dt = new Date(desde + 'T00:00:00');
+      if(!isNaN(dt)){
+        mes      = dt.getMonth() + 1;
+        año      = dt.getFullYear();
+        mesLetra = dt.toLocaleDateString('es-DO', { month:'long' }).toUpperCase();
+      }
+    }
+
+    const newRows = staged
+      .filter(r => !r.isUD && r.balance !== 0)
+      .map(r => ({
+        id:        Utils.uid('dr'),
+        consorcio: r.excelName || r.consorcio || '',
+        fecha:     desde || '',
+        mesLetra,
+        mes,
+        año,
+        corte:     corteLabel,
+        grupo:     '',
+        tipo:      r.balance < 0 ? 'CXP' : 'CXC',
+        accion:    '',
+        fechaPago: '',
+        monto:     Math.abs(r.balance),
+        pago:      0,
+        pendiente: Math.abs(r.balance),
+        numero:    '',
+        estado:    'Pendiente'
+      }));
+
+    if(newRows.length === 0) return 0;
+
+    const existing = Storage.getDataRows();
+    Storage.saveDataRows([...existing, ...newRows]);
+    load();
+    return newRows.length;
+  }
+
   return { render, importFile, load, goPage, setFilter, updateStatus,
-           getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows };
+           getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
+           importFromWeekly };
 })();
