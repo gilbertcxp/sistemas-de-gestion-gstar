@@ -11,7 +11,7 @@ const DataModule = (() => {
 
   // ------ helpers ------
   function _deriveEstado(tipo, pendiente){
-    if(tipo === 'CXC') return 'Por Cobrar';
+    if(tipo === 'CXC') return (pendiente > 0.001) ? 'Por Cobrar' : 'Cobrada';
     return (pendiente > 0.001) ? 'Pendiente' : 'Pagada';
   }
 
@@ -242,7 +242,10 @@ const DataModule = (() => {
                <option${r.estado==='Pendiente'?' selected':''}>Pendiente</option>
                <option${r.estado==='Pagada'?' selected':''}>Pagada</option>
              </select>`
-          : `<span class="pill blue" style="font-size:10.5px"><span class="pill-dot"></span>Por Cobrar</span>`;
+          : `<select class="input data-status-sel" onchange="DataModule.updateStatus('${Utils.jsAttr(r.id)}', this.value)">
+               <option${r.estado==='Por Cobrar'?' selected':''}>Por Cobrar</option>
+               <option${r.estado==='Cobrada'?' selected':''}>Cobrada</option>
+             </select>`;
 
         const nombreCell = r._count
           ? `<b>${Utils.escapeHtml(r.consorcio)}</b> <span class="muted" style="font-size:11px">(${r._count} consorcios)</span>`
@@ -299,7 +302,7 @@ const DataModule = (() => {
     Storage.updateDataRow(id, { estado });
     load();
     _renderSummary();
-    // No re-render table to avoid losing scroll position; the select already shows new value
+    if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
   }
 
   function getCortes(){
