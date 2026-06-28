@@ -195,7 +195,7 @@ const DataModule = (() => {
       const sub = udRows.filter(r => r.tipo === tipo);
       if(sub.length === 0) return;
       agg.push({
-        id:        'ud-' + tipo + '-group',
+        id:        sub.length === 1 ? sub[0].id : 'ud-' + tipo + '-group',
         consorcio: 'Grupo UD',
         fecha:     sub[0].fecha,
         mesLetra:  sub[0].mesLetra,
@@ -210,7 +210,9 @@ const DataModule = (() => {
         pago:      sub.reduce((s,r) => s + r.pago,  0),
         pendiente: sub.reduce((s,r) => s + r.pendiente, 0),
         numero:    '',
-        estado:    sub.some(r => r.estado === 'Pendiente') ? 'Pendiente' : 'Pagada',
+        estado:    tipo === 'CXC'
+          ? (sub.some(r => r.estado === 'Por Cobrar') ? 'Por Cobrar' : 'Cobrada')
+          : (sub.some(r => r.estado === 'Pendiente')  ? 'Pendiente'  : 'Pagada'),
         _count:    sub.length
       });
     });
@@ -299,8 +301,16 @@ const DataModule = (() => {
   }
 
   function updateStatus(id, estado){
-    Storage.updateDataRow(id, { estado });
+    const row  = _rows.find(r => r.id === id);
+    const updates = { estado };
+    if(row){
+      const done = (estado === 'Cobrada' || estado === 'Pagada');
+      updates.pago      = done ? row.monto : 0;
+      updates.pendiente = done ? 0 : row.monto;
+    }
+    Storage.updateDataRow(id, updates);
     load();
+    _renderTable();
     _renderSummary();
     if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
   }
@@ -342,13 +352,9 @@ const DataModule = (() => {
       }
     }
 
-    const pct    = Number(Storage.getSettings().porcentaje) || 0;
-    const round2 = n => Math.round(n * 100) / 100;
-
     const mkRow = (consorcio, balance, grupo) => {
-      const montoBase  = Math.abs(balance);
-      const comision   = round2(montoBase * (pct / 100));
-      const montoTotal = round2(montoBase + comision);
+      const montoBase = Math.abs(balance);
+      const tipo      = balance > 0 ? 'CXC' : 'CXP';
       return {
         id:        Utils.uid('dr'),
         consorcio,
@@ -358,14 +364,14 @@ const DataModule = (() => {
         año,
         corte:     corteLabel,
         grupo,
-        tipo:      balance > 0 ? 'CXC' : 'CXP',
+        tipo,
         accion:    '',
         fechaPago: '',
         monto:     montoBase,
         pago:      0,
-        pendiente: montoTotal,
+        pendiente: montoBase,
         numero:    '',
-        estado:    'Pendiente'
+        estado:    tipo === 'CXC' ? 'Por Cobrar' : 'Pendiente'
       };
     };
 
