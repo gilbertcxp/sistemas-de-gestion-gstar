@@ -152,91 +152,34 @@ const SolicitudPago = (() => {
     w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
   }
 
-  // ------ PDF export ------
+  // ------ PDF export — captura el preview HTML tal como se ve ------
   function exportPDF(){
     updatePreview();
-    const { jsPDF } = window.jspdf;
-    const doc  = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const W = 210, M = 15;
-    const cfg  = Storage.getSettings();
-    const { balanceComp, transferencia, balanceOp, balanceCompAct, totalPagar, balanceDispOP } = _calcTotals();
-    let y = 20;
-
-    // ---- Header band ----
-    doc.setFillColor(11,20,55);
-    doc.rect(0, 0, W, 30, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.setTextColor(255,255,255);
-    doc.text('Solicitud de Pago', M, 13);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,190,230);
-    doc.text('Compensación de Consorcios — ' + (cfg.empresa?.nombre||'Gstar Services S.A.'), M, 20);
-    doc.text(new Date().toLocaleDateString('es-DO'), W-M, 13, {align:'right'});
-    if(_corteSelected) doc.text('Corte: '+_corteSelected, W-M, 20, {align:'right'});
-    y = 40;
-
-    // ---- Balance rows ----
-    const addBal = (label, val, bold, color) => {
-      doc.setFont('helvetica', bold?'bold':'normal'); doc.setFontSize(9.5);
-      doc.setTextColor(...(color||[40,50,70]));
-      doc.text(label, M, y);
-      doc.text(Utils.fmtMoney(val), W-M, y, {align:'right'});
-      if(bold){ doc.setDrawColor(200,210,230); doc.line(M, y+1.5, W-M, y+1.5); }
-      y += 7;
-    };
-
-    addBal('Balance en Cuenta Bancaria COMP', balanceComp);
-    addBal('Transferencia entre Cuentas', transferencia);
-    addBal('Balance COMP Actualizado', balanceCompAct, true);
-    y += 2;
-    addBal('Saldo a Favor en Cuenta Operativa', balanceOp);
-    addBal('Saldo a Pagar por Concepto de Corte', totalPagar, false, [200,38,38]);
-    addBal('Balance Disponible Después de Pago CTA OP', balanceDispOP, true,
-      balanceDispOP < 0 ? [200,38,38] : [40,50,70]);
-    y += 2;
-
-    // Highlight bar
-    doc.setFillColor(37,99,235);
-    doc.rect(M-2, y-4.5, W-2*M+4, 11, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(255,255,255);
-    doc.text('BALANCE DISPONIBLE COMPENSACIÓN', M+2, y+2);
-    doc.text(Utils.fmtMoney(balanceCompAct), W-M-2, y+2, {align:'right'});
-    y += 16;
-
-    // ---- TIPO label ----
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(100,116,139);
-    doc.text('TIPO: CXP', M, y);
-    y += 5;
-
-    // ---- Table ----
-    if(_rows.length > 0){
-      const body = [
-        ..._rows.map(r => [r.consorcio, r.corte, Utils.fmtMoney(Math.abs(r.pendiente))]),
-        ['', 'TOTAL A PAGAR', Utils.fmtMoney(totalPagar)]
-      ];
-      doc.autoTable({
-        startY: y,
-        head: [['CONSORCIO','CORTE','PENDIENTE']],
-        body,
-        theme:'grid',
-        styles:{ fontSize:8.5, cellPadding:2.5 },
-        headStyles:{ fillColor:[37,99,235], textColor:255, fontStyle:'bold' },
-        columnStyles:{ 2:{ halign:'right', fontStyle:'bold' } },
-        didParseCell: d => { if(d.row.index === body.length-1) d.cell.styles.fontStyle='bold'; }
-      });
-      y = doc.lastAutoTable.finalY + 14;
-    }
-
-    // ---- Signatures ----
-    if(y > 240){ doc.addPage(); y = 20; }
-    const sigW = (W - 2*M - 20) / 2;
-    doc.setDrawColor(148,163,184);
-    doc.line(M, y+10, M+sigW, y+10);
-    doc.line(M+sigW+20, y+10, M+2*sigW+20, y+10);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,116,139);
-    doc.text('Preparado por', M+sigW/2, y+15, {align:'center'});
-    doc.text('Autorizado por', M+sigW+20+sigW/2, y+15, {align:'center'});
-
-    doc.save(`Solicitud_Pago_${(_corteSelected||Utils.todayISO()).replace(/\s/g,'_')}.pdf`);
-    UI.toast('PDF descargado correctamente', 'ok');
+    const el = document.getElementById('spDocument');
+    if(!el){ UI.toast('No hay documento para exportar', 'err'); return; }
+    UI.toast('Generando PDF…', 'ok');
+    html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
+      .then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf    = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.97);
+        const pgW = 210, pgH = 297;
+        const imgW = pgW;
+        const imgH = (canvas.height / canvas.width) * pgW;
+        if(imgH <= pgH){
+          pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+        } else {
+          let yOff = 0;
+          while(yOff < imgH){
+            if(yOff > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, -yOff, imgW, imgH);
+            yOff += pgH;
+          }
+        }
+        pdf.save(`Solicitud_Pago_${(_corteSelected||Utils.todayISO()).replace(/[\s\/]/g,'_')}.pdf`);
+        UI.toast('PDF descargado correctamente', 'ok');
+      })
+      .catch(() => UI.toast('Error al generar el PDF', 'err'));
   }
 
   // ------ Print CSS ------
