@@ -60,7 +60,7 @@ const EstadoCuenta = (() => {
     const stateCls = isFavor ? 'favor' : isPagar ? 'pagar' : 'cero';
     const stateTag = isFavor ? 'A FAVOR DEL CONSORCIO' : isPagar ? 'A PAGAR' : 'EN CERO';
 
-    const detRows = _rows.map(r => {
+    const detRows = _rows.filter(r => Math.abs(r.pendiente) > 0.001).map(r => {
       const isCXP = r.tipo === 'CXP';
       return `<tr>
         <td>${r.año||'—'}</td>
