@@ -352,9 +352,14 @@ const DataModule = (() => {
       }
     }
 
+    const pct    = Number(Storage.getSettings().porcentaje) || 2;
+    const round2 = n => Math.round(n * 100) / 100;
+
     const mkRow = (consorcio, balance, grupo) => {
-      const montoBase = Math.abs(balance);
-      const tipo      = balance > 0 ? 'CXC' : 'CXP';
+      const montoBase  = Math.abs(balance);
+      const comision   = round2(montoBase * (pct / 100));
+      const montoTotal = round2(montoBase + comision);
+      const tipo       = balance > 0 ? 'CXC' : 'CXP';
       return {
         id:        Utils.uid('dr'),
         consorcio,
@@ -367,9 +372,9 @@ const DataModule = (() => {
         tipo,
         accion:    '',
         fechaPago: '',
-        monto:     montoBase,
+        monto:     montoTotal,
         pago:      0,
-        pendiente: montoBase,
+        pendiente: montoTotal,
         numero:    '',
         estado:    tipo === 'CXC' ? 'Por Cobrar' : 'Pendiente'
       };
