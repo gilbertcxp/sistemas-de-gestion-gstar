@@ -467,9 +467,15 @@ const App = (() => {
   }
 
   function wire(){
-    // Nav
+    // Nav — Configuración requiere PIN de administrador
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-      btn.addEventListener('click', () => switchView(btn.dataset.view));
+      btn.addEventListener('click', () => {
+        if(btn.dataset.view === 'config'){
+          UI.requirePin(() => switchView('config'));
+        } else {
+          switchView(btn.dataset.view);
+        }
+      });
     });
     document.querySelectorAll('[data-view]').forEach(el => {
       if(!el.classList.contains('nav-item')) el.addEventListener('click', () => switchView(el.dataset.view));
