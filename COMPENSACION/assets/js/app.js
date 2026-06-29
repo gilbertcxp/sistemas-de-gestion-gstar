@@ -403,13 +403,16 @@ const App = (() => {
     document.getElementById('cfgVendedor').value = s.vendedor;
     document.getElementById('cfgEntregadoPor').value = s.entregadoPor;
     document.getElementById('cfgProximoNumero').value = Storage.peekNextInvoiceNumber();
+    document.getElementById('cfgAdminPin').value = s.adminPin || '1234';
   }
   function saveConfig(){
+    const newPin = document.getElementById('cfgAdminPin').value.trim();
     Storage.saveSettings({
       porcentaje: Number(document.getElementById('cfgPorcentaje').value)||2,
       diasVencimiento: Number(document.getElementById('cfgDiasVenc').value)||30,
       vendedor: document.getElementById('cfgVendedor').value.trim(),
       entregadoPor: document.getElementById('cfgEntregadoPor').value.trim(),
+      adminPin: newPin || '1234',
     });
     const manualNum = document.getElementById('cfgProximoNumero').value.trim();
     const m = manualNum.match(/(\d+)/);
