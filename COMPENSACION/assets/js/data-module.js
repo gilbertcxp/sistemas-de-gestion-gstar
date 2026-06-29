@@ -315,6 +315,37 @@ const DataModule = (() => {
     if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
   }
 
+  // ------ Eliminar Corte (Admin) ------
+  function showDeleteCorteModal(){
+    const cortes = [...new Set(_rows.map(r => r.corte).filter(Boolean))].sort();
+    const sel = document.getElementById('deleteCorteSelect');
+    if(sel) sel.innerHTML = cortes.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('');
+    const pin = document.getElementById('deleteCortePin');
+    if(pin) pin.value = '';
+    const modal = document.getElementById('modalDeleteCorte');
+    if(modal){ modal.style.display = 'flex'; setTimeout(()=>pin&&pin.focus(), 100); }
+  }
+
+  function closeDeleteCorteModal(){
+    const modal = document.getElementById('modalDeleteCorte');
+    if(modal) modal.style.display = 'none';
+  }
+
+  function confirmDeleteCorte(){
+    const pin      = (document.getElementById('deleteCortePin')?.value || '').trim();
+    const adminPin = String(Storage.getSettings().adminPin || '1234');
+    if(pin !== adminPin){ UI.toast('PIN incorrecto', 'err'); return; }
+    const corte = document.getElementById('deleteCorteSelect')?.value;
+    if(!corte){ UI.toast('Selecciona un corte', 'err'); return; }
+    const remaining = Storage.getDataRows().filter(r => r.corte !== corte);
+    Storage.saveDataRows(remaining);
+    load();
+    render();
+    closeDeleteCorteModal();
+    UI.toast(`Corte eliminado correctamente`, 'ok');
+    if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+  }
+
   function getCortes(){
     return [...new Set(_rows.filter(r => r.tipo==='CXP' && r.estado==='Pendiente').map(r=>r.corte).filter(Boolean))].sort();
   }
@@ -404,5 +435,6 @@ const DataModule = (() => {
 
   return { render, importFile, load, goPage, setFilter, updateStatus,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
-           importFromWeekly };
+           importFromWeekly,
+           showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte };
 })();

@@ -760,6 +760,10 @@
               .then(r=>{ UI.toast(r.count.toLocaleString()+' registros importados correctamente','ok'); DataModule.render(); })
               .catch(e=>UI.toast(e.message,'err'))
               .finally(()=>{ this.value=''; })">
+          <button class="btn btn-ghost" style="color:#dc2626;border-color:#fecaca" onclick="DataModule.showDeleteCorteModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Eliminar Corte
+          </button>
           <button class="btn btn-accent" onclick="document.getElementById('dataFileInput').click()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
             Importar Excel
@@ -1039,6 +1043,33 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalVincular')">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarVinculo">Vincular</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ELIMINAR CORTE (Admin) ===================== -->
+<div class="modal-overlay" id="modalDeleteCorte" onclick="if(event.target===this)DataModule.closeDeleteCorteModal()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-head">
+      <h3 style="color:#dc2626">Eliminar Corte</h3>
+      <button class="btn btn-ghost btn-icon" onclick="DataModule.closeDeleteCorteModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <p style="font-size:13px;color:#64748b;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">
+        ⚠️ Esta acción eliminará <b>todos los registros</b> del corte seleccionado de forma permanente.
+      </p>
+      <div class="field">
+        <label class="f-label">Corte a eliminar</label>
+        <select class="input" id="deleteCorteSelect"></select>
+      </div>
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="deleteCortePin" placeholder="Ingresa el PIN" onkeydown="if(event.key==='Enter')DataModule.confirmDeleteCorte()">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="DataModule.closeDeleteCorteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="DataModule.confirmDeleteCorte()">Eliminar corte</button>
     </div>
   </div>
 </div>

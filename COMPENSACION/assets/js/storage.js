@@ -12,6 +12,7 @@ const Storage = (() => {
   const DEFAULT_SETTINGS = {
     porcentaje: 2,
     diasVencimiento: 30,
+    adminPin: '1234',
     vendedor: '8- ELUIN P.',
     entregadoPor: 'Eluin Polanco',
     empresa: {
