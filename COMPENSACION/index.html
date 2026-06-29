@@ -1047,6 +1047,27 @@
   </div>
 </div>
 
+<!-- ===================== MODAL: PIN ADMINISTRADOR (genérico) ===================== -->
+<div class="modal-overlay" id="modalAdminPin" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Verificación de administrador</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
+          onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button>
+      <button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== MODAL: ELIMINAR CORTE (Admin) ===================== -->
 <div class="modal-overlay" id="modalDeleteCorte" onclick="if(event.target===this)DataModule.closeDeleteCorteModal()">
   <div class="modal" style="max-width:440px;">

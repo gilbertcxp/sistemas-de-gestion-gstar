@@ -37,7 +37,30 @@ const UI = (() => {
     return `<span class="pill ${cls}"><span class="pill-dot"></span>${estado}</span>`;
   }
 
-  return { openModal, closeModal, openSidebar, closeSidebar, toast, confirm, runConfirm, estadoPill };
+  let _pinCallback = null;
+  function requirePin(callback){
+    _pinCallback = callback;
+    const input = document.getElementById('adminPinInput');
+    if(input) input.value = '';
+    const m = document.getElementById('modalAdminPin');
+    if(m){ m.style.display = 'flex'; setTimeout(()=>input&&input.focus(), 100); }
+  }
+  function closeAdminPin(){
+    _pinCallback = null;
+    const m = document.getElementById('modalAdminPin');
+    if(m) m.style.display = 'none';
+  }
+  function confirmAdminPin(){
+    const pin      = (document.getElementById('adminPinInput')?.value || '').trim();
+    const adminPin = String(Storage.getSettings().adminPin || '1234');
+    if(pin !== adminPin){ toast('PIN incorrecto', 'err'); return; }
+    closeAdminPin();
+    if(_pinCallback) _pinCallback();
+    _pinCallback = null;
+  }
+
+  return { openModal, closeModal, openSidebar, closeSidebar, toast, confirm, runConfirm, estadoPill,
+           requirePin, closeAdminPin, confirmAdminPin };
 })();
 
 
@@ -322,7 +345,7 @@ const App = (() => {
     renderFacturasTable();
   }
   function confirmDeleteInvoice(numero){
-    UI.confirm('Eliminar factura', `¿Eliminar la factura ${numero}? Esta acción no se puede deshacer.`, () => {
+    UI.requirePin(() => {
       Invoices.remove(numero);
       renderFacturasTable();
       Dashboard.renderAll();
