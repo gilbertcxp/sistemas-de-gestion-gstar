@@ -54,9 +54,9 @@ const UI = (() => {
     const pin      = (document.getElementById('adminPinInput')?.value || '').trim();
     const adminPin = String(Storage.getSettings().adminPin || '1234');
     if(pin !== adminPin){ toast('PIN incorrecto', 'err'); return; }
+    const cb = _pinCallback;        // capturar antes de cerrar (closeAdminPin pone null)
     closeAdminPin();
-    if(_pinCallback) _pinCallback();
-    _pinCallback = null;
+    if(cb) cb();
   }
 
   return { openModal, closeModal, openSidebar, closeSidebar, toast, confirm, runConfirm, estadoPill,
