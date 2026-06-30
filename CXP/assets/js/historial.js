@@ -35,7 +35,7 @@ const Historial = (() => {
           <div>
             <div style="font-weight:700;font-size:14px;">${Utils.fmtDateLong(s.fecha)}</div>
             <div class="muted" style="font-size:12px;margin-top:3px;">
-              ${s.totalDocs} documento(s) · Total ${Utils.fmtMoney(s.totalRD||0)}${s.totalUS?' + US$ '+Utils.fmtNum(s.totalUS):''}
+              ${s.totalDocs} documento(s) · Total ${Utils.fmtMoney(s.totalGeneral||0)}
             </div>
           </div>
           <div class="flex gap8">

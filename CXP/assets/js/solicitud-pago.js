@@ -24,22 +24,24 @@ const SolicitudPago = (() => {
     if(_locked) return;
     Storage.saveBank(_getBankInputs());
   }
+  // El Saldo Pendiente ya viene expresado en RD$ desde el reporte (las facturas en
+  // US$ se registran con su equivalente ya convertido), así que el total es uno solo.
   function _calcTotals(){
     const bank = _getBankInputs();
     const montoDisponible = bank.balanceBanco - bank.chequesTransito - bank.provisiones + bank.depositos;
-    const totalRD = _items.filter(i=>i.moneda==='RD$').reduce((s,i)=>s+(i.valor||0),0);
-    const totalUS = _items.filter(i=>i.moneda==='US$').reduce((s,i)=>s+(i.valor||0),0);
-    const disponibilidadActualizada = montoDisponible - totalRD;
-    return { bank, montoDisponible, totalRD, totalUS, disponibilidadActualizada };
+    const montoAPagar = _items.reduce((s,i)=>s+(i.valor||0),0);
+    const disponibilidadActualizada = montoDisponible - montoAPagar;
+    return { bank, montoDisponible, montoAPagar, disponibilidadActualizada };
   }
-  function _totalesPorSuplidor(){
-    const map = {};
-    _items.forEach(i => {
-      const k = i.proveedor;
-      if(!map[k]) map[k] = { RD$:0, 'US$':0 };
-      map[k][i.moneda] = (map[k][i.moneda]||0) + (i.valor||0);
-    });
-    return map;
+  function _fmtDateShort(iso){
+    const d = Utils.parseISODate(iso);
+    if(!d) return '—';
+    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  }
+  // Formato contable: negativos entre paréntesis y en rojo, sin símbolo de moneda
+  function _fmtSigned(n){
+    n = Number(n)||0;
+    return n < 0 ? `<span class="neg">(${Utils.fmtNum(Math.abs(n))})</span>` : Utils.fmtNum(n);
   }
 
   // ------ Public: iniciar nueva solicitud desde la selección del Reporte ------
@@ -89,7 +91,7 @@ const SolicitudPago = (() => {
 
   function guardar(){
     if(_items.length === 0){ UI.toast('No hay documentos en la solicitud', 'err'); return; }
-    const { totalRD, totalUS } = _calcTotals();
+    const { montoAPagar } = _calcTotals();
     const sol = {
       id: _id || Utils.uid('sol'),
       fecha: _createdAt || Utils.todayISO(),
@@ -97,7 +99,7 @@ const SolicitudPago = (() => {
       estado: 'Guardada',
       bank: Storage.getBank(),
       items: _items,
-      totalRD, totalUS,
+      totalGeneral: montoAPagar,
       totalDocs: _items.length
     };
     Storage.upsertSolicitud(sol);
@@ -107,96 +109,58 @@ const SolicitudPago = (() => {
     UI.toast('Solicitud de pago guardada', 'ok');
   }
 
-  // ------ Build doc HTML (vista previa / impresión / PDF) ------
+  // ------ Build doc HTML (vista previa / impresión / PDF) — réplica del Excel ------
   function _buildDocHTML(){
-    const { bank, montoDisponible, totalRD, totalUS, disponibilidadActualizada } = _calcTotals();
-    const cfg = Storage.getSettings();
-    const fecha = new Date().toLocaleDateString('es-DO', { day:'2-digit', month:'long', year:'numeric' });
+    const { bank, montoDisponible, montoAPagar, disponibilidadActualizada } = _calcTotals();
+    const cuenta = bank.cuentaLabel || 'Balance en banco';
 
-    const balRow = (label, val, extra='') =>
-      `<div class="doc-bal-row${extra}">
-         <span class="doc-bal-label">${Utils.escapeHtml(label)}</span>
-         <span class="doc-bal-val${val<0?' neg':''}">${Utils.fmtMoney(val)}</span>
+    const bbRow = (label, val, extra='') =>
+      `<div class="bb-row${extra}">
+         <span class="l">${Utils.escapeHtml(label)}</span>
+         <span class="v">${_fmtSigned(val)}</span>
+       </div>`;
+    const bbRowText = (label, text, extra='') =>
+      `<div class="bb-row${extra}">
+         <span class="l">${Utils.escapeHtml(label)}</span>
+         <span class="v">${Utils.escapeHtml(text)}</span>
        </div>`;
 
     const tableRows = _items.length === 0
-      ? `<tr><td colspan="6"><div class="t-empty">No hay documentos en esta solicitud.</div></td></tr>`
-      : _items.map(i => `<tr>
+      ? `<tr><td colspan="4"><div class="t-empty">No hay documentos en esta solicitud.</div></td></tr>`
+      : _items.map(i => {
+          const detalle = Utils.escapeHtml(i.detalle||'—') + (i.observaciones ? ` <i>(${Utils.escapeHtml(i.observaciones)})</i>` : '');
+          return `<tr>
             <td>${Utils.fmtDate(i.fecha)}</td>
             <td>${Utils.escapeHtml(i.proveedor)}</td>
-            <td>${Utils.escapeHtml(i.detalle||'—')}</td>
-            <td class="c">${Utils.escapeHtml(i.moneda)}</td>
-            <td class="r">${Utils.fmtMoney(i.valor)}</td>
-            <td>${Utils.escapeHtml(i.observaciones||'')}</td>
-          </tr>`).join('');
-
-    const porSuplidor = _totalesPorSuplidor();
-    const suplidorRows = Object.keys(porSuplidor).sort().map(prov => {
-      const t = porSuplidor[prov];
-      const partes = [];
-      if(t['RD$']) partes.push(Utils.fmtMoney(t['RD$']));
-      if(t['US$']) partes.push('US$ ' + Utils.fmtNum(t['US$']));
-      return `<tr><td>${Utils.escapeHtml(prov)}</td><td class="r">${partes.join(' + ')}</td></tr>`;
-    }).join('');
+            <td>${detalle}</td>
+            <td class="r">${Utils.fmtNum(i.valor)}</td>
+          </tr>`;
+        }).join('');
 
     return `
       <div class="doc-page">
-        <div class="doc-header">
-          <img src="assets/img/logo.png" class="doc-logo" alt="Logo" onerror="this.style.display='none'">
-          <div class="doc-header-right">
-            <div class="doc-empresa">${Utils.escapeHtml(cfg.empresa?.nombre||'Gstar Services S.A.')}</div>
-            <div class="doc-sub">RNC ${Utils.escapeHtml(cfg.empresa?.rnc||'131751016')}</div>
-            <div class="doc-fecha">${fecha}</div>
+        <div class="doc-top">
+          <img src="assets/img/logo.png" class="doc-logo2" alt="Logo" onerror="this.style.display='none'">
+          <div class="doc-bankblock">
+            ${bbRowText('Actualizado', _fmtDateShort(_createdAt || Utils.todayISO()), ' header')}
+            ${bbRow(cuenta, bank.balanceBanco)}
+            ${bbRow('Menos: Cheques o transferencias en transito', -bank.chequesTransito)}
+            ${bbRow('Menos: Provisiones, Reservas y pagos de compensacion de la sem.', -bank.provisiones)}
+            ${bbRow('Mas: Depositos o transferencias entre cuentas', bank.depositos)}
+            ${bbRow('Monto disponible para pagos', montoDisponible, ' total')}
+            <div class="bb-spacer"></div>
+            ${bbRow('Monto a Pagar', montoAPagar, ' pagar')}
+            ${bbRow(`Disponibilidad actualizada ${cuenta}`, disponibilidadActualizada, ' total')}
           </div>
         </div>
 
-        <div class="doc-title-block">
-          <h2 class="doc-title">Solicitud de Pago</h2>
-          <p class="doc-subtitle">Cuentas por Pagar — Proveedores</p>
-        </div>
-
-        <div class="doc-balance-grid">
-          ${balRow(bank.cuentaLabel || 'Balance en banco', bank.balanceBanco)}
-          ${balRow('Menos: Cheques o transferencias en tránsito', -bank.chequesTransito)}
-          ${balRow('Menos: Provisiones y reservas', -bank.provisiones)}
-          ${balRow('Más: Depósitos o transferencias entre cuentas', bank.depositos)}
-          ${balRow('Monto disponible para pagos', montoDisponible, ' doc-bal-total')}
-          ${balRow('Monto a Pagar (RD$)', totalRD)}
-          ${totalUS ? balRow('Monto a Pagar (US$, no incluido en disponibilidad RD$)', totalUS) : ''}
-          <div class="doc-bal-row doc-bal-highlight">
-            <span class="doc-bal-label">DISPONIBILIDAD ACTUALIZADA</span>
-            <span class="doc-bal-val">${Utils.fmtMoney(disponibilidadActualizada)}</span>
-          </div>
-        </div>
-
-        <div class="doc-tipo-tag">DOCUMENTOS SELECCIONADOS (${_items.length})</div>
-
-        <table class="doc-table">
+        <div class="doc-title-bar">Solicitud De Pagos</div>
+        <table class="doc-table2">
           <thead>
-            <tr><th>FECHA</th><th>SUPLIDOR</th><th>DETALLE</th><th>MONEDA</th><th class="r">VALOR</th><th>OBSERVACIONES</th></tr>
+            <tr><th>FECHA</th><th>SUPLIDOR</th><th>DETALLE</th><th class="r">VALOR</th></tr>
           </thead>
           <tbody>${tableRows}</tbody>
-          ${_items.length > 0 ? `<tfoot>
-            <tr>
-              <td colspan="4"><b>TOTAL A PAGAR</b></td>
-              <td class="r"><b>${Utils.fmtMoney(totalRD)}${totalUS?' + US$ '+Utils.fmtNum(totalUS):''}</b></td>
-              <td></td>
-            </tr>
-          </tfoot>` : ''}
         </table>
-
-        ${suplidorRows ? `
-        <div class="doc-tipo-tag">TOTAL POR SUPLIDOR</div>
-        <table class="doc-table" style="margin-bottom:22px;">
-          <thead><tr><th>SUPLIDOR</th><th class="r">TOTAL</th></tr></thead>
-          <tbody>${suplidorRows}</tbody>
-        </table>` : ''}
-
-        <div class="doc-signatures">
-          <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Preparado por</div></div>
-          <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Autorizado por</div></div>
-          <div class="doc-sig"><div class="doc-sig-line"></div><div class="doc-sig-label">Autorizado por</div></div>
-        </div>
       </div>`;
   }
 
@@ -281,15 +245,16 @@ const SolicitudPago = (() => {
   // ------ PDF export ------
   function exportPDF(){
     updatePreview();
-    const el = document.getElementById('spDocument');
+    // Captura .doc-page (tamaño real del documento), no el contenedor con scroll horizontal
+    const el = document.querySelector('#spDocument .doc-page');
     if(!el){ UI.toast('No hay documento para exportar', 'err'); return; }
     UI.toast('Generando PDF…', 'ok');
     html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
       .then(canvas => {
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
         const imgData = canvas.toDataURL('image/jpeg', 0.97);
-        const pgW = 210, pgH = 297, imgW = pgW;
+        const pgW = 297, pgH = 210, imgW = pgW;
         const imgH = (canvas.height / canvas.width) * pgW;
         if(imgH <= pgH){ pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH); }
         else { let yOff=0; while(yOff<imgH){ if(yOff>0) pdf.addPage(); pdf.addImage(imgData,'JPEG',0,-yOff,imgW,imgH); yOff+=pgH; } }
@@ -325,38 +290,29 @@ const SolicitudPago = (() => {
   }
 
   function _printCSS(){ return `
+    @page{ size:A4 landscape; margin:12mm 14mm; }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;padding:18mm 20mm;color:#334155}
+    body{font-family:Arial,sans-serif;color:#1f2937}
     .doc-page{max-width:100%}
-    .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}
-    .doc-logo{height:56px}
-    .doc-header-right{text-align:right}
-    .doc-empresa{font-size:15px;font-weight:700;color:#0f172a}
-    .doc-sub,.doc-fecha{font-size:11px;color:#64748b}
-    .doc-title-block{border-left:4px solid #2563eb;padding-left:12px;margin-bottom:16px}
-    .doc-title{font-size:20px;font-weight:800;color:#0f172a}
-    .doc-subtitle{font-size:12px;color:#64748b;margin-top:2px}
-    .doc-balance-grid{border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;margin-bottom:16px}
-    .doc-bal-row{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #e2e8f0;font-size:12px}
-    .doc-bal-row:last-child{border-bottom:none}
-    .doc-bal-label{flex:1}
-    .doc-bal-val{font-weight:600;text-align:right;min-width:130px}
-    .doc-bal-val.neg{color:#dc2626}
-    .doc-bal-total{background:#f8fafc;font-weight:700}
-    .doc-bal-total .doc-bal-label,.doc-bal-total .doc-bal-val{font-weight:700}
-    .doc-bal-highlight{background:#eff6ff}
-    .doc-bal-highlight .doc-bal-label,.doc-bal-highlight .doc-bal-val{font-weight:800;color:#1d4ed8}
-    .doc-tipo-tag{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:6px}
-    .doc-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:22px}
-    .doc-table th{background:#2563eb;color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
-    .doc-table th.r,.doc-table td.r{text-align:right}
-    .doc-table th.c,.doc-table td.c{text-align:center}
-    .doc-table td{padding:7px 10px;border-bottom:1px solid #e2e8f0}
-    .doc-table tfoot td{background:#f1f5f9;font-weight:700;border-top:2px solid #cbd5e1}
-    .doc-signatures{display:flex;gap:50px;margin-top:36px}
-    .doc-sig{flex:1}
-    .doc-sig-line{border-bottom:1.5px solid #94a3b8;height:34px;margin-bottom:6px}
-    .doc-sig-label{font-size:10px;color:#64748b;text-align:center}
+    .doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px}
+    .doc-logo2{height:56px}
+    .doc-bankblock{min-width:400px}
+    .bb-row{display:flex;justify-content:space-between;gap:20px;padding:2px 0;font-size:11.5px}
+    .bb-row .l{flex:1;text-align:right;color:#1f2937}
+    .bb-row .v{font-weight:700;text-align:right;min-width:110px}
+    .bb-row .v .neg{color:#dc2626}
+    .bb-row.header .l,.bb-row.header .v{font-weight:800}
+    .bb-row.total{background:#d9d9d9;font-weight:800}
+    .bb-row.total .l,.bb-row.total .v{font-weight:800}
+    .bb-row.pagar .l{font-weight:700}
+    .bb-row.pagar .v{color:#dc2626;font-weight:800}
+    .bb-spacer{height:6px}
+    .doc-title-bar{background:#1f3864;color:#fff;text-align:center;font-weight:700;font-size:12.5px;letter-spacing:.3px;padding:8px;margin-top:4px}
+    .doc-table2{width:100%;border-collapse:collapse;font-size:11px}
+    .doc-table2 th{background:#1f3864;color:#fff;padding:7px 10px;text-align:left;font-size:10.5px;font-weight:700}
+    .doc-table2 th.r,.doc-table2 td.r{text-align:right}
+    .doc-table2 td{padding:5px 10px;border-bottom:1px solid #f1f5f9}
+    .doc-table2 td.r{font-weight:600}
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   `; }
 
