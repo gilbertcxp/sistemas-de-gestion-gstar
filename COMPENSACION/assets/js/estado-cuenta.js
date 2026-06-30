@@ -58,7 +58,6 @@ const EstadoCuenta = (() => {
     const saldo    = totalCXC - totalCXP;
     const isFavor  = saldo > 0.001, isPagar = saldo < -0.001;
     const stateCls = isFavor ? 'favor' : isPagar ? 'pagar' : 'cero';
-    const stateTag = isFavor ? 'A FAVOR DEL CONSORCIO' : isPagar ? 'A PAGAR' : 'EN CERO';
 
     const detRows = _rows.filter(r => Math.abs(r.pendiente) > 0.001).map(r => {
       const isCXP = r.tipo === 'CXP';
@@ -110,7 +109,6 @@ const EstadoCuenta = (() => {
         <div class="ec-total ${stateCls}">
           <div class="ec-total-thumb">${_svg('thumb')}</div>
           <div class="ec-total-check">${_svg('check')}</div>
-          <div class="ec-total-tag">${stateTag}</div>
           <div class="ec-total-val">${Utils.fmtMoney(Math.abs(saldo))}</div>
         </div>
 
