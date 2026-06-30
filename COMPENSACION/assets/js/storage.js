@@ -24,6 +24,10 @@ const Storage = (() => {
     }
   };
 
+  // Claves que se comparten entre todos los usuarios (sincronizadas a la nube)
+  const SHARED_KEYS = [K_CLIENTS, K_INVOICES, K_COUNTER, K_SETTINGS, 'fc_data_rows', 'fc_bank_data'];
+  let _suppressSync = false;
+
   function _get(key, fallback){
     try{
       const raw = localStorage.getItem(key);
@@ -33,9 +37,21 @@ const Storage = (() => {
   function _set(key, value){
     try{
       localStorage.setItem(key, JSON.stringify(value));
+      // Empuja a la nube los cambios de claves compartidas (si Sync está activo)
+      if(!_suppressSync && SHARED_KEYS.indexOf(key) !== -1 && window.Sync){
+        window.Sync.push(key, value);
+      }
       return true;
     }catch(e){ console.error('Storage write error', key, e); return false; }
   }
+  // Escribe un valor recibido de la nube SIN volver a empujarlo (evita eco)
+  function applyRemote(key, value){
+    _suppressSync = true;
+    try{ localStorage.setItem(key, JSON.stringify(value)); }
+    catch(e){ console.error('applyRemote error', key, e); }
+    _suppressSync = false;
+  }
+  function getSharedKeys(){ return SHARED_KEYS.slice(); }
 
   function init(){
     if(localStorage.getItem(K_CLIENTS) === null){
@@ -164,6 +180,7 @@ const Storage = (() => {
     getSettings, saveSettings,
     getDataRows, saveDataRows, clearDataRows, updateDataRow,
     getBankData, saveBankData,
-    exportBackup, importBackup, resetAll
+    exportBackup, importBackup, resetAll,
+    applyRemote, getSharedKeys
   };
 })();

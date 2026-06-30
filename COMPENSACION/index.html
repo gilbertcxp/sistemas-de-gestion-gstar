@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Facturas de Compensación — Gstar Services</title>
 <link rel="icon" href="assets/img/sello.png">
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 <!-- Guard de autenticación -->
 <script src="../auth/auth.js"></script>
 <script>if (window.Auth) Auth.requireAuth();</script>
@@ -747,6 +750,16 @@
           <button class="btn btn-danger" id="btnReset">Borrar todos los datos</button>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Sincronización en la nube</h3><p class="sub">Comparte los datos con todos los usuarios</p></div></div>
+        <div class="card-body stack" style="gap:12px;">
+          <p class="hint">Los datos de Compensación se guardan en la nube y se cargan automáticamente para todos los usuarios al iniciar sesión. Usa este botón si quieres forzar que <b>tus datos actuales</b> queden publicados para todos.</p>
+          <div class="flex gap10 wrap">
+            <button class="btn btn-primary" id="btnPublishAll">Publicar mis datos para todos</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===================== DATA ===================== -->
@@ -1120,6 +1133,7 @@
 <script src="assets/js/assets.js"></script>
 <script src="assets/js/utils.js"></script>
 <script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
 <script src="assets/js/parser.js"></script>
 <script src="assets/js/clients.js"></script>
 <script src="assets/js/invoices.js"></script>

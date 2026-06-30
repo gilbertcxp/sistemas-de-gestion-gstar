@@ -72,11 +72,7 @@ const App = (() => {
   let currentFile = null;
 
   // ---------------- Routing ----------------
-  function switchView(name){
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-'+name).classList.add('active');
-    document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
-    UI.closeSidebar();
+  function renderView(name){
     if(name === 'facturas') renderFacturasTable();
     if(name === 'clientes') Clients.render();
     if(name === 'reportes') renderReportes();
@@ -85,7 +81,35 @@ const App = (() => {
     if(name === 'data') DataModule.render();
     if(name === 'solicitud-pago') SolicitudPago.render();
     if(name === 'estado-cuenta') EstadoCuenta.render();
+  }
+
+  function switchView(name){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    UI.closeSidebar();
+    renderView(name);
     window.scrollTo({top:0});
+  }
+
+  // Re-renderiza la vista activa cuando llegan datos de otro usuario (realtime)
+  function syncRerender(){
+    const active = document.querySelector('.view.active');
+    if(!active || !active.id.startsWith('view-')) return;
+    const name = active.id.slice('view-'.length);
+    if(typeof DataModule !== 'undefined' && DataModule.load) DataModule.load();
+    Dashboard.renderAll();
+    renderView(name);
+  }
+
+  // Publica a la nube toda la data local del usuario actual (admin)
+  function publishAll(){
+    if(!window.Sync){ UI.toast('Sincronización no disponible', 'err'); return; }
+    UI.toast('Publicando datos…', 'ok');
+    Sync.publishAll().then(res => {
+      if(res && res.ok) UI.toast('Datos publicados para todos los usuarios', 'ok');
+      else UI.toast('No se pudo publicar (revisa la conexión)', 'err');
+    });
   }
 
   // ---------------- Cargar Excel ----------------
@@ -555,6 +579,8 @@ const App = (() => {
     document.getElementById('btnRestoreBtn').addEventListener('click', () => document.getElementById('btnRestore').click());
     document.getElementById('btnRestore').addEventListener('change', e => { if(e.target.files[0]) restore(e.target.files[0]); });
     document.getElementById('btnReset').addEventListener('click', resetAll);
+    const btnPublish = document.getElementById('btnPublishAll');
+    if(btnPublish) btnPublish.addEventListener('click', publishAll);
 
     // ---- Modal overlay click-to-close ----
     document.querySelectorAll('.modal-overlay').forEach(ov => {
@@ -562,10 +588,16 @@ const App = (() => {
     });
   }
 
-  function init(){
+  async function init(){
     Storage.init();
+    // Trae la data compartida de la nube antes de renderizar (si está disponible)
+    if(window.Sync){
+      try{ await Sync.pull(); }catch(e){ console.warn('Sync.pull falló, se usa data local', e); }
+    }
     wire();
     Dashboard.renderAll();
+    // Escucha cambios de otros usuarios en tiempo real
+    if(window.Sync){ Sync.subscribeRealtime(() => syncRerender()); }
   }
 
   function clearPendingVinculo(){ pendingVinculoTarget = null; }
@@ -573,7 +605,7 @@ const App = (() => {
   return {
     init, switchView, viewInvoice, openVincular, confirmVinculo, crearDesdeVincular,
     toggleStagedRow, toggleSelectInvoice, confirmDeleteInvoice, clearPendingVinculo,
-    cargarData
+    cargarData, publishAll
   };
 })();
 
