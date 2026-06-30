@@ -390,7 +390,7 @@ const DataModule = (() => {
       const montoBase  = Math.abs(balance);
       const comision   = round2(montoBase * (pct / 100));
       const montoTotal = round2(montoBase + comision);
-      const tipo       = balance > 0 ? 'CXC' : 'CXP';
+      const tipo       = balance > 0 ? 'CXP' : 'CXC';  // monto positivo = CXP (por pagar)
       return {
         id:        Utils.uid('dr'),
         consorcio,
@@ -415,7 +415,7 @@ const DataModule = (() => {
     const udStaged    = staged.filter(r => r.isUD    && r.balance !== 0);
     const nonUDStaged = staged.filter(r => !r.isUD   && r.balance !== 0);
 
-    // Neto del Grupo UD: CXC (balance>0) menos CXP (balance<0)
+    // Neto del Grupo UD: suma de balances (positivo = CXP, negativo = CXC)
     const udNet = udStaged.reduce((s, r) => s + r.balance, 0);
 
     const newRows = [
