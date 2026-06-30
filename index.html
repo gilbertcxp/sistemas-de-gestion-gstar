@@ -429,15 +429,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
-  <!-- ======= CXP · REPORTE DE CXP (en desarrollo) ======= -->
+  <!-- ======= CXP · REPORTE DE CXP (app integrada) ======= -->
   <section class="page" id="page-cxp-reporte">
-    <div class="empty-state">
-      <div class="empty-card">
-        <div class="empty-ico purple"><i class="bi bi-file-earmark-bar-graph"></i></div>
-        <div class="empty-title">Reporte de Cuentas por Pagar</div>
-        <div class="empty-msg">Este módulo se encuentra en desarrollo y estará disponible próximamente.</div>
-        <div class="empty-sign"><i class="bi bi-hourglass-split"></i> En desarrollo</div>
-      </div>
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-cxp-reporte"
+              data-src="CXP/index.html"
+              title="Reporte de Cuentas por Pagar"></iframe>
     </div>
   </section>
 
@@ -461,7 +458,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 const APPS = {
   preconciliacion : "CONCILIAR/conciliadorav2.0.html",          // ✅ integrada
   erogaciones     : "EROGACIONES/dashboard-erogaciones.html",   // ✅ integrada
-  compensacion    : "COMPENSACION/index.html"                   // ✅ integrada
+  compensacion    : "COMPENSACION/index.html",                  // ✅ integrada
+  "cxp-reporte"   : "CXP/index.html"                            // ✅ integrada
 };
 
 /* ===================================================================
@@ -529,6 +527,11 @@ function lazyLoadFrame(page){
   // Compensación
   if(page==='compensacion'){
     const f=document.getElementById('frame-compensacion');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // CXP · Reporte de CXP
+  if(page==='cxp-reporte'){
+    const f=document.getElementById('frame-cxp-reporte');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Erogaciones (pendiente de adjuntar)

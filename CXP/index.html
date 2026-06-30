@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuentas por Pagar — Gstar Services</title>
+<link rel="icon" href="assets/img/sello.png">
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<!-- Guard de autenticación -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+.data-status-sel { font-size:11px; padding:3px 6px; height:auto; min-width:0; width:auto; }
+.kpi.warn{ --accent:var(--warn); }
+
+/* ---- Document preview container ---- */
+.doc-preview { background:var(--canvas); border-radius:var(--r-lg); padding:20px; min-height:300px; }
+.doc-page { background:#fff; border:1px solid var(--line); border-radius:10px; padding:32px 40px; font-family:'Inter',sans-serif; color:#334155; }
+.doc-header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:18px; border-bottom:2px solid #e2e8f0; margin-bottom:20px; }
+.doc-logo { height:58px; object-fit:contain; }
+.doc-header-right { text-align:right; }
+.doc-empresa { font-size:15px; font-weight:700; color:#0f172a; }
+.doc-sub, .doc-fecha { font-size:11.5px; color:#64748b; }
+.doc-title-block { border-left:4px solid #2563eb; padding-left:13px; margin-bottom:18px; }
+.doc-title { font-size:21px; font-weight:800; color:#0f172a; margin:0; }
+.doc-subtitle { font-size:12.5px; color:#64748b; margin:3px 0 0; }
+.doc-balance-grid { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:18px; }
+.doc-bal-row { display:flex; justify-content:space-between; align-items:center; padding:9px 16px; border-bottom:1px solid #e2e8f0; font-size:13px; }
+.doc-bal-row:last-child { border-bottom:none; }
+.doc-bal-label { flex:1; }
+.doc-bal-val { font-weight:600; text-align:right; min-width:140px; }
+.doc-bal-val.neg { color:#dc2626; }
+.doc-bal-total { background:#f8fafc; }
+.doc-bal-total .doc-bal-label, .doc-bal-total .doc-bal-val { font-weight:700; }
+.doc-bal-highlight { background:#eff6ff; }
+.doc-bal-highlight .doc-bal-label, .doc-bal-highlight .doc-bal-val { font-weight:800; color:#1d4ed8; font-size:13.5px; }
+.doc-tipo-tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#64748b; margin-bottom:8px; }
+.doc-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:22px; }
+.doc-table th { background:#2563eb; color:#fff; padding:8px 12px; text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; }
+.doc-table th.r, .doc-table td.r { text-align:right; }
+.doc-table th.c, .doc-table td.c { text-align:center; }
+.doc-table td { padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+.doc-table tfoot td { background:#f1f5f9; font-weight:700; border-top:2px solid #cbd5e1; }
+.doc-signatures { display:flex; gap:56px; margin-top:38px; padding-top:12px; }
+.doc-sig { flex:1; }
+.doc-sig-line { border-bottom:1.5px solid #94a3b8; height:36px; margin-bottom:7px; }
+.doc-sig-label { font-size:10.5px; color:#64748b; text-align:center; }
+
+/* ---- Barra de selección flotante ---- */
+.cxp-sel-bar{
+  position:sticky; bottom:16px; background:#13141C; color:#fff; border-radius:14px;
+  padding:13px 20px; display:none; align-items:center; justify-content:space-between; gap:16px;
+  box-shadow:0 14px 36px rgba(0,0,0,.3); z-index:15; flex-wrap:wrap;
+}
+.cxp-sel-bar .cxp-sel-info{ font-size:13.5px; }
+.cxp-sel-bar .cxp-sel-info b{ color:#fff; }
+.cxp-sel-bar .cxp-sel-info span{ color:#9196B5; }
+</style>
+
+<!-- Librerías empaquetadas localmente: la app funciona 100% sin internet -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<script src="assets/vendor/html2canvas.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+<script src="assets/vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="assets/vendor/jszip.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="sidebar-scrim" id="scrim" onclick="UI.closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">CP</div>
+      <div class="txt">
+        <b>CUENTAS POR PAGAR</b>
+        <span>GSTAR SERVICES S.A.</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">PRINCIPAL</div>
+      <button class="nav-item active" data-view="reporte">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+        Reporte de CXP
+      </button>
+
+      <div class="nav-section">DOCUMENTOS</div>
+      <button class="nav-item" data-view="solicitud-pago">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+        Solicitud de Pago
+      </button>
+      <button class="nav-item" data-view="historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        Historial
+      </button>
+
+      <div class="nav-section">SISTEMA</div>
+      <button class="nav-item" data-view="config">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V20a2.06 2.06 0 1 1-4.12 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H4a2.06 2.06 0 1 1 0-4.12h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1.03-1.55V4a2.06 2.06 0 1 1 4.12 0v.1a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1.03H20a2.06 2.06 0 1 1 0 4.12h-.1a1.7 1.7 0 0 0-1.55 1.03Z"/></svg>
+        Configuración
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <b>Gstar Services S.A.</b><br>RNC 131751016
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===================== REPORTE DE CXP ===================== -->
+    <section class="view active" id="view-reporte">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Reporte de Cuentas por Pagar</h1>
+          <p class="sub">Detalle de facturas y compromisos de pago a proveedores</p>
+        </div>
+        <div class="topbar-actions">
+          <input type="file" id="cxpFileInput" accept=".xlsx,.xls" style="display:none">
+          <button class="btn btn-accent" onclick="document.getElementById('cxpFileInput').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Importar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-kpi">
+        <div class="kpi red">
+          <div class="lbl">Total Pendiente</div>
+          <div class="val" id="cxpKpiPendiente">RD$ 0.00</div>
+          <div class="delta">Por pagar a proveedores</div>
+        </div>
+        <div class="kpi warn">
+          <div class="lbl">Total Vencido</div>
+          <div class="val" id="cxpKpiVencido">RD$ 0.00</div>
+          <div class="delta">Facturas fuera de plazo</div>
+        </div>
+        <div class="kpi blue">
+          <div class="lbl">Facturas</div>
+          <div class="val" id="cxpKpiFacturas">0</div>
+          <div class="delta">Registros cargados</div>
+        </div>
+        <div class="kpi indigo">
+          <div class="lbl">Proveedores</div>
+          <div class="val" id="cxpKpiProveedores">0</div>
+          <div class="delta">Suplidores distintos</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding-bottom:12px;">
+          <div class="filters-bar">
+            <div class="field">
+              <label class="f-label">Suplidor</label>
+              <input type="text" class="input" id="dfProveedor" placeholder="Buscar…">
+            </div>
+            <div class="field">
+              <label class="f-label">N° Factura</label>
+              <input type="text" class="input" id="dfFactura" placeholder="Buscar…">
+            </div>
+            <div class="field">
+              <label class="f-label">Estado</label>
+              <select class="input" id="dfEstado">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagar">Pagar</option>
+                <option value="Pagada">Pagada</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Vencimiento desde</label>
+              <input type="date" class="input" id="dfDesde">
+            </div>
+            <div class="field">
+              <label class="f-label">Vencimiento hasta</label>
+              <input type="date" class="input" id="dfHasta">
+            </div>
+          </div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap" style="max-height:480px;">
+            <table class="t" id="tblCXP">
+              <thead>
+                <tr>
+                  <th class="c"><input type="checkbox" class="chk" id="cxpChkAll"></th>
+                  <th data-sort="proveedor">Suplidor<span class="sort-ic"></span></th>
+                  <th>Factura</th>
+                  <th data-sort="fecha">F. Factura<span class="sort-ic"></span></th>
+                  <th data-sort="fechaVencimiento">F. Vencimiento<span class="sort-ic"></span></th>
+                  <th>Concepto</th>
+                  <th class="c">Moneda</th>
+                  <th class="r" data-sort="saldoPendiente">Pendiente<span class="sort-ic"></span></th>
+                  <th class="c" data-sort="diasVencimiento">Días<span class="sort-ic"></span></th>
+                  <th class="c">Estado</th>
+                  <th class="c">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="11"><div class="t-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+                  <div>Importa el Excel de Cuentas por Pagar para ver los datos aquí.</div>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);justify-content:flex-start;">
+          <div id="cxpPagination" class="flex gap8 align-center" style="font-size:13px;"></div>
+        </div>
+      </div>
+
+      <div class="cxp-sel-bar" id="cxpSelectionBar">
+        <div class="cxp-sel-info"><b id="cxpSelCount">0</b> <span>seleccionada(s) · Total</span> <b id="cxpSelTotal">RD$ 0.00</b></div>
+        <div class="flex gap10">
+          <button class="btn btn-ghost" id="btnLimpiarSeleccion" style="color:#fff;border-color:rgba(255,255,255,.25);">Limpiar selección</button>
+          <button class="btn btn-accent" id="btnGenerarSolicitud" disabled>Generar Solicitud de Pago</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOLICITUD DE PAGO ===================== -->
+    <section class="view" id="view-solicitud-pago">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Solicitud de Pago <span class="pill warn" id="spEstadoBadge" style="margin-left:8px;vertical-align:middle;">Borrador</span></h1>
+          <p class="sub">Documentos seleccionados desde el Reporte de CXP</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="btnImprimirSolicitud">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            Imprimir
+          </button>
+          <button class="btn btn-soft" id="btnExcelSolicitud">Exportar Excel</button>
+          <button class="btn btn-accent" id="btnPdfSolicitud">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Descargar PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="two-col" style="grid-template-columns:290px 1fr;align-items:start;">
+        <div class="card" style="position:sticky;top:20px;">
+          <div class="card-head"><div><h3>Disponibilidad Bancaria</h3><p class="sub">Parámetros del documento</p></div></div>
+          <div class="card-body" id="spBankFields" style="gap:10px;display:flex;flex-direction:column;">
+            <div class="field">
+              <label class="f-label">Cuenta bancaria</label>
+              <input type="text" class="input" id="spCuentaLabel">
+            </div>
+            <div class="field">
+              <label class="f-label">Balance en banco (RD$)</label>
+              <input type="number" class="input" id="spBalanceBanco" value="0" step="0.01">
+            </div>
+            <div class="field">
+              <label class="f-label">Cheques/transferencias en tránsito (RD$)</label>
+              <input type="number" class="input" id="spChequesTransito" value="0" step="0.01">
+            </div>
+            <div class="field">
+              <label class="f-label">Provisiones y reservas (RD$)</label>
+              <input type="number" class="input" id="spProvisiones" value="0" step="0.01">
+            </div>
+            <div class="field">
+              <label class="f-label">Depósitos/transferencias entre cuentas (RD$)</label>
+              <input type="number" class="input" id="spDepositos" value="0" step="0.01">
+            </div>
+          </div>
+          <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);">
+            <button class="btn btn-soft" id="btnEditarSolicitud" style="display:none;">Editar</button>
+            <button class="btn btn-primary" id="btnGuardarSolicitud">Guardar solicitud</button>
+          </div>
+        </div>
+
+        <div id="spDocument" class="doc-preview">
+          <div class="t-empty" style="padding:60px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+            <div>Selecciona facturas en el Reporte de CXP para generar la solicitud.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Documentos de la solicitud</h3><p class="sub">Quita documentos o agrega observaciones antes de guardar</p></div></div>
+        <div class="card-body pad-0" id="spItemsTable"></div>
+      </div>
+    </section>
+
+    <!-- ===================== HISTORIAL ===================== -->
+    <section class="view" id="view-historial">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Historial de Solicitudes</h1>
+          <p class="sub">Solicitudes de pago guardadas anteriormente</p>
+        </div>
+      </div>
+      <div id="histList"></div>
+    </section>
+
+    <!-- ===================== CONFIGURACIÓN ===================== -->
+    <section class="view" id="view-config">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Configuración</h1>
+          <p class="sub">Acceso exclusivo de administrador</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Seguridad</h3><p class="sub">PIN de administrador</p></div></div>
+        <div class="card-body stack" style="gap:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label class="f-label">PIN de administrador</label>
+            <input type="password" class="input" id="cfgAdminPin" placeholder="PIN actual o nuevo">
+            <p class="hint">Requerido para eliminar facturas, solicitudes y borrar todos los datos. Default: 1234</p>
+          </div>
+          <div><button class="btn btn-primary" id="btnGuardarConfig">Guardar configuración</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Datos del sistema</h3><p class="sub">Respaldo y mantenimiento</p></div></div>
+        <div class="card-body flex gap10 wrap">
+          <button class="btn btn-soft" id="btnBackup">Descargar respaldo (JSON)</button>
+          <button class="btn btn-soft" id="btnRestoreBtn">Restaurar respaldo</button>
+          <input type="file" id="btnRestore" accept=".json" style="display:none;">
+          <button class="btn btn-danger" id="btnReset">Borrar todos los datos</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Sincronización en la nube</h3><p class="sub">Comparte los datos con todos los usuarios</p></div></div>
+        <div class="card-body stack" style="gap:12px;">
+          <p class="hint">Los datos de Cuentas por Pagar se guardan en la nube y se cargan automáticamente para todos los usuarios al iniciar sesión. Usa este botón si quieres forzar que <b>tus datos actuales</b> queden publicados para todos.</p>
+          <div class="flex gap10 wrap">
+            <button class="btn btn-primary" id="btnPublishAll">Publicar mis datos para todos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== MODAL: PIN ADMINISTRADOR ===================== -->
+<div class="modal-overlay" id="modalAdminPin" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Verificación de administrador</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
+          onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button>
+      <button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR ===================== -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/parser.js"></script>
+<script src="assets/js/data-module.js"></script>
+<script src="assets/js/solicitud-pago.js"></script>
+<script src="assets/js/historial.js"></script>
+<script src="assets/js/app.js"></script>
+</body></html>
