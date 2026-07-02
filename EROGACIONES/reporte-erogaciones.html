@@ -160,6 +160,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
 
+@media(min-width:769px){
+  .sidebar.sidebar-collapsed{transform:translateX(calc(-1 * var(--sidebar)))}
+  .main-content.sidebar-collapsed{margin-left:0}
+}
+
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
   .main-content{margin-left:0}
@@ -194,7 +199,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <main class="main-content">
   <div class="topbar">
     <div class="d-flex align-items-center gap-3" style="display:flex;align-items:center;gap:12px">
-      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <button class="mobile-toggle" onclick="toggleSidebar()" title="Mostrar / ocultar panel lateral"><i class="bi bi-layout-sidebar" id="sidebarToggleIcon"></i></button>
       <span class="topbar-title">Reporte de Erogaciones</span>
     </div>
     <div class="topbar-actions">
@@ -314,6 +319,31 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme', t);
   document.getElementById('thIcon').className = t==='dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
 }
+
+// ─── SIDEBAR TOGGLE ──────────────────────────────────────────
+function toggleSidebar(){
+  const isMobile = window.innerWidth<=768;
+  const sidebar  = document.getElementById('sidebar');
+  const main     = document.querySelector('.main-content');
+  if(isMobile){ sidebar.classList.toggle('open'); return; }
+  const collapsed = sidebar.classList.toggle('sidebar-collapsed');
+  main.classList.toggle('sidebar-collapsed', collapsed);
+  sessionStorage.setItem('repErogSidebarCollapsed', collapsed?'1':'0');
+  const icon = document.getElementById('sidebarToggleIcon');
+  if(icon) icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+}
+
+(function initSidebar(){
+  if(window.innerWidth<=768) return;
+  const saved = sessionStorage.getItem('repErogSidebarCollapsed');
+  const collapsed = saved==='1';
+  if(collapsed){
+    document.getElementById('sidebar').classList.add('sidebar-collapsed');
+    document.querySelector('.main-content').classList.add('sidebar-collapsed');
+  }
+  const icon = document.getElementById('sidebarToggleIcon');
+  if(icon) icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+})();
 
 function showSp(){ document.getElementById('spOv').style.display='flex'; }
 function hideSp(){ document.getElementById('spOv').style.display='none'; }
