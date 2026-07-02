@@ -366,15 +366,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
-  <!-- ======= BANCO · REPORTES DE EROGACIONES (reservado) ======= -->
+  <!-- ======= BANCO · REPORTES DE EROGACIONES (app integrada) ======= -->
   <section class="page" id="page-reportes-erog">
-    <div class="empty-state">
-      <div class="empty-card">
-        <div class="empty-ico purple"><i class="bi bi-file-earmark-bar-graph"></i></div>
-        <div class="empty-title">Reportes de Erogaciones</div>
-        <div class="empty-msg">Espacio reservado para futuros desarrollos. Aquí se construirán los reportes de erogaciones del módulo Banco.</div>
-        <div class="empty-sign"><i class="bi bi-bookmark-star"></i> Espacio reservado</div>
-      </div>
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-reportes-erog"
+              data-src="EROGACIONES/reporte-erogaciones.html"
+              title="Reporte de Erogaciones — Banreservas Terminal 2715"></iframe>
     </div>
   </section>
 
@@ -459,7 +456,8 @@ const APPS = {
   preconciliacion : "CONCILIAR/conciliadorav2.0.html",          // ✅ integrada
   erogaciones     : "EROGACIONES/dashboard-erogaciones.html",   // ✅ integrada
   compensacion    : "COMPENSACION/index.html",                  // ✅ integrada
-  "cxp-reporte"   : "CXP/index.html"                            // ✅ integrada
+  "cxp-reporte"   : "CXP/index.html",                           // ✅ integrada
+  "reportes-erog" : "EROGACIONES/reporte-erogaciones.html"      // ✅ integrada
 };
 
 /* ===================================================================
@@ -532,6 +530,11 @@ function lazyLoadFrame(page){
   // CXP · Reporte de CXP
   if(page==='cxp-reporte'){
     const f=document.getElementById('frame-cxp-reporte');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Banco · Reportes de Erogaciones
+  if(page==='reportes-erog'){
+    const f=document.getElementById('frame-reportes-erog');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Erogaciones (pendiente de adjuntar)

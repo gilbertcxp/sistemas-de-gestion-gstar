@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Erogaciones — Banreservas Terminal 2715</title>
+<!-- Guard de autenticación: sin sesión activa redirige al login -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<!-- Cliente de Supabase: lee los mismos datos publicados desde Dashboard de Erogaciones -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<!-- =====================================================================
+     REPORTE DE EROGACIONES (solo lectura)
+     Consume la tabla compartida "erogaciones_data" (la misma que alimenta
+     Dashboard de Erogaciones). No crea, edita ni elimina pagos: únicamente
+     consulta, filtra y exporta la salida de efectivo por beneficiario.
+====================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg-app:#EEF2FF;--bg-card:#FFFFFF;--bg-sidebar:#0B1437;
+  --text-primary:#0F172A;--text-secondary:#64748B;
+  --text-sidebar:#7E94B8;--border-color:#E2E8F0;
+  --blue:#2563EB;--blue-lt:#DBEAFE;
+  --emerald:#10B981;--emerald-lt:#D1FAE5;
+  --amber:#F59E0B;--amber-lt:#FEF3C7;
+  --coral:#EF4444;--coral-lt:#FEE2E2;
+  --purple:#8B5CF6;--purple-lt:#EDE9FE;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 10px 15px -3px rgba(0,0,0,.04);
+  --radius:12px;--sidebar:260px;
+  /* Colores institucionales Banreservas */
+  --br-navy:#1F3A63;--br-navy-lt:#E8EDF5;--br-cyan:#1CADE4;--br-orange:#F7941D;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0F1E3A;--bg-sidebar:#050B1A;
+  --text-primary:#E8F0FE;--text-secondary:#7E94B8;--border-color:#1A2E55;
+  --blue-lt:#1A2E5F;--emerald-lt:#0A3020;--amber-lt:#352500;
+  --coral-lt:#3A1010;--purple-lt:#251050;--br-navy-lt:#16233D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--text-primary);min-height:100vh;transition:background .3s,color .3s}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);background:var(--bg-sidebar);z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.05)}
+.brand-name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.brand-name span{color:var(--blue)}
+.brand-tag{font-size:10px;color:var(--text-sidebar);margin-top:2px;text-transform:uppercase;letter-spacing:.8px}
+.sidebar-nav{padding:14px 10px;flex:1;overflow-y:auto}
+.nav-group-label{font-size:10px;font-weight:700;color:#3A5080;text-transform:uppercase;letter-spacing:1px;padding:10px 8px 5px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--text-sidebar);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:1px}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(37,99,235,.2);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
+.nav-btn i{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;color:#2D4070;text-align:center}
+
+/* MAIN */
+.main-content{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column;transition:margin-left .3s}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border-color);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+.mobile-toggle{display:flex;align-items:center;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:4px 6px;border-radius:7px;transition:color .15s,background .15s}
+.mobile-toggle:hover{color:var(--blue);background:var(--blue-lt)}
+
+.page{padding:24px}
+
+/* BANRESERVAS HERO */
+.br-hero{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden}
+.br-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--br-navy),var(--br-cyan),var(--br-orange))}
+.br-hero-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.br-hero-left{display:flex;align-items:center;gap:16px}
+.br-logo{height:46px;object-fit:contain;flex-shrink:0}
+.br-logo-fallback{height:46px;padding:0 14px;border-radius:8px;background:var(--br-navy-lt);color:var(--br-navy);font-weight:800;font-size:16px;display:flex;align-items:center;letter-spacing:-.3px}
+.br-hero-title{font-size:21px;font-weight:800;color:var(--br-navy);letter-spacing:-.4px}
+.br-hero-sub{font-size:12.5px;color:var(--text-secondary);margin-top:2px}
+.br-hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.br-status{font-size:11.5px;color:var(--text-secondary);margin-top:10px;display:flex;align-items:center;gap:6px}
+.br-status i{color:var(--emerald)}
+
+/* KPI GRID */
+.rep-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:900px){.rep-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.rep-kpi-grid{grid-template-columns:1fr}}
+.ekpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;box-shadow:var(--shadow)}
+.ekpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.ekpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.ekpi-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+.ekpi-val{font-size:23px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text-primary);letter-spacing:-.5px;line-height:1}
+.ekpi-label{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-top:5px}
+
+/* CARD / FILTERS */
+.card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-body{padding:18px}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f-field{display:flex;flex-direction:column;gap:5px}
+.f-field label{font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px}
+.fi{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:7px 11px;font-size:12.5px;outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fi option{background:var(--bg-card);color:var(--text-primary)}
+
+/* BUTTONS */
+.btn-p{background:var(--br-navy);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-p:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn-s{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif}
+.btn-s:hover{border-color:var(--br-navy);color:var(--br-navy)}
+.xbtn{padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--border-color);transition:all .15s;background:var(--bg-card);color:var(--text-primary);font-family:'Inter',sans-serif}
+.xbtn:hover{border-color:var(--br-navy);color:var(--br-navy)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius);max-height:560px;overflow-y:auto}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.tbl thead th{background:var(--bg-app);color:var(--text-secondary);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:9px 13px;border-bottom:1px solid var(--border-color);white-space:nowrap;position:sticky;top:0;z-index:9;cursor:pointer;user-select:none}
+.tbl thead th:hover{color:var(--br-navy)}
+.tbl thead th.nosort{cursor:default}
+.tbl thead th.nosort:hover{color:var(--text-secondary)}
+.tbl tbody tr:hover{background:var(--bg-app)}
+.tbl tbody td{padding:9px 13px;border-bottom:1px solid var(--border-color);color:var(--text-primary);vertical-align:middle}
+.tbl .mono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+.sort-ic{opacity:.5;margin-left:3px;font-size:9px}
+.pill-estado{padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+
+/* PAGINATION */
+.pag-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.pag-btn:hover,.pag-btn.on{background:var(--br-navy);color:#fff;border-color:var(--br-navy)}
+
+/* EMPTY */
+.empty-s{text-align:center;padding:56px 20px;color:var(--text-secondary)}
+.empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
+.empty-s h4{font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+
+/* SPINNER */
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
+.sp-box{background:var(--bg-card);border-radius:var(--radius);padding:28px 36px;text-align:center;box-shadow:var(--shadow-md)}
+.spin{width:34px;height:34px;border:3px solid var(--border-color);border-top-color:var(--br-navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0}
+  .page{padding:14px}.topbar{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div class="sp-overlay" id="spOv">
+  <div class="sp-box">
+    <div class="spin"></div>
+    <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Cargando datos...</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand-name">EROGA<span>CIONES</span></div>
+    <div class="brand-tag">Salida de Efectivo</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Erogaciones</div>
+    <button class="nav-btn active"><i class="bi bi-file-earmark-bar-graph"></i>Reporte de Erogaciones</button>
+  </nav>
+  <div class="sidebar-footer">v1.0.0 · Gstar</div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3" style="display:flex;align-items:center;gap:12px">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <span class="topbar-title">Reporte de Erogaciones</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="cargarDatos(true)" title="Actualizar datos"><i class="bi bi-arrow-clockwise"></i></button>
+      <button class="icon-btn" onclick="toggleTheme()" title="Tema"><i class="bi bi-moon-stars" id="thIcon"></i></button>
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- Hero Banreservas -->
+    <div class="br-hero">
+      <div class="br-hero-row">
+        <div class="br-hero-left">
+          <img src="assets/banreservas-logo.png" class="br-logo" alt="Banreservas" id="brLogo"
+               onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'br-logo-fallback',textContent:'BANRESERVAS'}))">
+          <div>
+            <div class="br-hero-title">Banreservas Terminal 2715</div>
+            <div class="br-hero-sub">Reporte de Erogaciones — Salida de efectivo por beneficiario</div>
+          </div>
+        </div>
+        <div class="br-hero-actions">
+          <button class="xbtn" onclick="exportRepExcel()"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+          <button class="xbtn" onclick="exportRepPDF()"><i class="bi bi-file-earmark-pdf"></i>PDF</button>
+        </div>
+      </div>
+      <div class="br-status" id="brStatus"><i class="bi bi-hourglass-split"></i> Cargando información publicada...</div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="repEmpty" class="empty-s" style="display:none">
+      <i class="bi bi-cash-coin"></i>
+      <h4>Sin datos publicados</h4>
+      <p>Aún no hay erogaciones publicadas para consultar. Un administrador debe cargar y publicar el archivo desde <strong>Dashboard de Erogaciones</strong>.</p>
+    </div>
+
+    <!-- Content -->
+    <div id="repContent" style="display:none">
+      <div class="rep-kpi-grid">
+        <div class="ekpi"><div class="ekpi-accent" style="background:var(--br-navy)"></div>
+          <div class="ekpi-icon" style="background:var(--br-navy-lt);color:var(--br-navy)"><i class="bi bi-cash-stack"></i></div>
+          <div class="ekpi-val" id="kTotal">RD$ 0.00</div><div class="ekpi-label">Total Desembolsado</div>
+        </div>
+        <div class="ekpi"><div class="ekpi-accent" style="background:var(--blue)"></div>
+          <div class="ekpi-icon" style="background:var(--blue-lt);color:var(--blue)"><i class="bi bi-receipt"></i></div>
+          <div class="ekpi-val" id="kCount">0</div><div class="ekpi-label">Pagos Realizados</div>
+        </div>
+        <div class="ekpi"><div class="ekpi-accent" style="background:var(--emerald)"></div>
+          <div class="ekpi-icon" style="background:var(--emerald-lt);color:var(--emerald)"><i class="bi bi-people"></i></div>
+          <div class="ekpi-val" id="kBen">0</div><div class="ekpi-label">Beneficiarios Únicos</div>
+        </div>
+        <div class="ekpi"><div class="ekpi-accent" style="background:var(--amber)"></div>
+          <div class="ekpi-icon" style="background:var(--amber-lt);color:var(--amber)"><i class="bi bi-graph-up"></i></div>
+          <div class="ekpi-val" id="kAvg">RD$ 0.00</div><div class="ekpi-label">Promedio por Pago</div>
+        </div>
+      </div>
+
+      <div class="card mb-3" style="margin-bottom:14px">
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="f-field">
+              <label>Beneficiario</label>
+              <div style="position:relative">
+                <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
+                <input class="fi" style="padding-left:28px;width:180px" placeholder="Buscar..." id="rfBen" oninput="applyRepFilters()">
+              </div>
+            </div>
+            <div class="f-field"><label>Desde</label><input type="date" class="fi" id="rfD1" onchange="applyRepFilters()"></div>
+            <div class="f-field"><label>Hasta</label><input type="date" class="fi" id="rfD2" onchange="applyRepFilters()"></div>
+            <div class="f-field"><label>Estado</label><select class="fi" id="rfEstado" onchange="applyRepFilters()"><option value="">Todos</option></select></div>
+            <div class="f-field"><label>Cuenta Bancaria</label><select class="fi" id="rfCuenta" onchange="applyRepFilters()"><option value="">Todas</option></select></div>
+            <div class="f-field"><label>&nbsp;</label><button class="btn-s" onclick="clearRepFilters()"><i class="bi bi-x-circle"></i>Limpiar</button></div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th data-sort="date">Fecha<span class="sort-ic" id="si-date"></span></th>
+                <th data-sort="ben">Beneficiario<span class="sort-ic" id="si-ben"></span></th>
+                <th class="nosort">Concepto</th>
+                <th class="nosort">Referencia</th>
+                <th class="nosort">N° Documento</th>
+                <th class="nosort">Cuenta Bancaria</th>
+                <th data-sort="monto" class="text-end">Monto Pagado<span class="sort-ic" id="si-monto"></span></th>
+                <th class="nosort">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="repTblBody"></tbody>
+          </table>
+        </div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--border-color)">
+          <div style="font-size:12px;color:var(--text-secondary)">Mostrando <b id="repShowN">0</b> de <b id="repTotN">0</b> pagos</div>
+          <div style="display:flex;gap:5px;align-items:center" id="repPgBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script>
+const R = { rows:[], filtered:[], page:1, perPage:20, sort:{key:'date',dir:'desc'}, meta:null };
+const ESTADO_COLORS = { 'pagado':'emerald','completado':'emerald','procesado':'emerald','pendiente':'amber','en proceso':'amber','rechazado':'coral','anulado':'coral','cancelado':'coral' };
+
+function fmtZ(v){ return 'RD$ '+(parseFloat(v)||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function toggleTheme(){
+  const t = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('thIcon').className = t==='dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+}
+
+function showSp(){ document.getElementById('spOv').style.display='flex'; }
+function hideSp(){ document.getElementById('spOv').style.display='none'; }
+
+async function cargarDatos(manual){
+  if(manual) showSp();
+  const status = document.getElementById('brStatus');
+  if(!window.db){
+    status.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:var(--coral)"></i> Sin conexión a la base de datos.';
+    hideSp();
+    return;
+  }
+  try{
+    const { data, error } = await window.db
+      .from('erogaciones_data')
+      .select('rows,file_name,updated_at,total_rows')
+      .eq('id','current')
+      .single();
+    if(error || !data || !data.rows || !data.rows.length){
+      document.getElementById('repEmpty').style.display = 'block';
+      document.getElementById('repContent').style.display = 'none';
+      status.innerHTML = '<i class="bi bi-info-circle-fill"></i> No hay datos publicados todavía.';
+      hideSp();
+      return;
+    }
+    R.meta = data;
+    R.rows = data.rows;
+    R.filtered = [...R.rows];
+    R.page = 1;
+
+    const d = new Date(data.updated_at);
+    const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+    status.innerHTML = `<i class="bi bi-cloud-check-fill"></i> Datos actualizados el ${fmt} · ${data.total_rows||R.rows.length} registro(s) · Archivo: ${data.file_name||'—'}`;
+
+    populateFilterSelects();
+    document.getElementById('repEmpty').style.display = 'none';
+    document.getElementById('repContent').style.display = 'block';
+    renderReport();
+  }catch(e){
+    console.error('cargarDatos:', e);
+    status.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:var(--coral)"></i> Error al cargar los datos.';
+  }
+  hideSp();
+}
+
+function populateFilterSelects(){
+  const estados = [...new Set(R.rows.map(r=>r.estado).filter(Boolean))].sort();
+  const cuentas = [...new Set(R.rows.map(r=>r.cuenta).filter(Boolean))].sort();
+  const selE = document.getElementById('rfEstado');
+  selE.innerHTML = '<option value="">Todos</option>' + estados.map(e=>`<option value="${e}">${e}</option>`).join('');
+  const selC = document.getElementById('rfCuenta');
+  selC.innerHTML = '<option value="">Todas</option>' + cuentas.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+function applyRepFilters(){
+  const ben = document.getElementById('rfBen').value.toLowerCase();
+  const d1  = document.getElementById('rfD1').value;
+  const d2  = document.getElementById('rfD2').value;
+  const est = document.getElementById('rfEstado').value;
+  const cta = document.getElementById('rfCuenta').value;
+  R.filtered = R.rows.filter(r=>{
+    if(ben && !(r.ben||'').toLowerCase().includes(ben)) return false;
+    if(d1 && r.date && r.date < d1) return false;
+    if(d2 && r.date && r.date > d2) return false;
+    if(est && r.estado !== est) return false;
+    if(cta && r.cuenta !== cta) return false;
+    return true;
+  });
+  R.page = 1;
+  renderReport();
+}
+
+function clearRepFilters(){
+  document.getElementById('rfBen').value='';
+  document.getElementById('rfD1').value='';
+  document.getElementById('rfD2').value='';
+  document.getElementById('rfEstado').value='';
+  document.getElementById('rfCuenta').value='';
+  R.filtered = [...R.rows];
+  R.page = 1;
+  renderReport();
+}
+
+function setSort(key){
+  if(R.sort.key === key){ R.sort.dir = R.sort.dir==='asc' ? 'desc' : 'asc'; }
+  else { R.sort = { key, dir: key==='date' ? 'desc' : 'asc' }; }
+  renderReport();
+}
+
+function estadoPillClass(estado){
+  const k = (estado||'').toLowerCase().trim();
+  const color = ESTADO_COLORS[k] || 'blue';
+  return { color };
+}
+
+function renderKPIs(){
+  const total = R.filtered.reduce((s,r)=>s+(r.monto||0),0);
+  const count = R.filtered.length;
+  const benUnicos = new Set(R.filtered.map(r=>r.ben)).size;
+  const avg = count ? total/count : 0;
+  document.getElementById('kTotal').textContent = fmtZ(total);
+  document.getElementById('kCount').textContent = count.toLocaleString();
+  document.getElementById('kBen').textContent = benUnicos.toLocaleString();
+  document.getElementById('kAvg').textContent = fmtZ(avg);
+}
+
+function renderReport(){
+  renderKPIs();
+  ['date','ben','monto'].forEach(k=>{
+    const el = document.getElementById('si-'+k);
+    if(el) el.textContent = R.sort.key===k ? (R.sort.dir==='asc'?'▲':'▼') : '';
+  });
+
+  const mul = R.sort.dir==='asc' ? 1 : -1;
+  const sorted = [...R.filtered].sort((a,b)=>{
+    let va = a[R.sort.key], vb = b[R.sort.key];
+    if(typeof va==='string') va=va.toLowerCase();
+    if(typeof vb==='string') vb=vb.toLowerCase();
+    if(va<vb) return -1*mul; if(va>vb) return 1*mul; return 0;
+  });
+
+  const tot = sorted.length;
+  const pages = Math.max(1, Math.ceil(tot/R.perPage));
+  if(R.page>pages) R.page = pages;
+  const sl = sorted.slice((R.page-1)*R.perPage, R.page*R.perPage);
+
+  document.getElementById('repShowN').textContent = sl.length;
+  document.getElementById('repTotN').textContent = tot;
+
+  const tb = document.getElementById('repTblBody');
+  if(!sl.length){
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
+  } else {
+    tb.innerHTML = sl.map(r=>{
+      const { color } = estadoPillClass(r.estado);
+      return `<tr>
+        <td style="white-space:nowrap">${r.date||'—'}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben||''}">${r.ben||'—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc||''}">${r.conc||'—'}</td>
+        <td class="mono" style="font-size:11.5px">${r.ref||'—'}</td>
+        <td class="mono" style="font-size:11.5px">${r.numDoc||'—'}</td>
+        <td style="font-size:12px">${r.cuenta||'—'}</td>
+        <td class="mono text-end" style="font-weight:700;color:var(--br-navy);text-align:right">${fmtZ(r.monto)}</td>
+        <td>${r.estado ? `<span class="pill-estado" style="background:var(--${color}-lt);color:var(--${color})">${r.estado}</span>` : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+  renderPag(pages);
+}
+
+function renderPag(pages){
+  const el = document.getElementById('repPgBtns');
+  if(pages<=1){ el.innerHTML=''; return; }
+  let h='';
+  if(R.page>1) h+=`<button class="pag-btn" onclick="goRepPage(${R.page-1})"><i class="bi bi-chevron-left"></i></button>`;
+  const st=Math.max(1,R.page-2), en=Math.min(pages,R.page+2);
+  if(st>1){ h+=`<button class="pag-btn" onclick="goRepPage(1)">1</button>`; if(st>2) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; }
+  for(let i=st;i<=en;i++) h+=`<button class="pag-btn ${i===R.page?'on':''}" onclick="goRepPage(${i})">${i}</button>`;
+  if(en<pages){ if(en<pages-1) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; h+=`<button class="pag-btn" onclick="goRepPage(${pages})">${pages}</button>`; }
+  if(R.page<pages) h+=`<button class="pag-btn" onclick="goRepPage(${R.page+1})"><i class="bi bi-chevron-right"></i></button>`;
+  el.innerHTML = h;
+}
+function goRepPage(p){ R.page = p; renderReport(); }
+
+document.querySelectorAll('.tbl thead th[data-sort]').forEach(th=>{
+  th.addEventListener('click', () => setSort(th.dataset.sort));
+});
+
+// ── Exportes ──────────────────────────────────────────────────
+function exportRepExcel(){
+  if(!R.filtered.length){ alert('No hay datos para exportar.'); return; }
+  const total = R.filtered.reduce((a,r)=>a+(r.monto||0),0);
+  const wb = XLSX.utils.book_new();
+  const wsData = [
+    ['BANRESERVAS TERMINAL 2715 — REPORTE DE EROGACIONES'],
+    ['Generado: '+new Date().toLocaleString('es-DO')],
+    ['Total Desembolsado: '+fmtZ(total)+' · Pagos: '+R.filtered.length],
+    [],
+    ['Fecha','Beneficiario','Concepto','Referencia','N° Documento','Cuenta Bancaria','Monto Pagado','Estado'],
+    ...R.filtered.map(r=>[r.date,r.ben,r.conc,r.ref,r.numDoc,r.cuenta,r.monto,r.estado])
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [12,26,32,16,16,20,15,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, 'Reporte Erogaciones');
+  XLSX.writeFile(wb, 'reporte_erogaciones_banreservas_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportRepPDF(){
+  if(!R.filtered.length){ alert('No hay datos para exportar.'); return; }
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    doc.setFillColor(31,58,99); doc.rect(0,0,297,20,'F');
+    doc.setFillColor(28,173,228); doc.rect(0,20,148.5,2,'F');
+    doc.setFillColor(247,148,29); doc.rect(148.5,20,148.5,2,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('BANRESERVAS TERMINAL 2715', 14, 13);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Reporte de Erogaciones · Generado: '+new Date().toLocaleString('es-DO'), 190, 13);
+    const total = R.filtered.reduce((a,r)=>a+(r.monto||0),0);
+    doc.setTextColor(0); doc.setFontSize(8.5);
+    doc.text(`Total Desembolsado: ${fmtZ(total)} · Pagos: ${R.filtered.length}`, 14, 29);
+    doc.autoTable({
+      head:[['Fecha','Beneficiario','Concepto','Referencia','N° Doc.','Cuenta','Monto','Estado']],
+      body: R.filtered.slice(0,1000).map(r=>[
+        r.date||'', (r.ben||'').substring(0,24), (r.conc||'').substring(0,30),
+        r.ref||'', r.numDoc||'', r.cuenta||'', fmtZ(r.monto), r.estado||''
+      ]),
+      startY:33,
+      styles:{ fontSize:6.5, cellPadding:2 },
+      headStyles:{ fillColor:[31,58,99], textColor:255, fontStyle:'bold' },
+      alternateRowStyles:{ fillColor:[232,237,245] },
+      columnStyles:{ 6:{ halign:'right', fontStyle:'bold' } },
+      margin:{ left:6, right:6 }
+    });
+    const pc = doc.internal.getNumberOfPages();
+    for(let i=1;i<=pc;i++){
+      doc.setPage(i); doc.setFontSize(6.5); doc.setTextColor(150);
+      doc.text(`Pág. ${i}/${pc} · Banreservas Terminal 2715 · Reporte de Erogaciones`, 14, 205);
+    }
+    doc.save('reporte_erogaciones_banreservas_'+new Date().toISOString().slice(0,10)+'.pdf');
+  }catch(e){ console.error(e); alert('Error generando PDF.'); }
+}
+
+cargarDatos(false);
+</script>
+</body></html>

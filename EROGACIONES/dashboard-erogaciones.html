@@ -552,6 +552,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         <div class="map-row"><div class="map-lbl" style="color:var(--erog-1);font-weight:700">Tipo de Erogación <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emTipoErog" style="border-color:var(--erog-1)"></select></div>
         <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px 162px"><i class="bi bi-info-circle me-1"></i>Usado en el análisis detallado al hacer doble clic en un beneficiario</div>
         <div class="map-row"><div class="map-lbl">Monto <span style="color:var(--coral)">*</span></div><select class="fi map-sel" id="emMonto"></select></div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px">Campos opcionales — Reporte de Erogaciones</div>
+        <div class="map-row"><div class="map-lbl">Referencia</div><select class="fi map-sel" id="emRef"></select></div>
+        <div class="map-row"><div class="map-lbl">N° de Documento</div><select class="fi map-sel" id="emNumDoc"></select></div>
+        <div class="map-row"><div class="map-lbl">Cuenta Bancaria</div><select class="fi map-sel" id="emCuenta"></select></div>
+        <div class="map-row"><div class="map-lbl">Estado del Pago</div><select class="fi map-sel" id="emEstado"></select></div>
       </div>
       <div class="modal-footer">
         <button class="btn-s" data-bs-dismiss="modal">Cancelar</button>
@@ -715,7 +720,11 @@ function autoDetectErog(headers){
     conc:     find(['concepto','descripci','concept','detail','motivo','razón']),
     tipo:     find(['tipo gasto','tipo de gasto','categoria','categoría','category','clase','rubro']),
     tipoErog: find(['tipo erogacion','tipo de erogacion','erogacion','tipo erogación','tipo de erogación','type','tipo']),
-    monto:    find(['total','monto','importe','amount','valor','suma','pago'])
+    monto:    find(['total','monto','importe','amount','valor','suma','pago']),
+    ref:      find(['referencia','reference','ref']),
+    numDoc:   find(['numero de documento','número de documento','no. documento','no documento','documento','cheque no','check no','num doc']),
+    cuenta:   find(['cuenta bancaria','cuenta','account','no. cuenta','banco']),
+    estado:   find(['estado del pago','estado','status'])
   };
 }
 
@@ -736,12 +745,17 @@ function runErogMap(){
   fillSel('emTipo',     detected.tipo);
   fillSel('emTipoErog', detected.tipoErog);
   fillSel('emMonto',    detected.monto);
+  fillSel('emRef',      detected.ref);
+  fillSel('emNumDoc',   detected.numDoc);
+  fillSel('emCuenta',   detected.cuenta);
+  fillSel('emEstado',   detected.estado);
   new bootstrap.Modal(document.getElementById('erogMapModal')).show();
 }
 
 function confirmErogMap(){
   const g = id => document.getElementById(id).value;
-  E.eMap = { date:g('emDate'), ben:g('emBen'), via:g('emVia'), conc:g('emConc'), tipo:g('emTipo'), tipoErog:g('emTipoErog'), monto:g('emMonto') };
+  E.eMap = { date:g('emDate'), ben:g('emBen'), via:g('emVia'), conc:g('emConc'), tipo:g('emTipo'), tipoErog:g('emTipoErog'), monto:g('emMonto'),
+             ref:g('emRef'), numDoc:g('emNumDoc'), cuenta:g('emCuenta'), estado:g('emEstado') };
   if(!E.eMap.monto){ alert('Debes asignar al menos la columna de Monto.'); return; }
   if(!E.eMap.tipoErog){ alert('Debes asignar la columna de Tipo de Erogación para el gráfico de distribución.'); return; }
   bootstrap.Modal.getInstance(document.getElementById('erogMapModal')).hide();
@@ -761,7 +775,11 @@ function processErog(){
         conc:     row[E.eMap.conc]     || '',
         tipo:     row[E.eMap.tipo]     || 'Sin categoría',
         tipoErog: row[E.eMap.tipoErog] || 'Sin especificar',
-        monto:    clean(row[E.eMap.monto])
+        monto:    clean(row[E.eMap.monto]),
+        ref:      E.eMap.ref    ? String(row[E.eMap.ref]||'').trim()    : '',
+        numDoc:   E.eMap.numDoc ? String(row[E.eMap.numDoc]||'').trim() : '',
+        cuenta:   E.eMap.cuenta ? String(row[E.eMap.cuenta]||'').trim() : '',
+        estado:   E.eMap.estado ? String(row[E.eMap.estado]||'').trim() : ''
       })).filter(r=>r.monto>0);
 
       E.filtered = [...E.mapped];
