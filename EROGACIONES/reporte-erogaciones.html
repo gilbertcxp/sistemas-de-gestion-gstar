@@ -128,6 +128,23 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .pag-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
 .pag-btn:hover,.pag-btn.on{background:var(--br-navy);color:#fff;border-color:var(--br-navy)}
 
+/* TOP BENEFICIARIOS */
+.chart-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.chart-title{font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.chart-sub{font-size:11.5px;color:var(--text-secondary);margin-bottom:14px}
+.ben-hint{font-size:11px;color:var(--text-secondary);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.ben-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-color)}
+.ben-row:last-child{border-bottom:none}
+.ben-row-clickable{cursor:pointer;border-radius:7px;transition:background .15s,transform .15s;margin:0 -6px;padding-left:6px;padding-right:6px}
+.ben-row-clickable:hover{background:var(--br-navy-lt);transform:translateX(4px)}
+.ben-row-clickable:active{transform:scale(.99)}
+.ben-rank{width:22px;height:22px;border-radius:6px;background:var(--br-navy-lt);color:var(--br-navy);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ben-rank.top3{background:linear-gradient(135deg,var(--br-cyan),var(--br-orange));color:#fff}
+.ben-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ben-bar-wrap{width:120px;height:6px;background:var(--border-color);border-radius:3px;flex-shrink:0}
+.ben-bar-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--br-navy),var(--br-cyan));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.ben-amt{font-size:11.5px;font-weight:700;color:var(--text-primary);font-family:'JetBrains Mono',monospace;min-width:110px;text-align:right;flex-shrink:0}
+
 /* EMPTY */
 .empty-s{text-align:center;padding:56px 20px;color:var(--text-secondary)}
 .empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
@@ -232,6 +249,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="ekpi-icon" style="background:var(--amber-lt);color:var(--amber)"><i class="bi bi-graph-up"></i></div>
           <div class="ekpi-val" id="kAvg">RD$ 0.00</div><div class="ekpi-label">Promedio por Pago</div>
         </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title"><i class="bi bi-people-fill" style="color:var(--br-navy)"></i>Top 10 Beneficiarios</div>
+        <div class="chart-sub">Por monto total pagado</div>
+        <div id="topBenList" style="max-height:280px;overflow-y:auto"></div>
       </div>
 
       <div class="card mb-3" style="margin-bottom:14px">
@@ -397,7 +420,37 @@ function renderKPIs(){
   document.getElementById('kAvg').textContent = fmtZ(avg);
 }
 
+function renderTopBen(){
+  const el = document.getElementById('topBenList');
+  if(!el) return;
+  const byBen = {};
+  R.filtered.forEach(r=>{ byBen[r.ben]=(byBen[r.ben]||0)+(r.monto||0); });
+  const sorted = Object.entries(byBen).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(!sorted.length){ el.innerHTML = '<div class="empty-s" style="padding:20px"><p>Sin datos</p></div>'; return; }
+  const maxAmt = sorted[0][1] || 1;
+  el.innerHTML =
+    '<div class="ben-hint"><i class="bi bi-mouse2"></i>Doble clic en un beneficiario para filtrar el reporte</div>' +
+    sorted.map(([name,amt],i)=>{
+      const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const esc = name.replace(/"/g,'&quot;');
+      return `<div class="ben-row ben-row-clickable" ondblclick="filterByBen('${safe}')" title="Doble clic — Filtrar por: ${esc}">
+        <div class="ben-rank ${i<3?'top3':''}">${i+1}</div>
+        <div class="ben-name" title="${esc}">${name}</div>
+        <div class="ben-bar-wrap"><div class="ben-bar-fill" style="width:${Math.round(amt/maxAmt*100)}%"></div></div>
+        <div class="ben-amt">${fmtZ(amt)}</div>
+        <i class="bi bi-zoom-in" style="font-size:11px;color:var(--text-secondary);margin-left:8px;flex-shrink:0"></i>
+      </div>`;
+    }).join('');
+}
+
+function filterByBen(name){
+  document.getElementById('rfBen').value = name;
+  applyRepFilters();
+  document.getElementById('rfBen').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
 function renderReport(){
+  renderTopBen();
   renderKPIs();
   ['date','ben','monto'].forEach(k=>{
     const el = document.getElementById('si-'+k);
