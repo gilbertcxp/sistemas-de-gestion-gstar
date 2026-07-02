@@ -252,9 +252,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       </div>
 
       <div class="chart-card">
-        <div class="chart-title"><i class="bi bi-people-fill" style="color:var(--br-navy)"></i>Top 10 Beneficiarios</div>
+        <div class="chart-title"><i class="bi bi-people-fill" style="color:var(--br-navy)"></i>Beneficiarios</div>
         <div class="chart-sub">Por monto total pagado</div>
-        <div id="topBenList" style="max-height:280px;overflow-y:auto"></div>
+        <div id="topBenList" style="max-height:420px;overflow-y:auto"></div>
       </div>
 
       <div class="card mb-3" style="margin-bottom:14px">
@@ -425,7 +425,7 @@ function renderTopBen(){
   if(!el) return;
   const byBen = {};
   R.filtered.forEach(r=>{ byBen[r.ben]=(byBen[r.ben]||0)+(r.monto||0); });
-  const sorted = Object.entries(byBen).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const sorted = Object.entries(byBen).sort((a,b)=>b[1]-a[1]);
   if(!sorted.length){ el.innerHTML = '<div class="empty-s" style="padding:20px"><p>Sin datos</p></div>'; return; }
   const maxAmt = sorted[0][1] || 1;
   el.innerHTML =
