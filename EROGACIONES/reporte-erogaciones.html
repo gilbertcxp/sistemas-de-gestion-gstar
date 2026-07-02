@@ -152,6 +152,19 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
 .empty-s h4{font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
 
+/* MODAL DETALLE DE TRANSACCIÓN */
+.tx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:8vh 16px;z-index:9000;overflow-y:auto}
+.tx-overlay.open{display:flex}
+.tx-modal{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow-md);width:100%;max-width:640px;overflow:hidden}
+.tx-head{padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tx-title{font-size:15px;font-weight:700;color:var(--br-navy);display:flex;align-items:center;gap:8px}
+.tx-close{background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:18px;padding:4px 8px;border-radius:7px;transition:all .15s}
+.tx-close:hover{background:var(--br-navy-lt);color:var(--br-navy)}
+.tx-body{padding:0}
+.tx-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.tx-tbl thead th{background:var(--br-navy);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;white-space:nowrap}
+.tx-tbl tbody td{padding:13px 16px;border-bottom:1px solid var(--border-color);color:var(--text-primary);vertical-align:top}
+
 /* SPINNER */
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
 .sp-box{background:var(--bg-card);border-radius:var(--radius);padding:28px 36px;text-align:center;box-shadow:var(--shadow-md)}
@@ -306,6 +319,24 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </div>
 </main>
+
+<!-- MODAL: DETALLE DE TRANSACCIÓN (solo lectura) -->
+<div class="tx-overlay" id="txOverlay" onclick="if(event.target===this)closeTxDetail()">
+  <div class="tx-modal">
+    <div class="tx-head">
+      <div class="tx-title"><i class="bi bi-receipt-cutoff"></i>Detalle de la Transacción</div>
+      <button class="tx-close" onclick="closeTxDetail()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="tx-body">
+      <table class="tx-tbl">
+        <thead>
+          <tr><th>Fecha</th><th>Beneficiario</th><th>Concepto</th><th style="text-align:right">Monto Pagado</th></tr>
+        </thead>
+        <tbody id="txDetailBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -485,6 +516,24 @@ function filterByBen(name){
   document.getElementById('rfBen').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
+// ── Detalle de una transacción (doble clic en la tabla) ──────
+function openTxDetail(i){
+  const r = (R.pageRows||[])[i];
+  if(!r) return;
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('txDetailBody').innerHTML = `<tr>
+    <td style="white-space:nowrap">${esc(r.date)||'—'}</td>
+    <td style="font-weight:600">${esc(r.ben)||'—'}</td>
+    <td style="font-size:12.5px">${esc(r.conc)||'—'}</td>
+    <td class="mono" style="font-weight:700;color:var(--br-navy);text-align:right;white-space:nowrap">${fmtZ(r.monto)}</td>
+  </tr>`;
+  document.getElementById('txOverlay').classList.add('open');
+}
+function closeTxDetail(){
+  document.getElementById('txOverlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeTxDetail(); });
+
 function renderReport(){
   renderTopBen();
   renderKPIs();
@@ -510,12 +559,13 @@ function renderReport(){
   document.getElementById('repTotN').textContent = tot;
 
   const tb = document.getElementById('repTblBody');
+  R.pageRows = sl; // referencia para el detalle por doble clic
   if(!sl.length){
     tb.innerHTML = '<tr><td colspan="8"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
   } else {
-    tb.innerHTML = sl.map(r=>{
+    tb.innerHTML = sl.map((r,i)=>{
       const { color } = estadoPillClass(r.estado);
-      return `<tr>
+      return `<tr ondblclick="openTxDetail(${i})" style="cursor:pointer" title="Doble clic — Ver detalle de esta transacción">
         <td style="white-space:nowrap">${r.date||'—'}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben||''}">${r.ben||'—'}</td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc||''}">${r.conc||'—'}</td>
