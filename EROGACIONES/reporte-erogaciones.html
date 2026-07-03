@@ -320,29 +320,6 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         <div id="topBenList" style="max-height:420px;overflow-y:auto"></div>
       </div>
 
-      <div class="card mb-3" style="margin-bottom:14px">
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th data-sort="date">Fecha<span class="sort-ic" id="si-date"></span></th>
-                <th data-sort="ben">Beneficiario<span class="sort-ic" id="si-ben"></span></th>
-                <th class="nosort">Concepto</th>
-                <th class="nosort">Referencia</th>
-                <th class="nosort">N° Documento</th>
-                <th class="nosort">Cuenta Bancaria</th>
-                <th data-sort="monto" class="text-end">Monto Pagado<span class="sort-ic" id="si-monto"></span></th>
-                <th class="nosort">Estado</th>
-              </tr>
-            </thead>
-            <tbody id="repTblBody"></tbody>
-          </table>
-        </div>
-        <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--border-color)">
-          <div style="font-size:12px;color:var(--text-secondary)">Mostrando <b id="repShowN">0</b> de <b id="repTotN">0</b> pagos</div>
-          <div style="display:flex;gap:5px;align-items:center" id="repPgBtns"></div>
-        </div>
-      </div>
     </div>
   </div>
 </main>
@@ -373,8 +350,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 <script>
-const R = { rows:[], filtered:[], page:1, perPage:20, sort:{key:'date',dir:'desc'}, meta:null };
-const ESTADO_COLORS = { 'pagado':'emerald','completado':'emerald','procesado':'emerald','pendiente':'amber','en proceso':'amber','rechazado':'coral','anulado':'coral','cancelado':'coral' };
+const R = { rows:[], filtered:[], meta:null };
 
 function fmtZ(v){ return 'RD$ '+(parseFloat(v)||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
@@ -436,7 +412,6 @@ async function cargarDatos(manual){
     R.meta = data;
     R.rows = data.rows;
     R.filtered = [...R.rows];
-    R.page = 1;
 
     const d = new Date(data.updated_at);
     const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
@@ -481,7 +456,6 @@ function applyRepFilters(){
     if(cta && r.cuenta !== cta) return false;
     return true;
   });
-  R.page = 1;
   renderReport();
 }
 
@@ -493,20 +467,7 @@ function clearRepFilters(){
   document.getElementById('rfEstado').value='';
   document.getElementById('rfCuenta').value='';
   R.filtered = [...R.rows];
-  R.page = 1;
   renderReport();
-}
-
-function setSort(key){
-  if(R.sort.key === key){ R.sort.dir = R.sort.dir==='asc' ? 'desc' : 'asc'; }
-  else { R.sort = { key, dir: key==='date' ? 'desc' : 'asc' }; }
-  renderReport();
-}
-
-function estadoPillClass(estado){
-  const k = (estado||'').toLowerCase().trim();
-  const color = ESTADO_COLORS[k] || 'blue';
-  return { color };
 }
 
 function renderKPIs(){
@@ -573,7 +534,7 @@ function renderBenBanner(){
   el.classList.add('open');
 }
 
-// ── Detalle de una transacción (doble clic en tabla o en el widget) ──────
+// ── Detalle de una transacción (doble clic en un pago) ──────
 function showTxDetail(r){
   if(!r) return;
   R.txCurrent = r;
@@ -586,7 +547,6 @@ function showTxDetail(r){
   </tr>`;
   document.getElementById('txOverlay').classList.add('open');
 }
-function openTxDetail(i){ showTxDetail((R.pageRows||[])[i]); }
 function openTxFromList(i){ showTxDetail((R.benListRows||[])[i]); }
 function closeTxDetail(){
   document.getElementById('txOverlay').classList.remove('open');
@@ -604,66 +564,7 @@ function renderReport(){
   renderBenBanner();
   renderTopBen();
   renderKPIs();
-  ['date','ben','monto'].forEach(k=>{
-    const el = document.getElementById('si-'+k);
-    if(el) el.textContent = R.sort.key===k ? (R.sort.dir==='asc'?'▲':'▼') : '';
-  });
-
-  const mul = R.sort.dir==='asc' ? 1 : -1;
-  const sorted = [...R.filtered].sort((a,b)=>{
-    let va = a[R.sort.key], vb = b[R.sort.key];
-    if(typeof va==='string') va=va.toLowerCase();
-    if(typeof vb==='string') vb=vb.toLowerCase();
-    if(va<vb) return -1*mul; if(va>vb) return 1*mul; return 0;
-  });
-
-  const tot = sorted.length;
-  const pages = Math.max(1, Math.ceil(tot/R.perPage));
-  if(R.page>pages) R.page = pages;
-  const sl = sorted.slice((R.page-1)*R.perPage, R.page*R.perPage);
-
-  document.getElementById('repShowN').textContent = sl.length;
-  document.getElementById('repTotN').textContent = tot;
-
-  const tb = document.getElementById('repTblBody');
-  R.pageRows = sl; // referencia para el detalle por doble clic
-  if(!sl.length){
-    tb.innerHTML = '<tr><td colspan="8"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>Sin resultados</h4></div></td></tr>';
-  } else {
-    tb.innerHTML = sl.map((r,i)=>{
-      const { color } = estadoPillClass(r.estado);
-      return `<tr ondblclick="openTxDetail(${i})" style="cursor:pointer" title="Doble clic — Ver detalle de esta transacción">
-        <td style="white-space:nowrap">${r.date||'—'}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben||''}">${r.ben||'—'}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc||''}">${r.conc||'—'}</td>
-        <td class="mono" style="font-size:11.5px">${r.ref||'—'}</td>
-        <td class="mono" style="font-size:11.5px">${r.numDoc||'—'}</td>
-        <td style="font-size:12px">${r.cuenta||'—'}</td>
-        <td class="mono text-end" style="font-weight:700;color:var(--br-navy);text-align:right">${fmtZ(r.monto)}</td>
-        <td>${r.estado ? `<span class="pill-estado" style="background:var(--${color}-lt);color:var(--${color})">${r.estado}</span>` : '—'}</td>
-      </tr>`;
-    }).join('');
-  }
-  renderPag(pages);
 }
-
-function renderPag(pages){
-  const el = document.getElementById('repPgBtns');
-  if(pages<=1){ el.innerHTML=''; return; }
-  let h='';
-  if(R.page>1) h+=`<button class="pag-btn" onclick="goRepPage(${R.page-1})"><i class="bi bi-chevron-left"></i></button>`;
-  const st=Math.max(1,R.page-2), en=Math.min(pages,R.page+2);
-  if(st>1){ h+=`<button class="pag-btn" onclick="goRepPage(1)">1</button>`; if(st>2) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; }
-  for(let i=st;i<=en;i++) h+=`<button class="pag-btn ${i===R.page?'on':''}" onclick="goRepPage(${i})">${i}</button>`;
-  if(en<pages){ if(en<pages-1) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; h+=`<button class="pag-btn" onclick="goRepPage(${pages})">${pages}</button>`; }
-  if(R.page<pages) h+=`<button class="pag-btn" onclick="goRepPage(${R.page+1})"><i class="bi bi-chevron-right"></i></button>`;
-  el.innerHTML = h;
-}
-function goRepPage(p){ R.page = p; renderReport(); }
-
-document.querySelectorAll('.tbl thead th[data-sort]').forEach(th=>{
-  th.addEventListener('click', () => setSort(th.dataset.sort));
-});
 
 // ── Exportes ──────────────────────────────────────────────────
 function exportRepExcel(){
