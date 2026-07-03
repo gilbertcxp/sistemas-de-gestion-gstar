@@ -282,7 +282,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
               <label>Beneficiario</label>
               <div style="position:relative">
                 <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
-                <input class="fi" style="padding-left:28px;width:180px" placeholder="Buscar..." id="rfBen" oninput="applyRepFilters()">
+                <input class="fi" style="padding-left:28px;width:220px" placeholder="Buscar o seleccionar..." id="rfBen" oninput="applyRepFilters()" list="benOptions" autocomplete="off">
+                <datalist id="benOptions"></datalist>
               </div>
             </div>
             <div class="f-field"><label>Desde</label><input type="date" class="fi" id="rfD1" onchange="applyRepFilters()"></div>
@@ -455,10 +456,13 @@ async function cargarDatos(manual){
 function populateFilterSelects(){
   const estados = [...new Set(R.rows.map(r=>r.estado).filter(Boolean))].sort();
   const cuentas = [...new Set(R.rows.map(r=>r.cuenta).filter(Boolean))].sort();
+  const bens    = [...new Set(R.rows.map(r=>r.ben).filter(Boolean))].sort();
   const selE = document.getElementById('rfEstado');
   selE.innerHTML = '<option value="">Todos</option>' + estados.map(e=>`<option value="${e}">${e}</option>`).join('');
   const selC = document.getElementById('rfCuenta');
   selC.innerHTML = '<option value="">Todas</option>' + cuentas.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const dl = document.getElementById('benOptions');
+  if(dl) dl.innerHTML = bens.map(b=>`<option value="${String(b).replace(/"/g,'&quot;')}">`).join('');
 }
 
 function applyRepFilters(){
