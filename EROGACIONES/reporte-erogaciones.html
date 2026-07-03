@@ -174,6 +174,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .tx-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .tx-tbl thead th{background:var(--br-navy);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;white-space:nowrap}
 .tx-tbl tbody td{padding:13px 16px;border-bottom:1px solid var(--border-color);color:var(--text-primary);vertical-align:top}
+.tx-foot{padding:12px 16px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 
 /* SPINNER */
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
@@ -360,6 +361,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         <tbody id="txDetailBody"></tbody>
       </table>
     </div>
+    <div class="tx-foot">
+      <button class="btn-s" onclick="verAnalisisBen()"><i class="bi bi-funnel"></i>Ver análisis del beneficiario</button>
+      <button class="btn-p" onclick="closeTxDetail()">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -517,17 +522,17 @@ function renderTopBen(){
   const el = document.getElementById('topBenList');
   if(!el) return;
   const sorted = [...R.filtered].sort((a,b)=>(b.monto||0)-(a.monto||0));
+  R.benListRows = sorted; // referencia para abrir el detalle por doble clic
   if(!sorted.length){ el.innerHTML = '<div class="empty-s" style="padding:20px"><p>Sin datos</p></div>'; return; }
   const maxAmt = sorted[0].monto || 1;
   el.innerHTML =
-    '<div class="ben-hint"><i class="bi bi-mouse2"></i>Doble clic en un pago para filtrar el reporte por su beneficiario</div>' +
+    '<div class="ben-hint"><i class="bi bi-mouse2"></i>Doble clic en un pago para ver su detalle</div>' +
     sorted.map((r,i)=>{
       const name = r.ben || 'Sin beneficiario';
       const tipo = r.tipo || '—';
-      const safe = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const esc  = name.replace(/"/g,'&quot;');
       const escTipo = String(tipo).replace(/"/g,'&quot;');
-      return `<div class="ben-row ben-row-clickable" ondblclick="filterByBen('${safe}')" title="Doble clic — Filtrar por: ${esc}">
+      return `<div class="ben-row ben-row-clickable" ondblclick="openTxFromList(${i})" title="Doble clic — Ver detalle del pago">
         <div class="ben-rank ${i<3?'top3':''}">${i+1}</div>
         <div class="ben-name" title="${esc}">${name}</div>
         <div class="ben-tipo" title="${escTipo}">${tipo}</div>
@@ -564,10 +569,10 @@ function renderBenBanner(){
   el.classList.add('open');
 }
 
-// ── Detalle de una transacción (doble clic en la tabla) ──────
-function openTxDetail(i){
-  const r = (R.pageRows||[])[i];
+// ── Detalle de una transacción (doble clic en tabla o en el widget) ──────
+function showTxDetail(r){
   if(!r) return;
+  R.txCurrent = r;
   const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   document.getElementById('txDetailBody').innerHTML = `<tr>
     <td style="white-space:nowrap">${esc(r.date)||'—'}</td>
@@ -577,8 +582,17 @@ function openTxDetail(i){
   </tr>`;
   document.getElementById('txOverlay').classList.add('open');
 }
+function openTxDetail(i){ showTxDetail((R.pageRows||[])[i]); }
+function openTxFromList(i){ showTxDetail((R.benListRows||[])[i]); }
 function closeTxDetail(){
   document.getElementById('txOverlay').classList.remove('open');
+}
+// Desde el modal: pasar al análisis completo del beneficiario de esa transacción
+function verAnalisisBen(){
+  const r = R.txCurrent;
+  if(!r) return;
+  closeTxDetail();
+  filterByBen(r.ben || '');
 }
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeTxDetail(); });
 
