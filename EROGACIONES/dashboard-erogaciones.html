@@ -389,18 +389,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
         </div>
       </div>
 
-      <!-- Charts row 1: Top Beneficiarios (ancho completo) -->
-      <div class="row g-3 mb-3">
-        <div class="col-12">
-          <div class="erog-chart-card">
-            <div class="erog-chart-title"><i class="bi bi-people-fill" style="color:var(--erog-2)"></i>Top 10 Beneficiarios</div>
-            <div class="erog-chart-sub">Por monto total pagado</div>
-            <div id="erogTopBen" style="max-height:260px;overflow-y:auto"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Charts row 2: Distribución + Tendencia + Vía de Pago (3 columns) -->
+      <!-- Charts row 1: Distribución + Tendencia + Vía de Pago (3 columns) -->
       <div class="row g-3 mb-3">
         <div class="col-md-4">
           <div class="erog-chart-card">
@@ -421,6 +410,17 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
             <div class="erog-chart-title"><i class="bi bi-credit-card-fill" style="color:var(--amber)"></i>Por Vía de Pago</div>
             <div class="erog-chart-sub">Monto por método de pago</div>
             <div class="erog-ch-h240"><canvas id="erogVia"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts row 2: Top Beneficiarios (ancho completo) -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="erog-chart-card">
+            <div class="erog-chart-title"><i class="bi bi-people-fill" style="color:var(--erog-2)"></i>Top 10 Beneficiarios</div>
+            <div class="erog-chart-sub">Por monto total pagado</div>
+            <div id="erogTopBen" style="max-height:260px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
