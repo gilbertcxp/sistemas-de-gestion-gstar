@@ -152,6 +152,16 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .empty-s i{font-size:44px;display:block;margin-bottom:14px;opacity:.35}
 .empty-s h4{font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
 
+/* BANNER ANÁLISIS DE BENEFICIARIO */
+.ben-hero{display:none;background:linear-gradient(135deg,#0B1437 0%,#152452 60%,#1F3A63 100%);border-radius:var(--radius);padding:18px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.ben-hero.open{display:block}
+.ben-hero-inner{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.ben-back-btn{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:'Inter',sans-serif;flex-shrink:0}
+.ben-back-btn:hover{background:rgba(255,255,255,.12)}
+.ben-hero-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45);margin-bottom:3px}
+.ben-hero-name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.ben-hero-sub{font-size:12.5px;color:rgba(255,255,255,.65);margin-top:2px}
+
 /* MODAL DETALLE DE TRANSACCIÓN */
 .tx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:8vh 16px;z-index:9000;overflow-y:auto}
 .tx-overlay.open{display:flex}
@@ -252,6 +262,18 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 
     <!-- Content -->
     <div id="repContent" style="display:none">
+      <!-- Banner de análisis por beneficiario (visible al hacer doble clic en un pago) -->
+      <div class="ben-hero" id="benBanner">
+        <div class="ben-hero-inner">
+          <button class="ben-back-btn" onclick="backToReport()"><i class="bi bi-arrow-left"></i> Regresar al Reporte</button>
+          <div>
+            <div class="ben-hero-label">Análisis de Beneficiario</div>
+            <div class="ben-hero-name" id="benBannerName">—</div>
+            <div class="ben-hero-sub" id="benBannerSub">—</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:14px">
         <div class="card-body">
           <div class="filter-bar">
@@ -435,6 +457,8 @@ function populateFilterSelects(){
 }
 
 function applyRepFilters(){
+  // Si el usuario edita manualmente el buscador, se sale del modo "análisis de beneficiario"
+  if(R.benView && document.getElementById('rfBen').value !== R.benView) R.benView = null;
   const ben = document.getElementById('rfBen').value.toLowerCase();
   const d1  = document.getElementById('rfD1').value;
   const d2  = document.getElementById('rfD2').value;
@@ -453,6 +477,7 @@ function applyRepFilters(){
 }
 
 function clearRepFilters(){
+  R.benView = null;
   document.getElementById('rfBen').value='';
   document.getElementById('rfD1').value='';
   document.getElementById('rfD2').value='';
@@ -514,9 +539,29 @@ function renderTopBen(){
 }
 
 function filterByBen(name){
+  R.benView = name;
   document.getElementById('rfBen').value = name;
   applyRepFilters();
-  document.getElementById('rfBen').scrollIntoView({ behavior:'smooth', block:'center' });
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function backToReport(){
+  R.benView = null;
+  clearRepFilters();
+}
+
+// Banner "Análisis de Beneficiario" — visible mientras el filtro venga del doble clic
+function renderBenBanner(){
+  const el = document.getElementById('benBanner');
+  if(!el) return;
+  if(!R.benView){ el.classList.remove('open'); return; }
+  const recs  = R.filtered;
+  const total = recs.reduce((s,r)=>s+(r.monto||0),0);
+  const tipos = new Set(recs.map(r=>r.tipo).filter(Boolean)).size;
+  document.getElementById('benBannerName').textContent = R.benView;
+  document.getElementById('benBannerSub').textContent =
+    `${recs.length} transaccion(es) · ${fmtZ(total)} · ${tipos} tipo(s) de gasto`;
+  el.classList.add('open');
 }
 
 // ── Detalle de una transacción (doble clic en la tabla) ──────
@@ -538,6 +583,7 @@ function closeTxDetail(){
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeTxDetail(); });
 
 function renderReport(){
+  renderBenBanner();
   renderTopBen();
   renderKPIs();
   ['date','ben','monto'].forEach(k=>{
