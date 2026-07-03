@@ -252,6 +252,25 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 
     <!-- Content -->
     <div id="repContent" style="display:none">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="f-field">
+              <label>Beneficiario</label>
+              <div style="position:relative">
+                <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
+                <input class="fi" style="padding-left:28px;width:180px" placeholder="Buscar..." id="rfBen" oninput="applyRepFilters()">
+              </div>
+            </div>
+            <div class="f-field"><label>Desde</label><input type="date" class="fi" id="rfD1" onchange="applyRepFilters()"></div>
+            <div class="f-field"><label>Hasta</label><input type="date" class="fi" id="rfD2" onchange="applyRepFilters()"></div>
+            <div class="f-field"><label>Estado</label><select class="fi" id="rfEstado" onchange="applyRepFilters()"><option value="">Todos</option></select></div>
+            <div class="f-field"><label>Cuenta Bancaria</label><select class="fi" id="rfCuenta" onchange="applyRepFilters()"><option value="">Todas</option></select></div>
+            <div class="f-field"><label>&nbsp;</label><button class="btn-s" onclick="clearRepFilters()"><i class="bi bi-x-circle"></i>Limpiar</button></div>
+          </div>
+        </div>
+      </div>
+
       <div class="rep-kpi-grid">
         <div class="ekpi"><div class="ekpi-accent" style="background:var(--br-navy)"></div>
           <div class="ekpi-icon" style="background:var(--br-navy-lt);color:var(--br-navy)"><i class="bi bi-cash-stack"></i></div>
@@ -278,22 +297,6 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       </div>
 
       <div class="card mb-3" style="margin-bottom:14px">
-        <div class="card-body">
-          <div class="filter-bar">
-            <div class="f-field">
-              <label>Beneficiario</label>
-              <div style="position:relative">
-                <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
-                <input class="fi" style="padding-left:28px;width:180px" placeholder="Buscar..." id="rfBen" oninput="applyRepFilters()">
-              </div>
-            </div>
-            <div class="f-field"><label>Desde</label><input type="date" class="fi" id="rfD1" onchange="applyRepFilters()"></div>
-            <div class="f-field"><label>Hasta</label><input type="date" class="fi" id="rfD2" onchange="applyRepFilters()"></div>
-            <div class="f-field"><label>Estado</label><select class="fi" id="rfEstado" onchange="applyRepFilters()"><option value="">Todos</option></select></div>
-            <div class="f-field"><label>Cuenta Bancaria</label><select class="fi" id="rfCuenta" onchange="applyRepFilters()"><option value="">Todas</option></select></div>
-            <div class="f-field"><label>&nbsp;</label><button class="btn-s" onclick="clearRepFilters()"><i class="bi bi-x-circle"></i>Limpiar</button></div>
-          </div>
-        </div>
         <div class="tbl-wrap">
           <table class="tbl">
             <thead>
