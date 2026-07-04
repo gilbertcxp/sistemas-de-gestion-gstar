@@ -215,6 +215,59 @@ table.rep tfoot td:first-child{text-align:left}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast i{color:#4ADE80}
 
+/* ============== CONMUTADOR + RESUMEN EJECUTIVO ============== */
+.view-switch{display:inline-flex;gap:4px;background:var(--bg-card);border:1px solid var(--line);
+  border-radius:13px;padding:5px;margin-top:20px;box-shadow:var(--shadow-sm)}
+.vs-btn{border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;
+  color:var(--ink-2);padding:9px 18px;border-radius:9px;display:inline-flex;align-items:center;gap:8px;
+  transition:background .18s,color .18s,box-shadow .18s}
+.vs-btn:hover{color:var(--ink)}
+.vs-btn.active{background:var(--navy);color:#fff;box-shadow:0 4px 12px rgba(11,20,55,.25)}
+.vs-btn i{font-size:15px}
+
+.ex-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+@media(max-width:980px){.ex-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.ex-cards{grid-template-columns:1fr}}
+.excard{background:var(--bg-card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;
+  opacity:0;transform:translateY(16px);animation:riseIn .5s cubic-bezier(.22,1,.36,1) forwards;
+  transition:transform .2s,box-shadow .2s}
+.excard:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.exc-head{display:flex;align-items:center;gap:14px;padding:19px 20px 17px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff}
+.exc-head::before{content:'';position:absolute;top:-45px;right:-25px;width:160px;height:160px;
+  background:radial-gradient(circle,rgba(89,124,224,.25),transparent 70%);pointer-events:none}
+.bank-badge{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:#fff;color:#0B7A6E;box-shadow:0 4px 10px rgba(0,0,0,.22);position:relative;z-index:1}
+.excard.cert .bank-badge{color:var(--gold)}
+.exc-id{position:relative;z-index:1;min-width:0}
+.exc-bank{font-size:9.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#9DB0DA}
+.exc-name{font-size:16.5px;font-weight:800;letter-spacing:-.3px;margin-top:2px;line-height:1.1}
+.exc-acct{font-size:11.5px;color:#AEC0E6;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exc-body{padding:8px 20px 14px;display:flex;flex-direction:column;flex:1}
+.exc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line-2)}
+.exc-row:last-child{border-bottom:none}
+.exc-row-l{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.exc-row-v{font-size:13.5px;font-weight:700}
+.exc-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;
+  background:linear-gradient(135deg,var(--green),#0B8A5E);color:#fff}
+.exc-total.gold{background:linear-gradient(135deg,var(--gold),#A9741F)}
+.exc-total-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.exc-total-v{font-size:19px;font-weight:900}
+.exc-total-v .cur{font-size:11px;font-weight:600;opacity:.85;margin-right:3px;vertical-align:1px}
+.exc-total-v.neg{color:#FECACA}
+.cert-big{padding:10px 0 14px;border-bottom:1px dashed var(--line-2)}
+.cert-big-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3)}
+.cert-big-v{font-size:23px;font-weight:900;color:var(--gold);margin-top:5px}
+.cert-big-v .cur{font-size:12.5px;font-weight:600;color:var(--ink-3);margin-right:3px;vertical-align:2px}
+
+@media print{
+  .view-switch{display:none!important}
+  .ex-cards{grid-template-columns:repeat(3,1fr)!important}
+  .excard{box-shadow:none;break-inside:avoid;animation:none;opacity:1;transform:none}
+  .exc-head,.exc-total{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
 /* ============== RESPONSIVE ============== */
 @media(max-width:780px){
   .wrap{padding:14px 12px 50px}
@@ -289,6 +342,39 @@ table.rep tfoot td:first-child{text-align:left}
     </div>
   </header>
 
+  <!-- ============ CONMUTADOR DE VISTA ============ -->
+  <div class="view-switch no-print">
+    <button class="vs-btn active" data-view="resumen" onclick="switchView('resumen')"><i class="bi bi-grid-1x2-fill"></i> Resumen Ejecutivo</button>
+    <button class="vs-btn" data-view="detalle" onclick="switchView('detalle')"><i class="bi bi-table"></i> Detallada</button>
+  </div>
+
+  <!-- ============ VISTA: RESUMEN EJECUTIVO (nueva) ============ -->
+  <div id="viewResumen">
+    <div class="ex-cards" id="exCards"></div>
+    <section class="grand" id="grandResumen" style="animation-delay:.3s">
+      <div class="grand-row">
+        <div class="grand-main">
+          <div class="gl">Balance General Disponible</div>
+          <div class="gv"><span class="cur">RD$</span><span id="rTotal">0.00</span></div>
+          <div class="gsub">Consolidado de cuentas y certificados al corte</div>
+        </div>
+        <div class="grand-break">
+          <div class="gbreak bank">
+            <div class="gbl"><i class="bi bi-bank2"></i> Total en Bancos</div>
+            <div class="gbv mono">RD$ <span id="rBancos">0.00</span></div>
+          </div>
+          <div class="gbreak cert">
+            <div class="gbl"><i class="bi bi-graph-up-arrow"></i> Certificados e Inv.</div>
+            <div class="gbv mono">RD$ <span id="rCert">0.00</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ VISTA: DETALLADA (actual, sin cambios) ============ -->
+  <div id="viewDetalle" style="display:none">
+
   <!-- ============ TABLA 1: CUENTAS BANCARIAS ============ -->
   <section class="report-sec" style="animation-delay:.18s">
     <div class="sec-head">
@@ -345,6 +431,8 @@ table.rep tfoot td:first-child{text-align:left}
     Los valores en <span style="color:var(--red);font-weight:700">rojo</span> reducen la disponibilidad ·
     Reporte generado por el Sistema de Gestión y Reportes Gstar
   </div>
+
+  </div><!-- /viewDetalle -->
 </div>
 
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
@@ -567,12 +655,99 @@ function renderGrand(totBancos,totCert){
 }
 
 /* ====================================================================
+   VISTA RESUMEN EJECUTIVO (tarjetas) — consume los mismos datos (DATA)
+==================================================================== */
+function excRow(label,val,mode){
+  if(mode==='count') return `<div class="exc-row"><span class="exc-row-l">${label}</span><span class="exc-row-v mono">${val}</span></div>`;
+  let cls,txt;
+  if(val===0||val==null){ cls='zero'; txt='—'; }
+  else if(val<0){ cls='neg'; txt='('+fnum(val)+')'; }
+  else { cls = (mode==='neutral')?'val':'pos'; txt=fnum(val); }
+  return `<div class="exc-row"><span class="exc-row-l">${label}</span><span class="exc-row-v mono ${cls}">${txt}</span></div>`;
+}
+
+function renderResumen(totBancos,totCert){
+  const badge = '<div class="bank-badge">'
+    + '<svg viewBox="0 0 48 40" width="32" height="27" xmlns="http://www.w3.org/2000/svg" aria-label="Banreservas">'
+    +   '<text x="11" y="28" font-family="Inter,Arial,sans-serif" font-weight="900" font-size="31" fill="#2B4A7D">B</text>'
+    +   '<path d="M4 29 Q19 21 36 27.5" stroke="#1C9AD6" stroke-width="3.8" fill="none" stroke-linecap="round"/>'
+    +   '<path d="M6.5 34.5 Q20 28 33 33" stroke="#F5A020" stroke-width="3.8" fill="none" stroke-linecap="round"/>'
+    + '</svg></div>';
+
+  /* Tarjetas de cuentas bancarias (Operativa y Compensación).
+     Total Disponible = Balance + Pagos + Transferencias + Pendientes  (== bancoUpd) */
+  const acctCards = DATA.bancos.rows.map((r,i)=>{
+    const total = bancoUpd(r);
+    return `<div class="excard" style="animation-delay:${(0.05+i*0.07).toFixed(2)}s">
+      <div class="exc-head">
+        ${badge}
+        <div class="exc-id">
+          <div class="exc-bank">Banreservas</div>
+          <div class="exc-name">${r.cuenta}</div>
+          <div class="exc-acct mono">${r.ref}</div>
+        </div>
+      </div>
+      <div class="exc-body">
+        ${excRow('Balance de la cuenta', r.balance, 'neutral')}
+        ${excRow('Pagos', r.pagos)}
+        ${excRow('Transferencias entre cuentas', r.transfer)}
+        ${excRow('Pagos pendientes de aprobación', r.transito)}
+      </div>
+      <div class="exc-total">
+        <span class="exc-total-l">Total Disponible</span>
+        <span class="exc-total-v mono ${total<0?'neg':''}"><span class="cur">RD$</span>${fnum(total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* Tarjeta Balance de Certificados — reutiliza los datos de la vista detallada */
+  const certCount = DATA.certificados.rows.length;
+  const certFecha = (DATA.certificados.balanceLabel||'').replace(/^Balance al\s*/i,'');
+  const certCard = `<div class="excard cert" style="animation-delay:${(0.05+DATA.bancos.rows.length*0.07).toFixed(2)}s">
+      <div class="exc-head">
+        ${badge}
+        <div class="exc-id">
+          <div class="exc-bank">Banreservas</div>
+          <div class="exc-name">Balance de Certificados</div>
+          <div class="exc-acct mono">Certificados financieros e inversiones</div>
+        </div>
+      </div>
+      <div class="exc-body">
+        <div class="cert-big">
+          <div class="cert-big-l">Balance total de certificados</div>
+          <div class="cert-big-v mono"><span class="cur">RD$</span>${fnum(totCert)}</div>
+        </div>
+        ${excRow('Cantidad de certificados', certCount, 'count')}
+        <div class="exc-row"><span class="exc-row-l">Fecha de actualización</span><span class="exc-row-v">${certFecha||'—'}</span></div>
+      </div>
+      <div class="exc-total gold">
+        <span class="exc-total-l">Total Certificados</span>
+        <span class="exc-total-v mono"><span class="cur">RD$</span>${fnum(totCert)}</span>
+      </div>
+    </div>`;
+
+  document.getElementById('exCards').innerHTML = acctCards + certCard;
+
+  document.getElementById('rBancos').textContent = fnum(totBancos);
+  document.getElementById('rCert').textContent   = fnum(totCert);
+  document.getElementById('rTotal').textContent  = fnum(totBancos+totCert);
+}
+
+/* ===== conmutador de vista (Resumen Ejecutivo / Detallada) ===== */
+function switchView(v){
+  document.getElementById('viewResumen').style.display = (v==='resumen')?'':'none';
+  document.getElementById('viewDetalle').style.display = (v==='detalle')?'':'none';
+  document.querySelectorAll('.vs-btn').forEach(btn=>btn.classList.toggle('active', btn.dataset.view===v));
+}
+
+/* ====================================================================
    ORQUESTACIÓN
 ==================================================================== */
 function buildReport(){
   const tb = renderBancos();
   const tc = renderCert();
   renderGrand(tb,tc);
+  renderResumen(tb,tc);
   document.getElementById('reportDate').textContent = DATA.reportDateLabel;
 }
 
