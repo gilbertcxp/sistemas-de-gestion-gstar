@@ -84,7 +84,7 @@ const EstadoCuenta = (() => {
         <div class="ec-section-title">
           <span class="ec-sec-ic">${_svg('pie')}</span>
           <div>
-            <div class="ec-sec-h">RESUMEN GENERAL</div>
+            <div class="ec-sec-h">ESTADO DE CUENTA</div>
           </div>
         </div>
 
