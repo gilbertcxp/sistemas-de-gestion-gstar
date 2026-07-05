@@ -6,8 +6,14 @@ const SolicitudPago = (() => {
 
   let _corteSelected = '';
   let _rows = [];
+  let _solicitudNumero = null;   // número de la solicitud persistida para el corte actual
 
   // ------ helpers ------
+  function _round2(n){ return Math.round((Number(n)||0)*100)/100; }
+  function _findSolicitudForCorte(corte){
+    const list = Storage.getSolicitudes().filter(s => s.corte === corte);
+    return list.length ? list[list.length - 1] : null;
+  }
   function _getInputs(){
     const n = id => parseFloat(document.getElementById(id)?.value)||0;
     return {
@@ -76,7 +82,7 @@ const SolicitudPago = (() => {
         </div>
 
         <div class="doc-corte-tag">
-          ${_corteSelected ? `<b>Corte:</b> ${Utils.escapeHtml(_corteSelected)}` : '<i style="opacity:.6">Selecciona un corte</i>'}
+          ${_solicitudNumero ? `<b>Solicitud No.</b> ${_solicitudNumero} &nbsp;·&nbsp; ` : ''}${_corteSelected ? `<b>Corte:</b> ${Utils.escapeHtml(_corteSelected)}` : '<i style="opacity:.6">Selecciona un corte</i>'}
         </div>
 
         <div class="doc-balance-grid">
@@ -118,7 +124,11 @@ const SolicitudPago = (() => {
   // ------ Public: render view ------
   function render(){
     DataModule.load();
-    if(_corteSelected) _rows = DataModule.getCXPByCorte(_corteSelected);
+    if(_corteSelected){
+      _rows = DataModule.getCXPByCorte(_corteSelected);
+      const found = _findSolicitudForCorte(_corteSelected);
+      _solicitudNumero = found ? found.numero : null;
+    }
     _populateCortes();
     // Restore saved balance values
     const saved = Storage.getBankData();
@@ -132,7 +142,34 @@ const SolicitudPago = (() => {
   function onCorteChange(val){
     _corteSelected = val;
     _rows = val ? DataModule.getCXPByCorte(val) : [];
+    const found = val ? _findSolicitudForCorte(val) : null;
+    _solicitudNumero = found ? found.numero : null;
     updatePreview();
+  }
+
+  // ------ Generar / guardar la solicitud con numeración consecutiva ------
+  function generarSolicitud(){
+    if(!_corteSelected){ UI.toast('Selecciona un corte primero', 'err'); return; }
+    const rows = DataModule.getCXPByCorte(_corteSelected);
+    if(rows.length === 0){ UI.toast('No hay CXP pendientes en este corte', 'err'); return; }
+    const existing = _findSolicitudForCorte(_corteSelected);
+    const doIt = () => {
+      const numero = Storage.nextSolicitudNumber();
+      Storage.addSolicitud({
+        numero,
+        corte: _corteSelected,
+        fecha: Utils.todayISO(),
+        creadoEn: new Date().toISOString(),
+        estado: 'Pendiente',
+        items: rows.map(r => ({ dataRowId:r.id, consorcio:r.consorcio, corte:r.corte, monto:_round2(Math.abs(r.pendiente)), pagado:false }))
+      });
+      _solicitudNumero = numero;
+      updatePreview();
+      UI.toast('Solicitud ' + numero + ' generada y guardada', 'ok');
+    };
+    if(existing){
+      UI.confirm('Ya existe una solicitud', `Este corte ya tiene la Solicitud ${existing.numero}. ¿Deseas generar una nueva?`, doIt);
+    } else { doIt(); }
   }
 
   function updatePreview(){
@@ -220,5 +257,5 @@ const SolicitudPago = (() => {
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   `; }
 
-  return { render, onCorteChange, updatePreview, printDoc, exportPDF };
+  return { render, onCorteChange, updatePreview, printDoc, exportPDF, generarSolicitud };
 })();

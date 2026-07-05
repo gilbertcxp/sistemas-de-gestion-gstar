@@ -25,7 +25,8 @@ const Storage = (() => {
   };
 
   // Claves que se comparten entre todos los usuarios (sincronizadas a la nube)
-  const SHARED_KEYS = [K_CLIENTS, K_INVOICES, K_COUNTER, K_SETTINGS, 'fc_data_rows', 'fc_bank_data'];
+  const SHARED_KEYS = [K_CLIENTS, K_INVOICES, K_COUNTER, K_SETTINGS, 'fc_data_rows', 'fc_bank_data',
+    'fc_pagos', 'fc_pago_counter', 'fc_solicitudes', 'fc_solicitud_counter'];
   let _suppressSync = false;
 
   function _get(key, fallback){
@@ -61,6 +62,10 @@ const Storage = (() => {
     if(localStorage.getItem(K_INVOICES) === null) _set(K_INVOICES, []);
     if(localStorage.getItem(K_COUNTER) === null) _set(K_COUNTER, 0);
     if(localStorage.getItem(K_SETTINGS) === null) _set(K_SETTINGS, DEFAULT_SETTINGS);
+    if(localStorage.getItem(K_PAGOS) === null) _set(K_PAGOS, []);
+    if(localStorage.getItem(K_PAGO_COUNTER) === null) _set(K_PAGO_COUNTER, 0);
+    if(localStorage.getItem(K_SOLICITUDES) === null) _set(K_SOLICITUDES, []);
+    if(localStorage.getItem(K_SOLICITUD_COUNTER) === null) _set(K_SOLICITUD_COUNTER, 0);
   }
 
   // ---------- Clients ----------
@@ -140,17 +145,49 @@ const Storage = (() => {
   function getBankData(){ return _get(K_BANK_DATA, DEFAULT_BANK); }
   function saveBankData(data){ return _set(K_BANK_DATA, {...getBankData(), ...data}); }
 
+  // ---------- Pagos (recibos de cobro CXC) ----------
+  const K_PAGOS        = 'fc_pagos';
+  const K_PAGO_COUNTER = 'fc_pago_counter';
+  function getPagos(){ return _get(K_PAGOS, []); }
+  function savePagos(list){ return _set(K_PAGOS, list); }
+  function getPagoCounter(){ return _get(K_PAGO_COUNTER, 0); }
+  function setPagoCounter(n){ _set(K_PAGO_COUNTER, n); }
+  function nextPagoNumber(){ const n = getPagoCounter() + 1; setPagoCounter(n); return n; }
+  function addPago(pago){ const list = getPagos(); list.push(pago); savePagos(list); return pago; }
+
+  // ---------- Solicitudes de Pago (persistidas, numeración consecutiva) ----------
+  const K_SOLICITUDES        = 'fc_solicitudes';
+  const K_SOLICITUD_COUNTER  = 'fc_solicitud_counter';
+  function getSolicitudes(){ return _get(K_SOLICITUDES, []); }
+  function saveSolicitudes(list){ return _set(K_SOLICITUDES, list); }
+  function getSolicitud(numero){ return getSolicitudes().find(s => String(s.numero) === String(numero)); }
+  function addSolicitud(sol){ const list = getSolicitudes(); list.push(sol); saveSolicitudes(list); return sol; }
+  function updateSolicitud(numero, patch){
+    const list = getSolicitudes();
+    const idx = list.findIndex(s => String(s.numero) === String(numero));
+    if(idx >= 0){ list[idx] = {...list[idx], ...patch}; saveSolicitudes(list); return list[idx]; }
+    return null;
+  }
+  function getSolicitudCounter(){ return _get(K_SOLICITUD_COUNTER, 0); }
+  function setSolicitudCounter(n){ _set(K_SOLICITUD_COUNTER, n); }
+  function nextSolicitudNumber(){ const n = getSolicitudCounter() + 1; setSolicitudCounter(n); return n; }
+  function peekNextSolicitudNumber(){ return getSolicitudCounter() + 1; }
+
   // ---------- Backup / restore / reset ----------
   function exportBackup(){
     return {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       clients: getClients(),
       invoices: getInvoices(),
       counter: getCounter(),
       settings: getSettings(),
       dataRows: getDataRows(),
-      bankData: getBankData()
+      bankData: getBankData(),
+      pagos: getPagos(),
+      pagoCounter: getPagoCounter(),
+      solicitudes: getSolicitudes(),
+      solicitudCounter: getSolicitudCounter()
     };
   }
   function importBackup(obj){
@@ -161,6 +198,10 @@ const Storage = (() => {
     if(obj.settings) _set(K_SETTINGS, obj.settings);
     if(Array.isArray(obj.dataRows)) saveDataRows(obj.dataRows);
     if(obj.bankData) saveBankData(obj.bankData);
+    if(Array.isArray(obj.pagos)) savePagos(obj.pagos);
+    if(typeof obj.pagoCounter === 'number') setPagoCounter(obj.pagoCounter);
+    if(Array.isArray(obj.solicitudes)) saveSolicitudes(obj.solicitudes);
+    if(typeof obj.solicitudCounter === 'number') setSolicitudCounter(obj.solicitudCounter);
   }
   function resetAll(){
     localStorage.removeItem(K_CLIENTS);
@@ -169,6 +210,10 @@ const Storage = (() => {
     localStorage.removeItem(K_SETTINGS);
     localStorage.removeItem(K_DATA_ROWS);
     localStorage.removeItem(K_BANK_DATA);
+    localStorage.removeItem(K_PAGOS);
+    localStorage.removeItem(K_PAGO_COUNTER);
+    localStorage.removeItem(K_SOLICITUDES);
+    localStorage.removeItem(K_SOLICITUD_COUNTER);
     init();
   }
 
@@ -180,6 +225,9 @@ const Storage = (() => {
     getSettings, saveSettings,
     getDataRows, saveDataRows, clearDataRows, updateDataRow,
     getBankData, saveBankData,
+    getPagos, savePagos, addPago, getPagoCounter, nextPagoNumber,
+    getSolicitudes, saveSolicitudes, getSolicitud, addSolicitud, updateSolicitud,
+    getSolicitudCounter, nextSolicitudNumber, peekNextSolicitudNumber,
     exportBackup, importBackup, resetAll,
     applyRemote, getSharedKeys
   };

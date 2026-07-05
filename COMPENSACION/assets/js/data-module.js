@@ -10,9 +10,25 @@ const DataModule = (() => {
   let _f = { consorcio:'', tipo:'', corte:'', año:'', estado:'' };
 
   // ------ helpers ------
-  function _deriveEstado(tipo, pendiente){
-    if(tipo === 'CXC') return (pendiente > 0.001) ? 'Por Cobrar' : 'Cobrada';
-    return (pendiente > 0.001) ? 'Pendiente' : 'Pagada';
+  function _round2(n){ return Math.round((Number(n)||0)*100)/100; }
+
+  // Estado derivado EXCLUSIVAMENTE de los montos (alimentado por el módulo Pagos).
+  //   sin pago            -> Por Cobrar (CXC) / Pendiente (CXP)
+  //   pago parcial        -> Parcial
+  //   pagado por completo -> Cobrada (CXC) / Pagada (CXP)
+  function _deriveEstado(tipo, monto, pago, pendiente){
+    const m    = Number(monto)||0;
+    const paid = Number(pago)||0;
+    const pend = (pendiente != null && pendiente !== '') ? (Number(pendiente)||0) : _round2(m - paid);
+    if(pend <= 0.001) return tipo === 'CXC' ? 'Cobrada' : 'Pagada';
+    if(paid > 0.001)  return 'Parcial';
+    return tipo === 'CXC' ? 'Por Cobrar' : 'Pendiente';
+  }
+
+  function _estadoPill(estado){
+    const map = { 'Por Cobrar':'warn', 'Pendiente':'warn', 'Parcial':'blue', 'Cobrada':'ok', 'Pagada':'ok' };
+    const cls = map[estado] || 'gray';
+    return `<span class="pill ${cls}"><span class="pill-dot"></span>${Utils.escapeHtml(estado)}</span>`;
   }
 
   function _excelDateToISO(val){
@@ -113,7 +129,7 @@ const DataModule = (() => {
         pago,
         pendiente,
         numero:    String(row[colMap.numero]||'').trim(),
-        estado:    _deriveEstado(tipo, pendiente)
+        estado:    _deriveEstado(tipo, monto, pago, pendiente)
       });
     }
 
@@ -141,14 +157,18 @@ const DataModule = (() => {
   }
 
   // ------ Internal load ------
+  // El estado se recalcula siempre desde los montos: nunca es editable a mano.
   function load(){
-    _rows = Storage.getDataRows();
+    _rows = Storage.getDataRows().map(r => ({
+      ...r,
+      estado: _deriveEstado(r.tipo, r.monto, r.pago, r.pendiente)
+    }));
   }
 
   // ------ Filters ------
   function _getFiltered(){
     return _rows.filter(r => {
-      if(_f.consorcio && !r.consorcio.toLowerCase().includes(_f.consorcio.toLowerCase())) return false;
+      if(_f.consorcio && r.consorcio !== _f.consorcio) return false;
       if(_f.tipo && r.tipo !== _f.tipo) return false;
       if(_f.corte && r.corte !== _f.corte) return false;
       if(_f.año && String(r.año) !== _f.año) return false;
@@ -158,18 +178,38 @@ const DataModule = (() => {
   }
 
   // ------ Populate filter selects ------
-  function _populateSelects(){
-    const cortes = [...new Set(_rows.map(r => r.corte).filter(Boolean))].sort();
-    const años   = [...new Set(_rows.map(r => r.año).filter(Boolean))].sort((a,b)=>b-a);
-
-    const cEl = document.getElementById('dfCorte');
-    if(cEl) cEl.innerHTML = `<option value="">Todos los cortes</option>` +
-      cortes.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('');
-
-    const aEl = document.getElementById('dfAño');
-    if(aEl) aEl.innerHTML = `<option value="">Todos los años</option>` +
-      años.map(a => `<option value="${a}">${a}</option>`).join('');
+  function _populateConsorcios(){
+    const consorcios = getConsorcios();
+    const el = document.getElementById('dfConsorcio');
+    if(!el) return;
+    const prev = _f.consorcio;
+    el.innerHTML = `<option value="">Todos los consorcios</option>` +
+      consorcios.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('');
+    if(prev && consorcios.includes(prev)) el.value = prev; else _f.consorcio = '';
   }
+
+  function _populateAños(){
+    const años = [...new Set(_rows.map(r => r.año).filter(Boolean))].sort((a,b)=>b-a);
+    const el = document.getElementById('dfAño');
+    if(!el) return;
+    el.innerHTML = `<option value="">Todos los años</option>` +
+      años.map(a => `<option value="${a}">${a}</option>`).join('');
+    if(_f.año) el.value = _f.año;
+  }
+
+  // El corte depende del año seleccionado: solo muestra cortes de ese año.
+  function _populateCortes(){
+    const source = _f.año ? _rows.filter(r => String(r.año) === String(_f.año)) : _rows;
+    const cortes = [...new Set(source.map(r => r.corte).filter(Boolean))].sort();
+    const el = document.getElementById('dfCorte');
+    if(!el) return;
+    const prev = _f.corte;
+    el.innerHTML = `<option value="">Todos los cortes</option>` +
+      cortes.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('');
+    if(prev && cortes.includes(prev)) el.value = prev; else _f.corte = '';
+  }
+
+  function _populateSelects(){ _populateConsorcios(); _populateAños(); _populateCortes(); }
 
   // ------ Render summary chips ------
   function _renderSummary(){
@@ -239,15 +279,8 @@ const DataModule = (() => {
           ? `<span class="pill red" style="font-size:10.5px"><span class="pill-dot"></span>CXP</span>`
           : `<span class="pill indigo" style="font-size:10.5px"><span class="pill-dot"></span>CXC</span>`;
 
-        const estadoCell = r.tipo === 'CXP'
-          ? `<select class="input data-status-sel" onchange="DataModule.updateStatus('${Utils.jsAttr(r.id)}', this.value)">
-               <option${r.estado==='Pendiente'?' selected':''}>Pendiente</option>
-               <option${r.estado==='Pagada'?' selected':''}>Pagada</option>
-             </select>`
-          : `<select class="input data-status-sel" onchange="DataModule.updateStatus('${Utils.jsAttr(r.id)}', this.value)">
-               <option${r.estado==='Por Cobrar'?' selected':''}>Por Cobrar</option>
-               <option${r.estado==='Cobrada'?' selected':''}>Cobrada</option>
-             </select>`;
+        // El estado ya no es editable: se alimenta desde el módulo Pagos.
+        const estadoCell = _estadoPill(r.estado);
 
         const nombreCell = r._count
           ? `<b>${Utils.escapeHtml(r.consorcio)}</b> <span class="muted" style="font-size:11px">(${r._count} consorcios)</span>`
@@ -297,22 +330,57 @@ const DataModule = (() => {
   function setFilter(key, val){
     _f[key] = val;
     _page = 1;
+    // El corte depende del año: al cambiar el año se reconstruye la lista de cortes.
+    if(key === 'año'){ _f.corte = ''; _populateCortes(); }
     _renderTable();
   }
 
-  function updateStatus(id, estado){
-    const row  = _rows.find(r => r.id === id);
-    const updates = { estado };
-    if(row){
-      const done = (estado === 'Cobrada' || estado === 'Pagada');
-      updates.pago      = done ? row.monto : 0;
-      updates.pendiente = done ? 0 : row.monto;
-    }
-    Storage.updateDataRow(id, updates);
+  // ------ Actualización de estado desde el módulo Pagos ------
+  // Registra un cobro (abono) sobre una fila CXC y recalcula pago/pendiente/estado.
+  function applyCobro(id, abono){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r) return null;
+    const monto   = Number(r.monto)||0;
+    const pagoNew = _round2(Math.min((Number(r.pago)||0) + (Number(abono)||0), monto));
+    const pendNew = _round2(Math.max(monto - pagoNew, 0));
+    const estado  = _deriveEstado(r.tipo, monto, pagoNew, pendNew);
+    Storage.updateDataRow(id, { pago:pagoNew, pendiente:pendNew, estado, fechaPago: Utils.todayISO() });
+    return { pago:pagoNew, pendiente:pendNew, estado };
+  }
+
+  // Marca una fila como saldada por completo (CXP -> Pagada, CXC -> Cobrada).
+  function applyPagoTotal(id){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r) return null;
+    const monto = Number(r.monto)||0;
+    Storage.updateDataRow(id, { pago:monto, pendiente:0, estado: r.tipo === 'CXC' ? 'Cobrada' : 'Pagada', fechaPago: Utils.todayISO() });
+    return true;
+  }
+
+  // Refresca la data en memoria y la vista Data si está activa (tras aplicar pagos).
+  function refresh(){
     load();
-    _renderTable();
-    _renderSummary();
+    const active = document.querySelector('.view.active');
+    if(active && active.id === 'view-data'){ _populateSelects(); _renderSummary(); _renderTable(); }
     if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+  }
+
+  // Facturas CXC pendientes (Por Cobrar / Parcial) de un consorcio — para Recibo de Pago.
+  function getCXCByConsorcio(consorcio){
+    return Storage.getDataRows()
+      .filter(r => r.tipo === 'CXC' && r.consorcio === consorcio && _round2((Number(r.monto)||0) - (Number(r.pago)||0)) > 0.001)
+      .map(r => {
+        const pend = _round2((Number(r.monto)||0) - (Number(r.pago)||0));
+        return { ...r, pendiente: pend, estado: _deriveEstado(r.tipo, r.monto, r.pago, pend) };
+      })
+      .sort((a,b) => (a.corte||'').localeCompare(b.corte||''));
+  }
+
+  // Consorcios que tienen al menos una CXC pendiente — para el selector de cliente.
+  function getConsorciosConCXC(){
+    return [...new Set(Storage.getDataRows()
+      .filter(r => r.tipo === 'CXC' && _round2((Number(r.monto)||0) - (Number(r.pago)||0)) > 0.001)
+      .map(r => r.consorcio).filter(Boolean))].sort();
   }
 
   // ------ Eliminar Corte (Admin) ------
@@ -433,7 +501,8 @@ const DataModule = (() => {
     return newRows.length;
   }
 
-  return { render, importFile, load, goPage, setFilter, updateStatus,
+  return { render, importFile, load, goPage, setFilter,
+           applyCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly,
            showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte };
