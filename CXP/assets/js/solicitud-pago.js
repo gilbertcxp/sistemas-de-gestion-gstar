@@ -408,7 +408,7 @@ const SolicitudPago = (() => {
         <div class="doc-title-bar">Solicitud De Pagos #${_sol.numero}</div>
         <table class="doc-table2">
           <thead>
-            <tr><th>FECHA</th><th>SUPLIDOR</th><th>DETALLE</th><th class="r">VALOR</th></tr>
+            <tr><th>FECHA</th><th>SUPLIDOR</th><th class="c">DETALLE</th><th class="r">VALOR</th></tr>
           </thead>
           <tbody>${tableRows}</tbody>
         </table>
@@ -609,6 +609,7 @@ const SolicitudPago = (() => {
     .doc-table2{width:100%;border-collapse:collapse;font-size:11px}
     .doc-table2 th{background:#1f3864;color:#fff;padding:7px 10px;text-align:left;font-size:10.5px;font-weight:700}
     .doc-table2 th.r,.doc-table2 td.r{text-align:right}
+    .doc-table2 th.c,.doc-table2 td.c{text-align:center}
     .doc-table2 td{padding:5px 10px;border-bottom:1px solid #f1f5f9}
     .doc-table2 td.r{font-weight:600}
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
