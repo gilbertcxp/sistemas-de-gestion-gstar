@@ -668,10 +668,12 @@ function excRow(label,val,mode){
 
 function renderResumen(totBancos,totCert){
   const badge = '<div class="bank-badge">'
-    + '<svg viewBox="0 0 48 40" width="32" height="27" xmlns="http://www.w3.org/2000/svg" aria-label="Banreservas">'
-    +   '<text x="11" y="28" font-family="Inter,Arial,sans-serif" font-weight="900" font-size="31" fill="#2B4A7D">B</text>'
-    +   '<path d="M4 29 Q19 21 36 27.5" stroke="#1C9AD6" stroke-width="3.8" fill="none" stroke-linecap="round"/>'
-    +   '<path d="M6.5 34.5 Q20 28 33 33" stroke="#F5A020" stroke-width="3.8" fill="none" stroke-linecap="round"/>'
+    + '<svg viewBox="0 0 110 102" width="46" height="43" xmlns="http://www.w3.org/2000/svg" aria-label="Banreservas">'
+    +   '<path fill-rule="evenodd" fill="#1B3566"'
+    +     ' d="M10,6 L56,6 Q88,6 88,32 Q88,52 64,58 L88,82 L66,82 L48,58 L28,58 L28,82 L10,82 Z'
+    +        ' M28,20 L28,46 L48,46 Q64,46 64,32 Q64,20 48,20 Z"/>'
+    +   '<path d="M2,84 Q54,66 108,76" stroke="#00AEEF" stroke-width="10" fill="none" stroke-linecap="round"/>'
+    +   '<path d="M16,95 Q58,78 108,88" stroke="#F5A623" stroke-width="10" fill="none" stroke-linecap="round"/>'
     + '</svg></div>';
 
   /* Tarjetas de cuentas bancarias (Operativa y Compensación).
