@@ -1,117 +1,302 @@
 /* ============================================================
-   SolicitudPago — arma, edita, guarda e imprime la Solicitud
+   SolicitudPago — arma, edita, paga e imprime la Solicitud
    de Pago a partir de las facturas seleccionadas en el Reporte
    ============================================================ */
 const SolicitudPago = (() => {
 
-  let _id = null;
-  let _items = [];      // [{ rowId, fecha, proveedor, empresa, moneda, valor, detalle, observaciones }]
-  let _locked = false;
-  let _createdAt = '';
+  let _sol    = null;   // solicitud activa (Pendiente) o cargada del historial
+  let _locked = false;  // true cuando se cargó solo para ver (historial)
 
   // ------ helpers ------
   function _getBankInputs(){
     const n = id => parseFloat(document.getElementById(id)?.value)||0;
     return {
-      cuentaLabel: document.getElementById('spCuentaLabel')?.value || Storage.getBank().cuentaLabel,
-      balanceBanco: n('spBalanceBanco'),
+      cuentaLabel:     document.getElementById('spCuentaLabel')?.value || Storage.getBank().cuentaLabel,
+      balanceBanco:    n('spBalanceBanco'),
       chequesTransito: n('spChequesTransito'),
-      provisiones: n('spProvisiones'),
-      depositos: n('spDepositos')
+      provisiones:     n('spProvisiones'),
+      depositos:       n('spDepositos')
     };
   }
-  function _saveBank(){
-    if(_locked) return;
-    Storage.saveBank(_getBankInputs());
-  }
-  // El Saldo Pendiente ya viene expresado en RD$ desde el reporte (las facturas en
-  // US$ se registran con su equivalente ya convertido), así que el total es uno solo.
-  function _calcTotals(){
-    const bank = _getBankInputs();
-    const montoDisponible = bank.balanceBanco - bank.chequesTransito - bank.provisiones + bank.depositos;
-    const montoAPagar = _items.reduce((s,i)=>s+(i.valor||0),0);
+
+  function _calcTotals(bank){
+    bank = bank || _getBankInputs();
+    const items = _sol?.items || [];
+    const montoDisponible        = bank.balanceBanco - bank.chequesTransito - bank.provisiones + bank.depositos;
+    const montoAPagar            = items.reduce((s,i)=>s+(i.valor||0),0);
     const disponibilidadActualizada = montoDisponible - montoAPagar;
     return { bank, montoDisponible, montoAPagar, disponibilidadActualizada };
   }
+
   function _fmtDateShort(iso){
     const d = Utils.parseISODate(iso);
     if(!d) return '—';
     return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
   }
-  // Formato contable: negativos entre paréntesis y en rojo, sin símbolo de moneda
+
   function _fmtSigned(n){
     n = Number(n)||0;
     return n < 0 ? `<span class="neg">(${Utils.fmtNum(Math.abs(n))})</span>` : Utils.fmtNum(n);
   }
 
-  // ------ Public: iniciar nueva solicitud desde la selección del Reporte ------
+  function _getActive(){
+    return Storage.getSolicitudes().find(s => s.estado === 'Pendiente') || null;
+  }
+
+  // ------ Public: cargar la solicitud Pendiente al entrar desde la barra lateral ------
+  function loadActive(){
+    const active = _getActive();
+    if(active){
+      _sol    = { ...active, items: active.items.map(i=>({...i})) };
+      _locked = false;
+    } else {
+      _sol    = null;
+      _locked = false;
+    }
+    // render() lo llama App.renderView()
+  }
+
+  // ------ Public: crear / agregar items desde la selección del Reporte ------
   function generar(rows){
     if(!rows || rows.length === 0){ UI.toast('Selecciona al menos una factura', 'err'); return false; }
-    _id = null;
-    _locked = false;
-    _createdAt = Utils.todayISO();
-    _items = rows.map(r => ({
-      rowId: r.id,
-      fecha: r.fechaVencimiento || r.fecha,
-      proveedor: r.proveedor,
-      empresa: r.empresa || 'Gstar Services',
-      moneda: r.moneda || 'RD$',
-      valor: r.saldoPendiente || 0,
-      detalle: r.detalle || '',
+
+    const newItems = rows.map(r => ({
+      rowId:        r.id,
+      fecha:        r.fechaVencimiento || r.fecha,
+      proveedor:    r.proveedor,
+      empresa:      r.empresa || 'Gstar Services',
+      moneda:       r.moneda || 'RD$',
+      valor:        r.saldoPendiente || 0,
+      detalle:      r.detalle || '',
       observaciones: ''
     }));
-    render();
+
+    const active = _getActive();
+    if(active){
+      // Agrega a la solicitud pendiente existente (sin duplicados)
+      const existingIds = new Set(active.items.map(i => i.rowId));
+      const added = newItems.filter(i => !existingIds.has(i.rowId));
+      if(added.length === 0){ UI.toast('Esas facturas ya están en la solicitud activa', 'err'); return false; }
+      _sol = { ...active, items: [...active.items, ...added] };
+      _sol.totalGeneral = _sol.items.reduce((s,i)=>s+(i.valor||0),0);
+      _sol.totalDocs    = _sol.items.length;
+      Storage.upsertSolicitud(_sol);
+      UI.toast(`${added.length} factura(s) agregada(s) a Solicitud #${_sol.numero}`, 'ok');
+    } else {
+      // Nueva solicitud con número consecutivo
+      const numero = Storage.getNextNumero();
+      _sol = {
+        id:              Utils.uid('sol'),
+        numero,
+        fecha:           Utils.todayISO(),
+        guardadaEn:      new Date().toISOString(),
+        fechaPago:       null,
+        estado:          'Pendiente',
+        bank:            Storage.getBank(),
+        items:           newItems,
+        totalGeneral:    newItems.reduce((s,i)=>s+(i.valor||0),0),
+        totalPagado:     0,
+        totalDocs:       newItems.length,
+        totalDocsPagados: 0
+      };
+      Storage.upsertSolicitud(_sol);
+      UI.toast(`Solicitud #${numero} creada`, 'ok');
+    }
+    _locked = false;
+    // render() lo llama App.switchView()
     return true;
   }
 
-  // ------ Public: cargar una solicitud guardada (desde Historial) ------
+  // ------ Public: cargar desde historial (solo lectura) ------
   function cargar(sol){
-    _id = sol.id;
+    _sol    = { ...sol, items: (sol.items||[]).map(i=>({...i})) };
     _locked = true;
-    _createdAt = sol.fecha;
-    _items = sol.items.map(i => ({...i}));
-    Storage.saveBank(sol.bank);
-    render();
+    // render() lo llama App.switchView()
   }
 
   function setObservacion(idx, val){
-    if(_locked) return;
-    if(_items[idx]) _items[idx].observaciones = val;
+    if(_locked || !_sol) return;
+    if(_sol.items[idx]) _sol.items[idx].observaciones = val;
+    Storage.upsertSolicitud(_sol);
   }
+
   function eliminarItem(idx){
-    if(_locked) return;
-    _items.splice(idx,1);
+    if(_locked || !_sol) return;
+    _sol.items.splice(idx,1);
+    _sol.totalGeneral = _sol.items.reduce((s,i)=>s+(i.valor||0),0);
+    _sol.totalDocs    = _sol.items.length;
+    Storage.upsertSolicitud(_sol);
     render();
   }
+
   function habilitarEdicion(){
+    if(!_sol || _sol.estado !== 'Pendiente'){
+      UI.toast('Solo se pueden editar solicitudes Pendientes', 'err'); return;
+    }
     _locked = false;
     render();
     UI.toast('Edición habilitada', 'ok');
   }
 
   function guardar(){
-    if(_items.length === 0){ UI.toast('No hay documentos en la solicitud', 'err'); return; }
-    const { montoAPagar } = _calcTotals();
-    const sol = {
-      id: _id || Utils.uid('sol'),
-      fecha: _createdAt || Utils.todayISO(),
-      guardadaEn: new Date().toISOString(),
-      estado: 'Guardada',
-      bank: Storage.getBank(),
-      items: _items,
-      totalGeneral: montoAPagar,
-      totalDocs: _items.length
-    };
-    Storage.upsertSolicitud(sol);
-    _id = sol.id;
-    _locked = true;
+    if(!_sol || _sol.items.length === 0){ UI.toast('No hay documentos en la solicitud', 'err'); return; }
+    _sol.guardadaEn   = new Date().toISOString();
+    _sol.estado       = 'Pendiente';
+    _sol.bank         = _getBankInputs();
+    _sol.totalGeneral = _sol.items.reduce((s,i)=>s+(i.valor||0),0);
+    _sol.totalDocs    = _sol.items.length;
+    Storage.upsertSolicitud(_sol);
     render();
-    UI.toast('Solicitud de pago guardada', 'ok');
+    UI.toast(`Solicitud #${_sol.numero} guardada`, 'ok');
   }
 
-  // ------ Build doc HTML (vista previa / impresión / PDF) — réplica del Excel ------
+  // ------ Pagar: abre modal de checklist ------
+  function pagar(){
+    if(!_sol || _sol.items.length === 0){ UI.toast('No hay documentos en la solicitud', 'err'); return; }
+    if(_sol.estado !== 'Pendiente'){ UI.toast('Esta solicitud ya fue procesada', 'err'); return; }
+
+    const numEl = document.getElementById('pagarNumero');
+    if(numEl) numEl.textContent = `#${_sol.numero}`;
+
+    const checklist = document.getElementById('pagarChecklist');
+    if(!checklist) return;
+
+    checklist.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--surface);border-bottom:2px solid var(--line)">
+            <th style="padding:10px 12px;text-align:center;width:44px">
+              <input type="checkbox" id="pagarChkAll" checked
+                onchange="SolicitudPago.toggleAllPagar(this.checked)">
+            </th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600">Suplidor</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600">Detalle</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:600">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${_sol.items.map((item, idx) => `
+            <tr style="border-bottom:1px solid var(--line)">
+              <td style="padding:10px 12px;text-align:center">
+                <input type="checkbox" class="pagar-chk" data-idx="${idx}" checked
+                  onchange="SolicitudPago.updatePagarSummary()">
+              </td>
+              <td style="padding:10px 12px;font-weight:600">${Utils.escapeHtml(item.proveedor)}</td>
+              <td style="padding:10px 12px;color:var(--ink-soft);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                  title="${Utils.escapeHtml(item.detalle||'')}">
+                ${Utils.escapeHtml(item.detalle||'—')}
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-family:monospace;font-weight:600;white-space:nowrap">
+                ${Utils.fmtNum(item.valor)}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    updatePagarSummary();
+    UI.openModal('modalPagar');
+  }
+
+  function toggleAllPagar(checked){
+    document.querySelectorAll('.pagar-chk').forEach(c => c.checked = checked);
+    updatePagarSummary();
+  }
+
+  function updatePagarSummary(){
+    const items = _sol?.items || [];
+    let count = 0, total = 0;
+    document.querySelectorAll('.pagar-chk').forEach((c, idx) => {
+      if(c.checked){ count++; total += items[idx]?.valor||0; }
+    });
+    const countEl = document.getElementById('pagarSelCount');
+    const montoEl = document.getElementById('pagarTotalMonto');
+    const chkAll  = document.getElementById('pagarChkAll');
+    if(countEl) countEl.textContent = count;
+    if(montoEl) montoEl.textContent = Utils.fmtMoney(total);
+    if(chkAll)  chkAll.indeterminate = (count > 0 && count < items.length);
+    if(chkAll && !chkAll.indeterminate) chkAll.checked = (count === items.length && items.length > 0);
+  }
+
+  // ------ Confirmar los pagos seleccionados ------
+  function confirmarPago(){
+    if(!_sol) return;
+    const items  = _sol.items;
+    const checks = [...document.querySelectorAll('.pagar-chk')];
+
+    const pagados    = [];
+    const pendientes = [];
+    checks.forEach((c, idx) => {
+      if(c.checked) pagados.push(items[idx]);
+      else           pendientes.push(items[idx]);
+    });
+
+    if(pagados.length === 0){ UI.toast('Marca al menos un pago para confirmar', 'err'); return; }
+
+    UI.closeModal('modalPagar');
+
+    const totalPagado = pagados.reduce((s,i)=>s+(i.valor||0),0);
+    const estado      = pendientes.length === 0 ? 'Pagada' : 'Parcialmente Pagada';
+    const session     = window.Auth ? Auth.getSession() : null;
+    const usuario     = session?.user?.email || session?.user?.name || '';
+
+    // Guarda la solicitud actual como Pagada / Parcialmente Pagada
+    const solFinal = {
+      ..._sol,
+      estado,
+      items:             pagados,
+      itemsNoProcesados: pendientes,
+      fechaPago:         new Date().toISOString(),
+      totalDocsPagados:  pagados.length,
+      totalPagado,
+      totalDocs:         pagados.length,
+      totalGeneral:      totalPagado,
+      usuarioPago:       usuario
+    };
+    Storage.upsertSolicitud(solFinal);
+
+    let msg = `Solicitud #${_sol.numero} marcada como ${estado}`;
+
+    // Si hay items sin pagar, crea la siguiente solicitud consecutiva
+    if(pendientes.length > 0){
+      const nextNum = Storage.getNextNumero();
+      const nextSol = {
+        id:              Utils.uid('sol'),
+        numero:          nextNum,
+        fecha:           Utils.todayISO(),
+        guardadaEn:      new Date().toISOString(),
+        fechaPago:       null,
+        estado:          'Pendiente',
+        bank:            Storage.getBank(),
+        items:           pendientes,
+        totalGeneral:    pendientes.reduce((s,i)=>s+(i.valor||0),0),
+        totalPagado:     0,
+        totalDocs:       pendientes.length,
+        totalDocsPagados: 0
+      };
+      Storage.upsertSolicitud(nextSol);
+      _sol    = { ...nextSol };
+      _locked = false;
+      msg += ` · ${pendientes.length} ítem(s) movido(s) a Solicitud #${nextNum}`;
+    } else {
+      _sol    = null;
+      _locked = false;
+    }
+
+    Historial.render();
+    UI.toast(msg, 'ok');
+    setTimeout(() => App.switchView('historial'), 1500);
+  }
+
+  // ------ Construye el HTML del documento (vista previa / impresión) ------
   function _buildDocHTML(){
-    const { bank, montoDisponible, montoAPagar, disponibilidadActualizada } = _calcTotals();
+    if(!_sol){
+      return `<div class="t-empty" style="padding:60px 20px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+        <div>Selecciona facturas en el Reporte de CXP para generar la solicitud.</div>
+      </div>`;
+    }
+
+    const { bank, montoDisponible, montoAPagar, disponibilidadActualizada } = _calcTotals(_sol.bank);
     const cuenta = bank.cuentaLabel || 'Balance en banco';
 
     const bbRow = (label, val, extra='') =>
@@ -125,14 +310,14 @@ const SolicitudPago = (() => {
          <span class="v">${Utils.escapeHtml(text)}</span>
        </div>`;
 
-    const tableRows = _items.length === 0
+    const tableRows = _sol.items.length === 0
       ? `<tr><td colspan="4"><div class="t-empty">No hay documentos en esta solicitud.</div></td></tr>`
-      : _items.map(i => {
-          const detalle = Utils.escapeHtml(i.detalle||'—') + (i.observaciones ? ` <i>(${Utils.escapeHtml(i.observaciones)})</i>` : '');
+      : _sol.items.map(i => {
+          const det = Utils.escapeHtml(i.detalle||'—') + (i.observaciones ? ` <i>(${Utils.escapeHtml(i.observaciones)})</i>` : '');
           return `<tr>
             <td>${Utils.fmtDate(i.fecha)}</td>
             <td>${Utils.escapeHtml(i.proveedor)}</td>
-            <td>${detalle}</td>
+            <td>${det}</td>
             <td class="r">${Utils.fmtNum(i.valor)}</td>
           </tr>`;
         }).join('');
@@ -142,7 +327,7 @@ const SolicitudPago = (() => {
         <div class="doc-top">
           <img src="assets/img/logo.png" class="doc-logo2" alt="Logo" onerror="this.style.display='none'">
           <div class="doc-bankblock">
-            ${bbRowText('Actualizado', _fmtDateShort(_createdAt || Utils.todayISO()), ' header')}
+            ${bbRowText('Actualizado', _fmtDateShort(_sol.fecha || Utils.todayISO()), ' header')}
             ${bbRow(cuenta, bank.balanceBanco)}
             ${bbRow('Menos: Cheques o transferencias en transito', -bank.chequesTransito)}
             ${bbRow('Menos: Provisiones, Reservas y pagos de compensacion de la sem.', -bank.provisiones)}
@@ -154,7 +339,7 @@ const SolicitudPago = (() => {
           </div>
         </div>
 
-        <div class="doc-title-bar">Solicitud De Pagos</div>
+        <div class="doc-title-bar">Solicitud De Pagos #${_sol.numero}</div>
         <table class="doc-table2">
           <thead>
             <tr><th>FECHA</th><th>SUPLIDOR</th><th>DETALLE</th><th class="r">VALOR</th></tr>
@@ -164,9 +349,9 @@ const SolicitudPago = (() => {
       </div>`;
   }
 
-  // ------ Editable items table (pantalla, no impresión) ------
+  // ------ Tabla editable de items (pantalla, no impresión) ------
   function _buildItemsTable(){
-    if(_items.length === 0){
+    if(!_sol || _sol.items.length === 0){
       return `<div class="t-empty" style="padding:40px 20px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
         <div>Selecciona facturas en el Reporte de CXP y presiona "Generar Solicitud de Pago".</div>
@@ -175,10 +360,11 @@ const SolicitudPago = (() => {
     return `<div class="table-wrap"><table class="t">
       <thead><tr><th>Fecha</th><th>Suplidor</th><th>Detalle</th><th class="c">Moneda</th><th class="r">Valor</th><th>Observaciones</th><th class="c">Acción</th></tr></thead>
       <tbody>
-        ${_items.map((i,idx) => `<tr>
+        ${_sol.items.map((i,idx) => `<tr>
           <td>${Utils.fmtDate(i.fecha)}</td>
           <td>${Utils.escapeHtml(i.proveedor)}</td>
-          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${Utils.escapeHtml(i.detalle)}">${Utils.escapeHtml(i.detalle||'—')}</td>
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="${Utils.escapeHtml(i.detalle)}">${Utils.escapeHtml(i.detalle||'—')}</td>
           <td class="c">${Utils.escapeHtml(i.moneda)}</td>
           <td class="r num">${Utils.fmtNum(i.valor)}</td>
           <td>
@@ -187,7 +373,8 @@ const SolicitudPago = (() => {
               oninput="SolicitudPago.setObservacion(${idx}, this.value)">
           </td>
           <td class="c">
-            <button class="btn btn-ghost btn-icon btn-sm" ${_locked?'disabled':''} title="Quitar de la solicitud" onclick="SolicitudPago.eliminarItem(${idx})">
+            <button class="btn btn-ghost btn-icon btn-sm" ${_locked?'disabled':''} title="Quitar de la solicitud"
+              onclick="SolicitudPago.eliminarItem(${idx})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </td>
@@ -196,56 +383,73 @@ const SolicitudPago = (() => {
     </table></div>`;
   }
 
-  // ------ Public: render view ------
+  // ------ Render principal ------
   function render(){
-    const saved = Storage.getBank();
-    const set = (id,v) => { const el = document.getElementById(id); if(el) el.value = v; };
-    set('spCuentaLabel', saved.cuentaLabel);
-    set('spBalanceBanco', saved.balanceBanco);
-    set('spChequesTransito', saved.chequesTransito);
-    set('spProvisiones', saved.provisiones);
-    set('spDepositos', saved.depositos);
+    // Inputs del banco
+    const bankData = _sol ? _sol.bank : Storage.getBank();
+    const set = (id,v) => { const el = document.getElementById(id); if(el) el.value = v ?? ''; };
+    set('spCuentaLabel',     bankData.cuentaLabel);
+    set('spBalanceBanco',    bankData.balanceBanco);
+    set('spChequesTransito', bankData.chequesTransito);
+    set('spProvisiones',     bankData.provisiones);
+    set('spDepositos',       bankData.depositos);
     document.querySelectorAll('#spBankFields input').forEach(el => { el.disabled = _locked; });
 
+    // Tabla de items
     const itemsWrap = document.getElementById('spItemsTable');
     if(itemsWrap) itemsWrap.innerHTML = _buildItemsTable();
 
+    // Vista previa del documento
     const doc = document.getElementById('spDocument');
     if(doc) doc.innerHTML = _buildDocHTML();
 
+    // Badge de estado
     const badge = document.getElementById('spEstadoBadge');
     if(badge){
-      badge.textContent = _locked ? 'Guardada' : 'Borrador';
-      badge.className = 'pill ' + (_locked ? 'ok' : 'warn');
+      if(!_sol){
+        badge.textContent = 'Sin solicitud activa';
+        badge.className   = 'pill gray';
+      } else {
+        const e = _sol.estado || 'Pendiente';
+        badge.textContent = `#${_sol.numero} · ${e}`;
+        badge.className   = 'pill ' + (e==='Pendiente' ? 'warn' : e==='Pagada' ? 'ok' : 'blue');
+      }
     }
-    const btnGuardar = document.getElementById('btnGuardarSolicitud');
-    if(btnGuardar) btnGuardar.style.display = _locked ? 'none' : '';
-    const btnEditar = document.getElementById('btnEditarSolicitud');
-    if(btnEditar) btnEditar.style.display = _locked ? '' : 'none';
+
+    // Visibilidad de botones
+    const hasSol      = !!_sol;
+    const isPendiente = hasSol && _sol.estado === 'Pendiente';
+    const btnGuardar  = document.getElementById('btnGuardarSolicitud');
+    const btnEditar   = document.getElementById('btnEditarSolicitud');
+    const btnPagar    = document.getElementById('btnPagar');
+    if(btnGuardar) btnGuardar.style.display = (!_locked && isPendiente) ? '' : 'none';
+    if(btnEditar)  btnEditar.style.display  = (_locked  && isPendiente) ? '' : 'none';
+    if(btnPagar)   btnPagar.style.display   = isPendiente               ? '' : 'none';
   }
 
   function updatePreview(){
-    _saveBank();
+    if(!_sol) return;
+    _sol.bank = _getBankInputs();
+    Storage.upsertSolicitud(_sol);
     const doc = document.getElementById('spDocument');
     if(doc) doc.innerHTML = _buildDocHTML();
   }
 
-  // ------ Print ------
+  // ------ Imprimir ------
   function printDoc(){
-    updatePreview();
+    if(!_sol){ UI.toast('No hay documento para imprimir', 'err'); return; }
     const content = document.getElementById('spDocument').innerHTML;
     const w = window.open('', '_blank', 'width=900,height=700');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-      <title>Solicitud de Pago</title>
+      <title>Solicitud de Pago #${_sol.numero}</title>
       <style>${_printCSS()}</style></head><body>${content}</body></html>`);
     w.document.close(); w.focus();
     w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
   }
 
-  // ------ PDF export ------
+  // ------ PDF ------
   function exportPDF(){
-    updatePreview();
-    // Captura .doc-page (tamaño real del documento), no el contenedor con scroll horizontal
+    if(!_sol){ UI.toast('No hay documento para exportar', 'err'); return; }
     const el = document.querySelector('#spDocument .doc-page');
     if(!el){ UI.toast('No hay documento para exportar', 'err'); return; }
     UI.toast('Generando PDF…', 'ok');
@@ -258,30 +462,30 @@ const SolicitudPago = (() => {
         const imgH = (canvas.height / canvas.width) * pgW;
         if(imgH <= pgH){ pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH); }
         else { let yOff=0; while(yOff<imgH){ if(yOff>0) pdf.addPage(); pdf.addImage(imgData,'JPEG',0,-yOff,imgW,imgH); yOff+=pgH; } }
-        pdf.save(`Solicitud_Pago_CXP_${Utils.todayISO()}.pdf`);
-        UI.toast('PDF descargado correctamente', 'ok');
+        pdf.save(`Solicitud_${_sol.numero}_CXP_${Utils.todayISO()}.pdf`);
+        UI.toast('PDF descargado', 'ok');
       })
       .catch(() => UI.toast('Error al generar el PDF', 'err'));
   }
 
-  // ------ Excel export ------
+  // ------ Excel ------
   function exportExcel(){
-    if(_items.length === 0){ UI.toast('No hay documentos para exportar', 'err'); return; }
+    if(!_sol || _sol.items.length === 0){ UI.toast('No hay documentos para exportar', 'err'); return; }
     try{
-      const data = _items.map(i => ({
-        'Fecha': Utils.fmtDate(i.fecha),
-        'Suplidor': i.proveedor,
-        'Empresa': i.empresa,
-        'Detalle': i.detalle,
-        'Moneda': i.moneda,
-        'Valor': i.valor,
-        'Observaciones': i.observaciones||''
+      const data = _sol.items.map(i => ({
+        'Fecha':          Utils.fmtDate(i.fecha),
+        'Suplidor':       i.proveedor,
+        'Empresa':        i.empresa,
+        'Detalle':        i.detalle,
+        'Moneda':         i.moneda,
+        'Valor':          i.valor,
+        'Observaciones':  i.observaciones||''
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       ws['!cols'] = [{wch:12},{wch:30},{wch:18},{wch:40},{wch:8},{wch:14},{wch:30}];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Solicitud de Pago');
-      XLSX.writeFile(wb, `Solicitud_Pago_CXP_${Utils.todayISO()}.xlsx`);
+      XLSX.writeFile(wb, `Solicitud_${_sol.numero}_CXP_${Utils.todayISO()}.xlsx`);
       UI.toast('Excel descargado', 'ok');
     }catch(err){
       console.error('exportExcel error:', err);
@@ -316,6 +520,10 @@ const SolicitudPago = (() => {
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   `; }
 
-  return { generar, cargar, render, updatePreview, setObservacion, eliminarItem,
-           habilitarEdicion, guardar, printDoc, exportPDF, exportExcel };
+  return {
+    generar, cargar, loadActive, render, updatePreview,
+    setObservacion, eliminarItem, habilitarEdicion, guardar,
+    pagar, confirmarPago, toggleAllPagar, updatePagarSummary,
+    printDoc, exportPDF, exportExcel
+  };
 })();

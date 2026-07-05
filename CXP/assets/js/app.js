@@ -64,10 +64,10 @@ const UI = (() => {
 const App = (() => {
 
   function renderView(name){
-    if(name === 'reporte') DataModule.render();
+    if(name === 'reporte')       DataModule.render();
     if(name === 'solicitud-pago') SolicitudPago.render();
-    if(name === 'historial') Historial.render();
-    if(name === 'config') loadConfigForm();
+    if(name === 'historial')     Historial.render();
+    if(name === 'config')        loadConfigForm();
   }
 
   function switchView(name){
@@ -145,6 +145,10 @@ const App = (() => {
       btn.addEventListener('click', () => {
         if(btn.dataset.view === 'config'){
           UI.requirePin(() => switchView('config'));
+        } else if(btn.dataset.view === 'solicitud-pago'){
+          // Carga la solicitud Pendiente activa antes de mostrar la vista
+          SolicitudPago.loadActive();
+          switchView('solicitud-pago');
         } else {
           switchView(btn.dataset.view);
         }
@@ -198,6 +202,8 @@ const App = (() => {
     if(btnGuardarSol) btnGuardarSol.addEventListener('click', SolicitudPago.guardar);
     const btnEditarSol = document.getElementById('btnEditarSolicitud');
     if(btnEditarSol) btnEditarSol.addEventListener('click', SolicitudPago.habilitarEdicion);
+    const btnPagar = document.getElementById('btnPagar');
+    if(btnPagar) btnPagar.addEventListener('click', SolicitudPago.pagar);
     const btnImprimirSol = document.getElementById('btnImprimirSolicitud');
     if(btnImprimirSol) btnImprimirSol.addEventListener('click', SolicitudPago.printDoc);
     const btnPdfSol = document.getElementById('btnPdfSolicitud');

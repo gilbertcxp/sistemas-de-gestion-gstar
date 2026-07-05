@@ -8,6 +8,7 @@ const Storage = (() => {
   const K_SETTINGS     = 'cxp_settings';
   const K_BANK         = 'cxp_bank';
   const K_SOLICITUDES  = 'cxp_solicitudes';
+  const K_COUNTER      = 'cxp_sol_counter';   // consecutivo local, no sincronizado
 
   const DEFAULT_SETTINGS = {
     adminPin: '1234',
@@ -56,6 +57,7 @@ const Storage = (() => {
     if(localStorage.getItem(K_SETTINGS) === null) _set(K_SETTINGS, DEFAULT_SETTINGS);
     if(localStorage.getItem(K_BANK) === null) _set(K_BANK, DEFAULT_BANK);
     if(localStorage.getItem(K_SOLICITUDES) === null) _set(K_SOLICITUDES, []);
+    if(localStorage.getItem(K_COUNTER) === null) localStorage.setItem(K_COUNTER, '0');
   }
 
   // ---------- Rows (Detalle de CXP) ----------
@@ -102,6 +104,17 @@ const Storage = (() => {
     saveSolicitudes(getSolicitudes().filter(s => s.id !== id));
   }
 
+  // ---------- Numeración consecutiva (local — no sincronizada) ----------
+  function getNextNumero(){
+    const current = parseInt(localStorage.getItem(K_COUNTER) || '0', 10);
+    const next = current + 1;
+    localStorage.setItem(K_COUNTER, String(next));
+    return next;
+  }
+  function getNumeroActual(){
+    return parseInt(localStorage.getItem(K_COUNTER) || '0', 10);
+  }
+
   // ---------- Selección temporal (NO se sincroniza — es local/personal) ----------
   const K_SELECCION = 'cxp_seleccion';
   function getSeleccion(){ return _get(K_SELECCION, []); }
@@ -117,7 +130,8 @@ const Storage = (() => {
       rows: getRows(),
       settings: getSettings(),
       bank: getBank(),
-      solicitudes: getSolicitudes()
+      solicitudes: getSolicitudes(),
+      solicitudesCounter: getNumeroActual()
     };
   }
   function importBackup(obj){
@@ -126,6 +140,9 @@ const Storage = (() => {
     if(obj.settings) _set(K_SETTINGS, obj.settings);
     if(obj.bank) _set(K_BANK, obj.bank);
     if(Array.isArray(obj.solicitudes)) saveSolicitudes(obj.solicitudes);
+    if(typeof obj.solicitudesCounter === 'number'){
+      localStorage.setItem(K_COUNTER, String(obj.solicitudesCounter));
+    }
   }
   function resetAll(){
     localStorage.removeItem(K_ROWS);
@@ -133,6 +150,7 @@ const Storage = (() => {
     localStorage.removeItem(K_BANK);
     localStorage.removeItem(K_SOLICITUDES);
     localStorage.removeItem(K_SELECCION);
+    localStorage.removeItem(K_COUNTER);
     init();
   }
 
@@ -142,6 +160,7 @@ const Storage = (() => {
     getSettings, saveSettings,
     getBank, saveBank,
     getSolicitudes, saveSolicitudes, upsertSolicitud, deleteSolicitud,
+    getNextNumero, getNumeroActual,
     getSeleccion, saveSeleccion,
     exportBackup, importBackup, resetAll,
     applyRemote, getSharedKeys

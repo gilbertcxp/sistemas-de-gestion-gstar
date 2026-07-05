@@ -239,7 +239,11 @@
         </div>
         <div class="topbar-actions">
           <button class="btn btn-soft" id="btnEditarSolicitud" style="display:none;">Editar</button>
-          <button class="btn btn-primary" id="btnGuardarSolicitud">Guardar solicitud</button>
+          <button class="btn btn-primary" id="btnGuardarSolicitud" style="display:none;">Guardar solicitud</button>
+          <button class="btn btn-primary" id="btnPagar" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border-color:transparent;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>
+            Pagar
+          </button>
           <button class="btn btn-ghost" id="btnImprimirSolicitud">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
             Imprimir
@@ -366,6 +370,33 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
       <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR PAGOS ===================== -->
+<div class="modal-overlay" id="modalPagar">
+  <div class="modal" style="max-width:660px;width:95vw">
+    <div class="modal-head">
+      <div>
+        <h3>Confirmar Pagos — Solicitud <span id="pagarNumero">#</span></h3>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:3px;">Marca los pagos realizados. Los desmarcados pasarán a la siguiente solicitud consecutiva.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalPagar')">✕</button>
+    </div>
+    <div style="overflow-y:auto;max-height:52vh;" id="pagarChecklist"></div>
+    <div class="modal-foot" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:13px;color:var(--ink-soft);">
+        <span id="pagarSelCount">0</span> seleccionado(s) · <b id="pagarTotalMonto">RD$ 0.00</b>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="UI.closeModal('modalPagar')">Cancelar</button>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,#16a34a,#15803d);border-color:transparent;"
+          onclick="SolicitudPago.confirmarPago()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirmar Pagos
+        </button>
+      </div>
     </div>
   </div>
 </div>
