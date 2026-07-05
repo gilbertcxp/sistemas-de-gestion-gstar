@@ -565,7 +565,7 @@ const SolicitudPago = (() => {
     body{font-family:Arial,sans-serif;color:#1f2937}
     .doc-page{max-width:100%}
     .doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px}
-    .doc-logo2{height:90px}
+    .doc-logo2{height:130px}
     .doc-bankblock{min-width:400px}
     .bb-row{display:flex;justify-content:space-between;gap:20px;padding:2px 0;font-size:11.5px}
     .bb-row .l{flex:1;text-align:right;color:#1f2937}
