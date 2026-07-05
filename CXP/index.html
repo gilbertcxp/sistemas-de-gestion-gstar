@@ -126,6 +126,10 @@
         </div>
         <div class="topbar-actions">
           <input type="file" id="cxpFileInput" accept=".xlsx,.xls" style="display:none">
+          <button class="btn btn-soft" onclick="DataModule.abrirModalAgregarCXP()" title="Agregar factura manualmente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar factura
+          </button>
           <button class="btn btn-accent" onclick="document.getElementById('cxpFileInput').click()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
             Importar Excel
@@ -377,6 +381,70 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
       <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: AGREGAR FACTURA AL REPORTE ===================== -->
+<div class="modal-overlay" id="modalAgregarCXP">
+  <div class="modal" style="max-width:520px;width:95vw">
+    <div class="modal-head">
+      <h3>Agregar factura</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAgregarCXP')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field" style="grid-column:1/-1">
+          <label class="f-label">Suplidor <span style="color:var(--brand-red)">*</span></label>
+          <input type="text" class="input" id="cxpMiProveedor" placeholder="Nombre del proveedor"
+            onkeydown="if(event.key==='Enter')document.getElementById('cxpMiFactura').focus()">
+        </div>
+        <div class="field">
+          <label class="f-label">N° Factura</label>
+          <input type="text" class="input" id="cxpMiFactura" placeholder="Ej: F-001"
+            onkeydown="if(event.key==='Enter')document.getElementById('cxpMiDetalle').focus()">
+        </div>
+        <div class="field">
+          <label class="f-label">Moneda</label>
+          <select class="input" id="cxpMiMoneda">
+            <option value="RD$">RD$</option>
+            <option value="US$">US$</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label class="f-label">Concepto / Detalle <span style="color:var(--brand-red)">*</span></label>
+          <input type="text" class="input" id="cxpMiDetalle" placeholder="Descripción de la factura"
+            onkeydown="if(event.key==='Enter')document.getElementById('cxpMiMonto').focus()">
+        </div>
+        <div class="field">
+          <label class="f-label">Monto <span style="color:var(--brand-red)">*</span></label>
+          <input type="number" class="input" id="cxpMiMonto" placeholder="0.00" step="0.01" min="0"
+            onkeydown="if(event.key==='Enter')document.getElementById('cxpMiFecha').focus()">
+        </div>
+        <div class="field">
+          <label class="f-label">Estado</label>
+          <select class="input" id="cxpMiEstado">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Pagar">Pagar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="f-label">Fecha de Factura</label>
+          <input type="date" class="input" id="cxpMiFecha">
+        </div>
+        <div class="field">
+          <label class="f-label">Fecha de Vencimiento</label>
+          <input type="date" class="input" id="cxpMiVencimiento"
+            onkeydown="if(event.key==='Enter')DataModule.submitAgregarCXP()">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalAgregarCXP')">Cancelar</button>
+      <button class="btn btn-primary" onclick="DataModule.submitAgregarCXP()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar
+      </button>
     </div>
   </div>
 </div>

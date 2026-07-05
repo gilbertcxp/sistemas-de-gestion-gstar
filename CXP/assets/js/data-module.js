@@ -257,9 +257,62 @@ const DataModule = (() => {
     if(empresaField) empresaField.style.display = _distinctEmpresas().length > 1 ? '' : 'none';
   }
 
+  // ------ Agregar factura manual al Reporte ------
+  function abrirModalAgregarCXP(){
+    const hoy = Utils.todayISO();
+    document.getElementById('cxpMiProveedor').value  = '';
+    document.getElementById('cxpMiFactura').value    = '';
+    document.getElementById('cxpMiDetalle').value    = '';
+    document.getElementById('cxpMiMonto').value      = '';
+    document.getElementById('cxpMiMoneda').value     = 'RD$';
+    document.getElementById('cxpMiEstado').value     = 'Pendiente';
+    document.getElementById('cxpMiFecha').value      = hoy;
+    document.getElementById('cxpMiVencimiento').value = hoy;
+    UI.openModal('modalAgregarCXP');
+    setTimeout(() => document.getElementById('cxpMiProveedor')?.focus(), 120);
+  }
+
+  function submitAgregarCXP(){
+    const proveedor    = (document.getElementById('cxpMiProveedor')?.value   || '').trim();
+    const numeroFactura = (document.getElementById('cxpMiFactura')?.value    || '').trim();
+    const detalle      = (document.getElementById('cxpMiDetalle')?.value     || '').trim();
+    const monto        = parseFloat(document.getElementById('cxpMiMonto')?.value) || 0;
+    const moneda       = document.getElementById('cxpMiMoneda')?.value       || 'RD$';
+    const estado       = document.getElementById('cxpMiEstado')?.value       || 'Pendiente';
+    const fecha        = document.getElementById('cxpMiFecha')?.value        || Utils.todayISO();
+    const fechaVenc    = document.getElementById('cxpMiVencimiento')?.value  || fecha;
+
+    if(!proveedor){ UI.toast('El suplidor es requerido', 'err'); document.getElementById('cxpMiProveedor')?.focus(); return; }
+    if(!detalle)  { UI.toast('El concepto es requerido', 'err'); document.getElementById('cxpMiDetalle')?.focus();   return; }
+    if(monto <= 0){ UI.toast('El monto debe ser mayor a 0', 'err'); document.getElementById('cxpMiMonto')?.focus(); return; }
+
+    const fila = {
+      id:               Utils.uid('cxp'),
+      empresa:          Storage.getSettings().empresa?.nombre || 'Gstar Services',
+      proveedor,
+      numeroFactura,
+      fecha,
+      fechaVencimiento: fechaVenc,
+      detalle,
+      moneda,
+      montoTotal:       monto,
+      montoPagado:      0,
+      saldoPendiente:   monto,
+      estado
+    };
+
+    const list = Storage.getRows();
+    list.unshift(fila);
+    Storage.saveRows(list);
+    load();
+    UI.closeModal('modalAgregarCXP');
+    render();
+    UI.toast(`Factura de ${proveedor} agregada`, 'ok');
+  }
+
   return {
     render, load, importFile, setFilter, setSort, goPage,
     toggleSelect, selectAllVisible, clearSelection, getSelectedRows, getSelectedCount,
-    updateEstado, deleteRow
+    updateEstado, deleteRow, abrirModalAgregarCXP, submitAgregarCXP
   };
 })();
