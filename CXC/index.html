@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Antigüedad de Saldo CXC — Gstar Services</title>
+<title>CXC — Gstar Services</title>
 <link rel="icon" href="../CXP/assets/img/sello.png">
 <script src="../auth/auth.js"></script>
 <script>if (window.Auth) Auth.requireAuth();</script>
@@ -18,49 +18,96 @@
   --shadow-lg:0 8px 24px rgba(0,0,0,.12);--r:12px;--r-lg:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column}
 
 /* ---- Topbar ---- */
 .topbar{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;
-  padding:15px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.topbar-left h1{font-size:17px;font-weight:800;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:9px}
-.topbar-left p{font-size:11.5px;color:#9DB0DA;margin-top:2px}
+  padding:13px 24px;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;flex-shrink:0}
+.topbar-left h1{font-size:16px;font-weight:800;font-family:'Sora',sans-serif;
+  display:flex;align-items:center;gap:9px}
+.topbar-left p{font-size:11px;color:#9DB0DA;margin-top:2px}
 .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* ---- Buttons ---- */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:none;border-radius:8px;
-  cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;transition:all .18s;white-space:nowrap}
-.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
-.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:none;
+  border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;
+  font-family:'Inter',sans-serif;transition:all .18s;white-space:nowrap}
 .btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2)}
 .btn-ghost:hover{background:rgba(255,255,255,.22)}
 .btn-outline{background:#fff;color:var(--ink);border:1px solid var(--line)}
 .btn-outline:hover{background:var(--line-2)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* ---- Upload zone ---- */
-.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-  padding:60px 40px;margin:24px;background:var(--bg-card);border:2px dashed var(--line);
-  border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+/* ---- App body ---- */
+.app-body{display:flex;flex:1;overflow:hidden}
+
+/* ---- Sidebar ---- */
+.sidebar{width:230px;background:linear-gradient(180deg,#192844 0%,#1e3461 100%);
+  flex-shrink:0;overflow-y:auto;padding:10px 0}
+
+.nav-mod-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;
+  color:#3a567a;padding:14px 18px 5px;user-select:none}
+
+.nav-group{margin-bottom:1px}
+.nav-group-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700;
+  font-family:'Sora',sans-serif;gap:8px;user-select:none;color:#c0d0e4;
+  transition:background .15s}
+.nav-group-hdr:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-group-hdr .ng-ico{font-size:15px;flex-shrink:0}
+.nav-group-hdr .ng-lbl{flex:1}
+.nav-group-hdr .chev{font-size:11px;transition:transform .22s;flex-shrink:0}
+.nav-group.open .chev{transform:rotate(180deg)}
+.nav-group.active-mod > .nav-group-hdr{color:#fff}
+
+.nav-sub{display:none;padding-bottom:4px}
+.nav-group.open .nav-sub{display:block}
+
+.nav-sub-item{display:flex;align-items:center;padding:8px 16px 8px 42px;
+  font-size:12.5px;cursor:pointer;color:#7a95b8;transition:all .15s;position:relative}
+.nav-sub-item::before{content:'●';font-size:5px;position:absolute;left:24px;
+  top:50%;transform:translateY(-50%);color:currentColor}
+.nav-sub-item:hover{background:rgba(255,255,255,.07);color:#c4d4e8}
+.nav-sub-item.active{color:#fff;background:rgba(37,99,235,.2)}
+
+.nav-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 0}
+
+/* ---- Content area ---- */
+.content-area{flex:1;overflow-y:auto}
+
+/* ---- Page sections ---- */
+.pg{display:none}
+.pg.active{display:block;animation:pgIn .18s ease}
+@keyframes pgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ---- Upload ---- */
+.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:60px 40px;margin:24px;background:var(--bg-card);
+  border:2px dashed var(--line);border-radius:var(--r-lg);text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s}
 .upload-zone:hover,.upload-zone.dragging{border-color:var(--blue);background:#eff6ff}
 .upload-ico{font-size:52px;color:var(--ink-3);transition:color .2s}
 .upload-zone:hover .upload-ico,.upload-zone.dragging .upload-ico{color:var(--blue)}
 .upload-title{font-size:19px;font-weight:700}
 .upload-sub{font-size:13px;color:var(--ink-2);max-width:420px;line-height:1.6}
 .upload-badge{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe;
-  border-radius:20px;padding:4px 14px;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+  border-radius:20px;padding:4px 14px;font-size:11.5px;font-weight:600;
+  display:flex;align-items:center;gap:6px}
 .upload-step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
 .upload-step-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;
   font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* ---- Content ---- */
-.content{padding:0 24px 32px}
+/* ---- Inner padding ---- */
+.inner{padding:0 24px 32px}
 
 /* ---- Stats bar ---- */
 .stats-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding-top:20px}
 .stat-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
   padding:14px 18px;display:flex;align-items:center;gap:12px;
-  box-shadow:var(--shadow);flex:1;min-width:170px}
+  box-shadow:var(--shadow);flex:1;min-width:160px}
 .stat-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
   justify-content:center;font-size:18px;flex-shrink:0}
 .stat-ico.blue{background:#eff6ff;color:var(--blue)}
@@ -76,116 +123,91 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-he
   background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
   padding:13px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .search-wrap{position:relative;flex:1;min-width:200px}
-.search-wrap .bi{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
-.search-input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--line);border-radius:8px;
-  font-size:13px;background:var(--bg);font-family:'Inter',sans-serif;color:var(--ink)}
+.search-wrap .bi{position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--ink-3);font-size:14px}
+.search-input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--line);
+  border-radius:8px;font-size:13px;background:var(--bg);
+  font-family:'Inter',sans-serif;color:var(--ink)}
 .search-input:focus{outline:none;border-color:var(--blue);background:#fff}
 .sel{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;
   background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;cursor:pointer}
 .sel:focus{outline:none;border-color:var(--blue)}
 .toolbar-sep{width:1px;height:26px;background:var(--line)}
 
-/* ---- Table container ---- */
-.table-wrap{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);
-  box-shadow:var(--shadow);overflow:hidden}
+/* ---- Table ---- */
+.table-wrap{background:var(--bg-card);border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
 .table-scroll{overflow-x:auto}
-
-/* ---- Aging table ---- */
 table.aging{width:100%;border-collapse:collapse;font-size:12.5px}
-
-/* Header rows */
-table.aging thead tr:first-child th{
-  background:#1f3864;color:#fff;font-size:10.5px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.5px;padding:10px 10px 5px;
+table.aging thead tr:first-child th{background:#1f3864;color:#fff;font-size:10.5px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 10px 5px;
   border-right:1px solid rgba(255,255,255,.1);text-align:right;white-space:nowrap}
 table.aging thead tr:first-child th:first-child{text-align:left;min-width:230px}
-table.aging thead tr:nth-child(2) th{
-  background:#274a8a;color:#bfdbfe;font-size:10px;font-weight:600;
-  padding:4px 10px 8px;border-right:1px solid rgba(255,255,255,.1);text-align:right}
+table.aging thead tr:nth-child(2) th{background:#274a8a;color:#bfdbfe;font-size:10px;
+  font-weight:600;padding:4px 10px 8px;border-right:1px solid rgba(255,255,255,.1);text-align:right}
 table.aging thead tr:nth-child(2) th:first-child{color:transparent}
-
-/* Body */
 table.aging tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s}
 table.aging tbody tr:hover{background:#f8fafc}
 table.aging tbody tr:nth-child(even){background:#fafbfc}
 table.aging tbody tr:nth-child(even):hover{background:#f3f6fa}
 table.aging tbody td{padding:8px 10px;border-right:1px solid var(--line-2);vertical-align:middle}
 table.aging tbody td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
-table.aging tbody td.m{
-  text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;
+table.aging tbody td.m{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;
   font-weight:400;color:var(--ink-3);white-space:nowrap;min-width:110px}
 table.aging tbody td.m.v{color:var(--ink);font-weight:600}
 table.aging tbody td.m.neg{color:var(--red);font-weight:600}
-table.aging tbody td.tot{
-  text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+table.aging tbody td.tot{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
   font-weight:700;background:#f1f5f9;white-space:nowrap;min-width:120px;
   border-left:2px solid var(--line)}
 table.aging tbody td.tot.neg{color:var(--red)}
-
-/* Footer */
-table.aging tfoot td{
-  background:#1f3864;color:#fff;font-weight:800;padding:11px 10px;
+table.aging tfoot td{background:#1f3864;color:#fff;font-weight:800;padding:11px 10px;
   text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
   white-space:nowrap;border-right:1px solid rgba(255,255,255,.1)}
-table.aging tfoot td:first-child{
-  text-align:left;font-family:'Sora',sans-serif;font-size:11.5px;
-  letter-spacing:.4px;font-weight:700}
+table.aging tfoot td:first-child{text-align:left;font-family:'Sora',sans-serif;
+  font-size:11.5px;letter-spacing:.4px;font-weight:700}
 table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,255,255,.2)}
-
-/* ---- Empty states ---- */
 .st-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:60px 20px;text-align:center;color:var(--ink-3);gap:12px}
 .st-empty .ico{font-size:44px}
 .st-empty .msg{font-size:14px;font-weight:500}
-
-/* ---- Table footer bar ---- */
 .tbl-footer{display:flex;justify-content:space-between;align-items:center;
-  padding:11px 18px;border-top:1px solid var(--line);
-  font-size:11.5px;color:var(--ink-3);flex-wrap:wrap;gap:8px}
+  padding:11px 18px;border-top:1px solid var(--line);font-size:11.5px;
+  color:var(--ink-3);flex-wrap:wrap;gap:8px}
 
-/* ---- Toast ---- */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:#0f172a;color:#fff;padding:11px 20px;border-radius:9px;
-  font-size:13px;font-weight:500;opacity:0;transition:all .3s;
-  z-index:9999;white-space:nowrap;pointer-events:none;
-  display:flex;align-items:center;gap:9px}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast i{font-size:15px}
-
-/* ---- Estado de Cuenta section ---- */
-.ec-section{margin-top:32px}
-.ec-section-header{display:flex;align-items:center;justify-content:space-between;gap:12px;
-  flex-wrap:wrap;margin-bottom:18px}
-.ec-section-title{font-size:18px;font-weight:800;font-family:'Sora',sans-serif;
+/* ---- Estado de Cuenta page ---- */
+.ec-inner{padding:24px}
+.ec-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;margin-bottom:20px}
+.ec-title{font-size:18px;font-weight:800;font-family:'Sora',sans-serif;
   display:flex;align-items:center;gap:10px;color:var(--navy)}
-.ec-sel-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ec-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ec-doc-frame{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
   box-shadow:var(--shadow-lg);overflow:hidden}
-.ec-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:60px 20px;text-align:center;color:var(--ink-3);gap:12px}
+.ec-placeholder{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:60px 20px;text-align:center;color:var(--ink-3);gap:12px}
 .ec-placeholder .ico{font-size:44px}
 .ec-placeholder .msg{font-size:14px;font-weight:500}
 
-/* Doc page */
-.doc-page{max-width:860px;margin:0 auto;padding:28px 32px;font-family:'Inter',sans-serif;color:#334155}
+/* ---- Doc page styles ---- */
+.doc-page{max-width:860px;margin:0 auto;padding:28px 32px;
+  font-family:'Inter',sans-serif;color:#334155}
 .doc-header{display:flex;justify-content:space-between;align-items:flex-start;
   padding-bottom:18px;border-bottom:2px solid #e2e8f0;margin-bottom:20px}
 .doc-logo{height:52px;object-fit:contain}
 .doc-header-right{text-align:right}
 .doc-empresa{font-size:15px;font-weight:700;color:#0f172a;font-family:'Sora',sans-serif}
 .doc-sub{font-size:11px;color:#64748b;margin-top:1px}
-.doc-fecha{font-size:11px;color:#64748b;margin-top:3px;font-style:italic}
-.doc-client-row{display:flex;align-items:center;gap:14px;
-  background:#f8fafc;border:1px solid var(--line);border-radius:10px;
-  padding:14px 18px;margin-bottom:18px}
-.doc-client-ico{width:44px;height:44px;border-radius:50%;
-  background:#eff6ff;color:var(--blue);display:flex;align-items:center;
-  justify-content:center;font-size:20px;flex-shrink:0}
+.doc-fecha-doc{font-size:11px;color:#64748b;margin-top:3px;font-style:italic}
+.doc-client-row{display:flex;align-items:center;gap:14px;background:#f8fafc;
+  border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:18px}
+.doc-client-ico{width:44px;height:44px;border-radius:50%;background:#eff6ff;
+  color:var(--blue);display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0}
 .doc-client-name{font-size:16px;font-weight:800;color:var(--ink);font-family:'Sora',sans-serif}
 .doc-client-sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
-.doc-ec-title{background:var(--navy);color:#fff;text-align:center;
-  padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;
-  letter-spacing:.8px;text-transform:uppercase;margin-bottom:18px;font-family:'Sora',sans-serif}
+.doc-ec-title{background:var(--navy);color:#fff;text-align:center;padding:10px 18px;
+  border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:18px;font-family:'Sora',sans-serif}
 .doc-cards{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
 .doc-card{flex:1;min-width:140px;border-radius:10px;padding:14px 16px;border:1px solid transparent}
 .doc-card.blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
@@ -218,12 +240,23 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 .doc-sub-heading{font-size:11.5px;font-weight:700;text-transform:uppercase;
   letter-spacing:.5px;color:var(--ink-3);margin-bottom:8px}
 
+/* ---- Toast ---- */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#0f172a;color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;
+  font-weight:500;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;
+  pointer-events:none;display:flex;align-items:center;gap:9px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{font-size:15px}
+
 /* ---- Print ---- */
 @media print{
-  .topbar,.toolbar,.stats-bar,.upload-zone,.no-print{display:none!important}
+  .topbar,.toolbar,.stats-bar,.sidebar,.ec-hdr,.no-print{display:none!important}
+  .app-body{display:block}
+  html,body{overflow:auto;height:auto}
+  .content-area{overflow:visible}
   body{background:#fff}
   .table-wrap{box-shadow:none;border:none}
-  .content{padding:0}
+  .inner{padding:0}
   table.aging{font-size:10px}
   table.aging tbody td.m,table.aging tbody td.tot{min-width:70px}
   @page{size:landscape;margin:8mm}
@@ -235,17 +268,16 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 </head>
 <body>
 
-<!-- Hidden file input -->
 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="CXC.loadFile(this)">
 
-<!-- ===== TOPBAR ===== -->
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <h1><i class="bi bi-clock-history"></i> Antigüedad de Saldo — CXC</h1>
-    <p>Cuentas por Cobrar · Gstar Services S.A.</p>
+    <h1><i class="bi bi-clock-history"></i> CXC — Cuentas por Cobrar</h1>
+    <p>Gstar Services S.A.</p>
   </div>
   <div class="topbar-right">
-    <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">
+    <button class="btn btn-ghost" onclick="CXC.navigate('upload')">
       <i class="bi bi-folder2-open"></i> Cargar Archivo
     </button>
     <button class="btn btn-ghost no-print" id="btnExport" onclick="CXC.exportExcel()" disabled>
@@ -257,174 +289,195 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
   </div>
 </div>
 
-<!-- ===== UPLOAD ZONE ===== -->
-<div id="uploadZone" class="upload-zone"
-     onclick="document.getElementById('fileInput').click()"
-     ondragover="event.preventDefault();this.classList.add('dragging')"
-     ondragleave="this.classList.remove('dragging')"
-     ondrop="CXC.handleDrop(event)">
-  <i class="bi bi-file-earmark-arrow-up upload-ico"></i>
-  <div class="upload-title">Cargar Estado de Cuenta</div>
-  <div class="upload-sub">
-    Haz clic aquí o arrastra el archivo <strong>frmRCxC.xlsx</strong> exportado del sistema contable.
-    El sistema generará automáticamente la antigüedad de saldo.
-  </div>
-  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-    <div class="upload-step"><div class="upload-step-num">1</div> Exportar Estado de Cuenta del sistema</div>
-    <div class="upload-step"><div class="upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong></div>
-    <div class="upload-step"><div class="upload-step-num">3</div> El reporte se genera automáticamente</div>
-  </div>
-  <div class="upload-badge"><i class="bi bi-file-earmark-spreadsheet"></i> Solo archivos .xlsx — frmRCxC.xlsx</div>
-</div>
+<!-- APP BODY -->
+<div class="app-body">
 
-<!-- ===== REPORT CONTENT ===== -->
-<div class="content" id="reportContent" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-mod-label">Módulos</div>
 
-  <!-- Print title -->
-  <div class="print-title">Antigüedad de Cuentas por Cobrar — Gstar Services S.A.</div>
-
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-ico blue"><i class="bi bi-people-fill"></i></div>
-      <div><div class="stat-lbl">Clientes</div><div class="stat-val" id="statClientes">—</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-ico green"><i class="bi bi-cash-stack"></i></div>
-      <div><div class="stat-lbl">Total CXC</div><div class="stat-val sm" id="statTotal">—</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-ico red"><i class="bi bi-hourglass-bottom"></i></div>
-      <div><div class="stat-lbl">+1 Año Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-ico amber"><i class="bi bi-calendar-check"></i></div>
-      <div><div class="stat-lbl">Generado</div><div class="stat-val sm" id="statFecha">—</div></div>
-    </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="toolbar no-print">
-    <div class="search-wrap">
-      <i class="bi bi-search"></i>
-      <input type="text" class="search-input" placeholder="Buscar cliente…" id="searchInput" oninput="CXC.filterTable()">
-    </div>
-    <div class="toolbar-sep"></div>
-    <select class="sel" id="filterCliente" onchange="CXC.filterTable()">
-      <option value="">Todos los clientes</option>
-    </select>
-    <select class="sel" id="filterBucket" onchange="CXC.filterTable()">
-      <option value="">Todos los períodos</option>
-      <option value="0">0 – 15 días</option>
-      <option value="1">1 Mes (16-30)</option>
-      <option value="2">1½ Mes (31-45)</option>
-      <option value="3">2 Meses (46-60)</option>
-      <option value="4">4 Meses (61-120)</option>
-      <option value="5">1 Año (121-365)</option>
-      <option value="6">+1 Año (365+)</option>
-    </select>
-    <button class="btn btn-outline" onclick="CXC.clearFilters()" style="padding:8px 12px">
-      <i class="bi bi-x-circle"></i> Limpiar
-    </button>
-    <div class="toolbar-sep"></div>
-    <button class="btn btn-outline" onclick="CXC.reloadFile()" style="padding:8px 12px" title="Cargar otro archivo">
-      <i class="bi bi-arrow-repeat"></i>
-    </button>
-  </div>
-
-  <!-- ===== ESTADO DE CUENTA ===== -->
-  <div class="ec-section no-print" id="ecSection" style="display:none">
-    <div class="ec-section-header">
-      <div class="ec-section-title">
-        <i class="bi bi-file-person"></i> Estado de Cuenta por Cliente
+    <!-- Módulo 1: Antigüedad de Saldo -->
+    <div class="nav-group open active-mod" id="ng1">
+      <div class="nav-group-hdr" onclick="CXC.toggleGroup('ng1')">
+        <i class="bi bi-clock-history ng-ico"></i>
+        <span class="ng-lbl">Antigüedad de Saldo</span>
+        <i class="bi bi-chevron-down chev"></i>
       </div>
-      <div class="ec-sel-wrap">
-        <select class="sel" id="ecClienteSel" onchange="CXC.ecOnClientChange(this.value)" style="min-width:260px">
-          <option value="">— Seleccionar cliente —</option>
-        </select>
-        <button class="btn btn-outline" id="ecBtnPrint" onclick="CXC.ecPrint()" disabled>
-          <i class="bi bi-printer"></i> Imprimir
-        </button>
-        <button class="btn btn-outline" id="ecBtnPDF" onclick="CXC.ecExportPDF()" disabled>
-          <i class="bi bi-file-earmark-pdf"></i> PDF
-        </button>
+      <div class="nav-sub">
+        <div class="nav-sub-item active" id="navUpload" onclick="CXC.navigate('upload')">Subir Archivo</div>
+        <div class="nav-sub-item" id="navReport" onclick="CXC.navigate('report')">Antigüedad de Saldo</div>
       </div>
     </div>
-    <div class="ec-doc-frame">
-      <div id="ecDocument">
-        <div class="ec-placeholder">
-          <i class="bi bi-person-lines-fill ico"></i>
-          <span class="msg">Selecciona un cliente para ver su estado de cuenta</span>
+
+    <div class="nav-divider"></div>
+
+    <!-- Módulo 2: Estado de Cuenta -->
+    <div class="nav-group" id="ng2">
+      <div class="nav-group-hdr" id="navEC" onclick="CXC.navigate('ec')">
+        <i class="bi bi-file-person ng-ico"></i>
+        <span class="ng-lbl">Estado de Cuenta</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- PAGE: Subir Archivo -->
+    <div class="pg active" id="pgUpload">
+      <div class="upload-zone"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('dragging')"
+           ondragleave="this.classList.remove('dragging')"
+           ondrop="CXC.handleDrop(event)">
+        <i class="bi bi-file-earmark-arrow-up upload-ico"></i>
+        <div class="upload-title">Cargar Estado de Cuenta</div>
+        <div class="upload-sub">
+          Haz clic aquí o arrastra el archivo <strong>frmRCxC.xlsx</strong> exportado
+          del sistema contable. El sistema generará automáticamente la antigüedad de saldo.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div class="upload-step"><div class="upload-step-num">1</div> Exportar Estado de Cuenta del sistema</div>
+          <div class="upload-step"><div class="upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong></div>
+          <div class="upload-step"><div class="upload-step-num">3</div> El reporte se genera automáticamente</div>
+        </div>
+        <div class="upload-badge"><i class="bi bi-file-earmark-spreadsheet"></i> Solo archivos .xlsx — frmRCxC.xlsx</div>
+      </div>
+    </div>
+
+    <!-- PAGE: Antigüedad de Saldo -->
+    <div class="pg" id="pgReport">
+      <div class="inner">
+        <div class="print-title">Antigüedad de Cuentas por Cobrar — Gstar Services S.A.</div>
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-ico blue"><i class="bi bi-people-fill"></i></div>
+            <div><div class="stat-lbl">Clientes</div><div class="stat-val" id="statClientes">—</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico green"><i class="bi bi-cash-stack"></i></div>
+            <div><div class="stat-lbl">Total CXC</div><div class="stat-val sm" id="statTotal">—</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico red"><i class="bi bi-hourglass-bottom"></i></div>
+            <div><div class="stat-lbl">+1 Año Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico amber"><i class="bi bi-calendar-check"></i></div>
+            <div><div class="stat-lbl">Generado</div><div class="stat-val sm" id="statFecha">—</div></div>
+          </div>
+        </div>
+        <div class="toolbar no-print">
+          <div class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" class="search-input" placeholder="Buscar cliente…"
+                   id="searchInput" oninput="CXC.filterTable()">
+          </div>
+          <div class="toolbar-sep"></div>
+          <select class="sel" id="filterCliente" onchange="CXC.filterTable()">
+            <option value="">Todos los clientes</option>
+          </select>
+          <select class="sel" id="filterBucket" onchange="CXC.filterTable()">
+            <option value="">Todos los períodos</option>
+            <option value="0">0 – 15 días</option>
+            <option value="1">1 Mes (16-30)</option>
+            <option value="2">1½ Mes (31-45)</option>
+            <option value="3">2 Meses (46-60)</option>
+            <option value="4">4 Meses (61-120)</option>
+            <option value="5">1 Año (121-365)</option>
+            <option value="6">+1 Año (365+)</option>
+          </select>
+          <button class="btn btn-outline" onclick="CXC.clearFilters()" style="padding:8px 12px">
+            <i class="bi bi-x-circle"></i> Limpiar
+          </button>
+          <div class="toolbar-sep"></div>
+          <button class="btn btn-outline" onclick="CXC.navigate('upload')" style="padding:8px 12px" title="Cargar otro archivo">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-scroll">
+            <table class="aging" id="agingTable">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
+                  <th>15 DÍAS</th><th>1 MES</th><th>1 MES Y ½</th><th>2 MESES</th>
+                  <th>4 MESES</th><th>1 AÑO</th><th>+1 AÑO</th>
+                  <th style="background:#17306d">TOTALES</th>
+                </tr>
+                <tr>
+                  <th>0 – 15</th><th>16 – 30</th><th>31 – 45</th><th>46 – 60</th>
+                  <th>61 – 120</th><th>121 – 365</th><th>365 +</th>
+                  <th style="background:#1d3d73"></th>
+                </tr>
+              </thead>
+              <tbody id="agingBody">
+                <tr><td colspan="9"><div class="st-empty">
+                  <i class="bi bi-inbox ico"></i>
+                  <span class="msg">Carga un archivo para generar el reporte</span>
+                </div></td></tr>
+              </tbody>
+              <tfoot id="agingFoot" style="display:none">
+                <tr>
+                  <td>TOTAL GENERAL</td>
+                  <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
+                  <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
+                  <td id="ft6">—</td>
+                  <td class="tot-ft" id="ftTotal">—</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="tbl-footer no-print" id="tblFooter" style="display:none">
+            <span id="footInfo">—</span>
+            <span id="footFile" style="font-style:italic;color:var(--ink-3)">—</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Table -->
-  <div class="table-wrap">
-    <div class="table-scroll">
-      <table class="aging" id="agingTable">
-        <thead>
-          <tr>
-            <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
-            <th>15 DÍAS</th>
-            <th>1 MES</th>
-            <th>1 MES Y ½</th>
-            <th>2 MESES</th>
-            <th>4 MESES</th>
-            <th>1 AÑO</th>
-            <th>+1 AÑO</th>
-            <th style="background:#17306d">TOTALES</th>
-          </tr>
-          <tr>
-            <th>0 – 15</th>
-            <th>16 – 30</th>
-            <th>31 – 45</th>
-            <th>46 – 60</th>
-            <th>61 – 120</th>
-            <th>121 – 365</th>
-            <th>365 +</th>
-            <th style="background:#1d3d73"></th>
-          </tr>
-        </thead>
-        <tbody id="agingBody">
-          <tr><td colspan="9"><div class="st-empty"><i class="bi bi-inbox ico"></i><span class="msg">Carga un archivo para generar el reporte</span></div></td></tr>
-        </tbody>
-        <tfoot id="agingFoot" style="display:none">
-          <tr>
-            <td>TOTAL GENERAL</td>
-            <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
-            <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
-            <td id="ft6">—</td>
-            <td class="tot-ft" id="ftTotal">—</td>
-          </tr>
-        </tfoot>
-      </table>
+    <!-- PAGE: Estado de Cuenta -->
+    <div class="pg" id="pgEC">
+      <div class="ec-inner">
+        <div class="ec-hdr">
+          <div class="ec-title"><i class="bi bi-file-person"></i> Estado de Cuenta por Cliente</div>
+          <div class="ec-actions">
+            <select class="sel" id="ecClienteSel" onchange="CXC.ecOnClientChange(this.value)"
+                    style="min-width:260px">
+              <option value="">— Seleccionar cliente —</option>
+            </select>
+            <button class="btn btn-outline no-print" id="ecBtnPrint" onclick="CXC.ecPrint()" disabled>
+              <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <button class="btn btn-outline no-print" id="ecBtnPDF" onclick="CXC.ecExportPDF()" disabled>
+              <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+        <div class="ec-doc-frame">
+          <div id="ecDocument">
+            <div class="ec-placeholder">
+              <i class="bi bi-person-lines-fill ico"></i>
+              <span class="msg">Selecciona un cliente para ver su estado de cuenta</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="tbl-footer no-print" id="tblFooter" style="display:none">
-      <span id="footInfo">—</span>
-      <span id="footFile" style="font-style:italic;color:var(--ink-3)">—</span>
-    </div>
-  </div>
 
-</div>
+  </div><!-- end content-area -->
+</div><!-- end app-body -->
 
-<!-- Toast -->
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i><span id="toastMsg">OK</span></div>
 
-<!-- SheetJS -->
 <script src="assets/vendor/xlsx.full.min.js"></script>
-<!-- html2canvas + jsPDF (for EC PDF export) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-/* ============================================================
-   CXC — Antigüedad de Saldo
-   ============================================================ */
 const CXC = (() => {
 
-  /* ---- Whitelist de clientes (frmBuscarClientes.xlsx) ---- */
+  /* ---- Whitelist ---- */
   const WHITELIST = [
     'Ec Terceros','Ud Los Cibao','Consorcio Candelier Guzman','Ud Lc Higuey',
     'Ud Lc Juan Dolio','Ud Lc Villa Altagracia','Ud Consorcio F','Ud Ocoa Kelvin',
@@ -460,8 +513,7 @@ const CXC = (() => {
     'Juancito Sport','Consorcio Liniero Vc, Srl','Ud Group Dominicana'
   ];
 
-  /* ---- Normalized whitelist cache ---- */
-  const norm = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
+  const norm   = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
   const WL_NORM = WHITELIST.map(w => norm(w));
 
   /* ---- State ---- */
@@ -470,38 +522,89 @@ const CXC = (() => {
   let _filtered = [];
   let _fileName = '';
   let _ecClientName = '';
+  let _currentPage = 'upload';
+
+  /* ---- Navigation ---- */
+  function navigate(page) {
+    if (page === 'report' && !_allRows.length) {
+      toast('Primero carga el archivo frmRCxC.xlsx', true);
+      page = 'upload';
+    }
+    if (page === 'ec' && !_allRows.length) {
+      toast('Primero carga el archivo frmRCxC.xlsx', true);
+      page = 'upload';
+    }
+    _currentPage = page;
+
+    // Show/hide pages
+    ['pgUpload','pgReport','pgEC'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    const pageMap = { upload:'pgUpload', report:'pgReport', ec:'pgEC' };
+    const target = document.getElementById(pageMap[page]);
+    if (target) target.classList.add('active');
+
+    // Sidebar active states
+    ['navUpload','navReport'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    const navEcHdr = document.getElementById('navEC');
+    if (navEcHdr) navEcHdr.classList.remove('active-group');
+    document.getElementById('ng1')?.classList.remove('active-mod');
+    document.getElementById('ng2')?.classList.remove('active-mod');
+
+    if (page === 'upload') {
+      document.getElementById('navUpload')?.classList.add('active');
+      document.getElementById('ng1')?.classList.add('active-mod');
+    } else if (page === 'report') {
+      document.getElementById('navReport')?.classList.add('active');
+      document.getElementById('ng1')?.classList.add('active-mod');
+    } else if (page === 'ec') {
+      if (navEcHdr) navEcHdr.classList.add('active-group');
+      document.getElementById('ng2')?.classList.add('active-mod');
+    }
+
+    // Topbar buttons
+    const btnExport = document.getElementById('btnExport');
+    const btnPrint  = document.getElementById('btnPrint');
+    if (btnExport) btnExport.style.display = page === 'report' ? '' : 'none';
+    if (btnPrint)  btnPrint.style.display  = page === 'report' ? '' : 'none';
+  }
+
+  function toggleGroup(id) {
+    document.getElementById(id)?.classList.toggle('open');
+  }
 
   /* ---- Client matching ---- */
   function matchWhitelist(clientName) {
     const cn = norm(clientName);
     if (!cn || cn.length < 2) return null;
-    // 1. Exact match
     const ei = WL_NORM.indexOf(cn);
     if (ei >= 0) return WHITELIST[ei];
-    // 2. Whitelist entry contains client name (e.g. WL="Felix Goris Martinez (Grupo Ovalle)", client="Felix Goris Martinez")
     for (let i = 0; i < WL_NORM.length; i++) {
       if (WL_NORM[i].includes(cn) && cn.length >= 5) return WHITELIST[i];
     }
-    // 3. Client name contains whitelist entry (e.g. client="Grupo Ud Especial", WL="Grupo Ud")
     for (let i = 0; i < WL_NORM.length; i++) {
       if (cn.includes(WL_NORM[i]) && WL_NORM[i].length >= 5) return WHITELIST[i];
     }
     return null;
   }
 
-  /* ---- Aging bucket (based on Días column) ---- */
+  /* ---- Bucket ---- */
   function getBucket(dias) {
     const d = Number(dias) || 0;
-    if (d <= 15)  return 0; // 0-15
-    if (d <= 30)  return 1; // 16-30
-    if (d <= 45)  return 2; // 31-45
-    if (d <= 60)  return 3; // 46-60
-    if (d <= 120) return 4; // 61-120
-    if (d <= 365) return 5; // 121-365
-    return 6;               // 365+
+    if (d <= 15)  return 0;
+    if (d <= 30)  return 1;
+    if (d <= 45)  return 2;
+    if (d <= 60)  return 3;
+    if (d <= 120) return 4;
+    if (d <= 365) return 5;
+    return 6;
   }
 
-  /* ---- Format helpers ---- */
+  /* ---- Format ---- */
   function fmtM(v) {
     if (v === 0) return '-';
     const abs = Math.abs(v);
@@ -511,30 +614,23 @@ const CXC = (() => {
   function fmtMFull(v) {
     return 'RD$ ' + v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
+  function _esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
-  /* ---- File drop / input ---- */
+  /* ---- File handling ---- */
   function handleDrop(e) {
     e.preventDefault();
-    document.getElementById('uploadZone').classList.remove('dragging');
+    e.currentTarget.classList.remove('dragging');
     const f = e.dataTransfer.files[0];
     if (f) _processFile(f);
   }
-
   function loadFile(input) {
     const f = input.files[0];
     if (f) _processFile(f);
     input.value = '';
   }
 
-  function reloadFile() {
-    document.getElementById('reportContent').style.display = 'none';
-    document.getElementById('uploadZone').style.display = 'flex';
-    document.getElementById('btnExport').disabled = true;
-    document.getElementById('btnPrint').disabled = true;
-    _allRows = []; _filtered = [];
-  }
-
-  /* ---- Parse & process ---- */
   function _processFile(file) {
     if (!file.name.match(/\.xlsx?$/i)) { toast('Solo se aceptan archivos .xlsx', true); return; }
     _fileName = file.name;
@@ -555,77 +651,59 @@ const CXC = (() => {
   }
 
   function _parse(data) {
-    /* frmRCxC.xlsx layout (0-indexed columns):
-       0=Doc  1=IdDoc  2=Cliente  3=Fecha  4=Vence  5=Vendedor
-       6=Días  7=Nota  8=DeudaOriginal  9=TotalPagado  10=DeudaPendiente  11=Balance
-       Row 0 = headers, Row 1 = "Moneda: RD$" → skip; data starts at row 2 */
-
-    const map = {};   // wlName → buckets[7]
+    const map = {};
     _rawByClient = {};
-    let skippedNotInList = 0;
-    let skippedZero = 0;
-    let totalInvoices = 0;
+    let skippedNotInList = 0, totalInvoices = 0;
 
     for (let i = 2; i < data.length; i++) {
       const row = data[i];
       if (!row || row.length < 11) continue;
-
-      const clientRaw  = String(row[2] || '').trim();
-      const diasRaw    = row[6];
-      const pendiente  = parseFloat(String(row[10]).replace(/,/g,'')) || 0;
-
+      const clientRaw = String(row[2] || '').trim();
+      const diasRaw   = row[6];
+      const pendiente = parseFloat(String(row[10]).replace(/,/g,'')) || 0;
       if (!clientRaw) continue;
-      if (pendiente === 0) { skippedZero++; continue; }
-
+      if (pendiente === 0) continue;
       totalInvoices++;
       const wl = matchWhitelist(clientRaw);
       if (!wl) { skippedNotInList++; continue; }
-
       if (!map[wl]) map[wl] = [0,0,0,0,0,0,0];
       map[wl][getBucket(diasRaw)] += pendiente;
-
       if (!_rawByClient[wl]) _rawByClient[wl] = [];
       _rawByClient[wl].push(row);
     }
 
-    // Build sorted array
     _allRows = Object.entries(map)
-      .map(([name, buckets]) => ({
-        name,
-        buckets,
-        total: buckets.reduce((s,v) => s+v, 0)
-      }))
+      .map(([name, buckets]) => ({ name, buckets, total: buckets.reduce((s,v)=>s+v,0) }))
       .sort((a,b) => a.name.localeCompare(b.name,'es'));
-
     _filtered = [..._allRows];
 
-    // Show report
-    document.getElementById('uploadZone').style.display  = 'none';
-    document.getElementById('reportContent').style.display = 'block';
     document.getElementById('btnExport').disabled = false;
     document.getElementById('btnPrint').disabled  = false;
-
     _updateStats();
     _populateClientFilter();
     _populateEcCliente();
     _render();
     document.getElementById('footFile').textContent = _fileName;
 
-    const processed = _allRows.length;
-    toast(`Reporte generado — ${processed} cliente${processed!==1?'s':''} · ${totalInvoices} facturas procesadas`);
-    if (skippedNotInList > 0) {
-      console.info(`[CXC] ${skippedNotInList} facturas no coincidieron con la lista de clientes`);
-    }
+    const n = _allRows.length;
+    toast(`Reporte generado — ${n} cliente${n!==1?'s':''} · ${totalInvoices} facturas`);
+    if (skippedNotInList > 0)
+      console.info(`[CXC] ${skippedNotInList} facturas sin coincidencia en lista`);
+
+    navigate('report');
   }
 
   /* ---- Render table ---- */
   function _render() {
-    const tbody = document.getElementById('agingBody');
-    const tfoot = document.getElementById('agingFoot');
+    const tbody  = document.getElementById('agingBody');
+    const tfoot  = document.getElementById('agingFoot');
     const footer = document.getElementById('tblFooter');
 
     if (_filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="st-empty"><i class="bi bi-search ico"></i><span class="msg">Sin resultados para los filtros aplicados</span></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9"><div class="st-empty">
+        <i class="bi bi-search ico"></i>
+        <span class="msg">Sin resultados para los filtros aplicados</span>
+      </div></td></tr>`;
       tfoot.style.display = 'none';
       footer.style.display = 'none';
       return;
@@ -633,7 +711,6 @@ const CXC = (() => {
 
     const totals = [0,0,0,0,0,0,0];
     let grandTotal = 0;
-
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
         totals[i] += v;
@@ -642,13 +719,10 @@ const CXC = (() => {
       }).join('');
       grandTotal += row.total;
       const tCls = 'tot' + (row.total<0?' neg':'');
-      return `<tr><td title="${row.name}">${row.name}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
     }).join('');
 
-    totals.forEach((v,i) => {
-      const el = document.getElementById('ft'+i);
-      if (el) el.textContent = fmtM(v);
-    });
+    totals.forEach((v,i) => { const el=document.getElementById('ft'+i); if(el) el.textContent=fmtM(v); });
     document.getElementById('ftTotal').textContent = fmtM(grandTotal);
     tfoot.style.display = '';
     footer.style.display = '';
@@ -659,57 +733,95 @@ const CXC = (() => {
   function _updateStats() {
     const total   = _allRows.reduce((s,r)=>s+r.total, 0);
     const vencido = _allRows.reduce((s,r)=>s+r.buckets[6], 0);
-    document.getElementById('statClientes').textContent  = _allRows.length;
-    document.getElementById('statTotal').textContent     = fmtMFull(total);
-    document.getElementById('statVencido').textContent   = fmtMFull(vencido);
-    document.getElementById('statFecha').textContent     =
+    document.getElementById('statClientes').textContent = _allRows.length;
+    document.getElementById('statTotal').textContent    = fmtMFull(total);
+    document.getElementById('statVencido').textContent  = fmtMFull(vencido);
+    document.getElementById('statFecha').textContent    =
       new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'});
   }
 
   function _populateClientFilter() {
     const sel = document.getElementById('filterCliente');
     sel.innerHTML = '<option value="">Todos los clientes</option>' +
-      _allRows.map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+      _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
+  }
+
+  /* ---- Filters ---- */
+  function filterTable() {
+    const q  = norm(document.getElementById('searchInput').value);
+    const cl = document.getElementById('filterCliente').value;
+    const bk = document.getElementById('filterBucket').value;
+    _filtered = _allRows.filter(r => {
+      if (q  && !norm(r.name).includes(q)) return false;
+      if (cl && r.name !== cl)             return false;
+      if (bk !== '' && r.buckets[+bk]===0) return false;
+      return true;
+    });
+    _render();
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value   = '';
+    document.getElementById('filterCliente').value = '';
+    document.getElementById('filterBucket').value  = '';
+    _filtered = [..._allRows];
+    _render();
+  }
+
+  /* ---- Export Excel ---- */
+  function exportExcel() {
+    if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
+    const BUCKET_LABELS = ['0-15','16-30','31-45','46-60','61-120','121-365','365 +'];
+    const HEADER_LABELS = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','.+ DE UN AÑO','TOTALES'];
+    const aoa = [
+      ['Antigüedad de cuentas por cobrar'], [],
+      HEADER_LABELS, ['', ...BUCKET_LABELS, ''],
+      ..._filtered.map(r => [r.name, ...r.buckets.map(v=>v===0?'-':v), r.total===0?'-':r.total]),
+      [],
+      ['TOTAL GENERAL',
+        ...[0,1,2,3,4,5,6].map(i => { const v=_filtered.reduce((s,r)=>s+r.buckets[i],0); return v===0?'-':v; }),
+        _filtered.reduce((s,r)=>s+r.total,0)]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:38},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Antigüedad CXC');
+    XLSX.writeFile(wb, `Antiguedad_CXC_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Excel descargado correctamente');
   }
 
   /* ---- Estado de Cuenta ---- */
-  const EC_BKT_NAMES  = ['0-15 días','16-30 días','31-45 días','46-60 días','61-120 días','121-365 días','+365 días'];
-  const EC_BKT_LABELS = ['15 DÍAS','1 MES','1 MES Y ½','2 MESES','4 MESES','1 AÑO','+1 AÑO'];
+  const BKT_NAMES  = ['0-15 días','16-30 días','31-45 días','46-60 días','61-120 días','121-365 días','+365 días'];
+  const BKT_LABELS = ['15 DÍAS','1 MES','1 MES Y ½','2 MESES','4 MESES','1 AÑO','+1 AÑO'];
 
   function _populateEcCliente() {
     const sel = document.getElementById('ecClienteSel');
     if (!sel) return;
     sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
       _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
-    document.getElementById('ecSection').style.display = 'block';
-    // reset if previously selected client no longer in list
     _ecClientName = '';
-    const btnP = document.getElementById('ecBtnPrint');
-    const btnD = document.getElementById('ecBtnPDF');
-    if (btnP) btnP.disabled = true;
-    if (btnD) btnD.disabled = true;
+    const bp = document.getElementById('ecBtnPrint');
+    const bd = document.getElementById('ecBtnPDF');
+    if (bp) bp.disabled = true;
+    if (bd) bd.disabled = true;
     document.getElementById('ecDocument').innerHTML =
       `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
   }
 
-  function _esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
   function ecOnClientChange(name) {
     _ecClientName = name;
-    const btnP = document.getElementById('ecBtnPrint');
-    const btnD = document.getElementById('ecBtnPDF');
+    const bp = document.getElementById('ecBtnPrint');
+    const bd = document.getElementById('ecBtnPDF');
     if (!name) {
       document.getElementById('ecDocument').innerHTML =
         `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
-      if (btnP) btnP.disabled = true;
-      if (btnD) btnD.disabled = true;
+      if (bp) bp.disabled = true;
+      if (bd) bd.disabled = true;
       return;
     }
     document.getElementById('ecDocument').innerHTML = _buildEstadoCuenta(name);
-    if (btnP) btnP.disabled = false;
-    if (btnD) btnD.disabled = false;
+    if (bp) bp.disabled = false;
+    if (bd) bd.disabled = false;
   }
 
   function _buildEstadoCuenta(name) {
@@ -717,41 +829,37 @@ const CXC = (() => {
     const invoices = _rawByClient[name] || [];
     if (!rowData) return `<div class="ec-placeholder"><i class="bi bi-exclamation-circle ico"></i><span class="msg">Cliente no encontrado</span></div>`;
 
-    const fecha    = new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
-    const total    = rowData.total;
+    const fecha     = new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+    const total     = rowData.total;
     const corriente = rowData.buckets.slice(0,4).reduce((s,v)=>s+v,0);
-    const vencMedio = rowData.buckets[4] + rowData.buckets[5];
+    const vencMed   = rowData.buckets[4] + rowData.buckets[5];
     const vencPlus  = rowData.buckets[6];
 
     const cards = `<div class="doc-cards">
       <div class="doc-card blue"><div class="doc-card-lbl">Total Pendiente</div><div class="doc-card-val">${fmtMFull(total)}</div></div>
       <div class="doc-card green"><div class="doc-card-lbl">Corriente (0-60 días)</div><div class="doc-card-val">${fmtMFull(corriente)}</div></div>
-      <div class="doc-card amber"><div class="doc-card-lbl">Vencido (61-365 días)</div><div class="doc-card-val">${fmtMFull(vencMedio)}</div></div>
+      <div class="doc-card amber"><div class="doc-card-lbl">Vencido (61-365 días)</div><div class="doc-card-val">${fmtMFull(vencMed)}</div></div>
       <div class="doc-card red"><div class="doc-card-lbl">+1 Año Vencido</div><div class="doc-card-val">${fmtMFull(vencPlus)}</div></div>
     </div>`;
 
     const bucketRows = rowData.buckets.map((v,i) => v===0 ? '' :
-      `<tr>
-        <td><span class="bkt bkt-${i}">${EC_BKT_NAMES[i]}</span></td>
-        <td>${EC_BKT_LABELS[i]}</td>
-        <td class="r">${fmtMFull(v)}</td>
-      </tr>`
+      `<tr><td><span class="bkt bkt-${i}">${BKT_NAMES[i]}</span></td><td>${BKT_LABELS[i]}</td><td class="r">${fmtMFull(v)}</td></tr>`
     ).join('');
 
     const invoiceRows = invoices.map(row => {
       const idDoc = String(row[1]||'').trim();
-      const fec   = row[3]||'';
-      const vence = row[4]||'';
+      const fec   = String(row[3]||'');
+      const venc  = String(row[4]||'');
       const dias  = Number(row[6])||0;
       const nota  = String(row[7]||'').trim();
       const pend  = parseFloat(String(row[10]).replace(/,/g,''))||0;
       const b     = getBucket(dias);
       return `<tr>
         <td>${_esc(idDoc)}</td>
-        <td style="white-space:nowrap">${_esc(String(fec))}</td>
-        <td style="white-space:nowrap">${_esc(String(vence))}</td>
+        <td style="white-space:nowrap">${_esc(fec)}</td>
+        <td style="white-space:nowrap">${_esc(venc)}</td>
         <td style="text-align:right">${dias}</td>
-        <td><span class="bkt bkt-${b}">${EC_BKT_NAMES[b]}</span></td>
+        <td><span class="bkt bkt-${b}">${BKT_NAMES[b]}</span></td>
         <td>${_esc(nota)}</td>
         <td class="r">${fmtMFull(pend)}</td>
       </tr>`;
@@ -763,10 +871,9 @@ const CXC = (() => {
         <div class="doc-header-right">
           <div class="doc-empresa">Gstar Services S.A.</div>
           <div class="doc-sub">RNC 131-75101-6</div>
-          <div class="doc-fecha">${fecha}</div>
+          <div class="doc-fecha-doc">${fecha}</div>
         </div>
       </div>
-
       <div class="doc-client-row">
         <div class="doc-client-ico"><i class="bi bi-building"></i></div>
         <div>
@@ -774,33 +881,27 @@ const CXC = (() => {
           <div class="doc-client-sub">CXC · Cuentas por Cobrar</div>
         </div>
       </div>
-
       <div class="doc-ec-title">Estado de Cuenta</div>
-
       ${cards}
-
       <div class="doc-total-block">
         <div class="doc-total-label">Total Pendiente por Cobrar</div>
         <div class="doc-total-amount">${fmtMFull(total)}</div>
       </div>
-
       <div class="doc-sub-heading">Antigüedad de Saldo</div>
       <table class="doc-tbl" style="margin-bottom:24px">
         <thead><tr><th>Período</th><th>Rango de Días</th><th class="r">Monto</th></tr></thead>
         <tbody>${bucketRows||'<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">Sin movimientos</td></tr>'}</tbody>
         <tfoot><tr><td colspan="2"><b>TOTAL</b></td><td class="r"><b>${fmtMFull(total)}</b></td></tr></tfoot>
       </table>
-
       <div class="doc-sub-heading">Detalle de Facturas (${invoices.length})</div>
       <table class="doc-tbl">
         <thead><tr>
           <th>N° Doc</th><th>Fecha</th><th>Vence</th>
           <th class="r">Días</th><th>Estado</th><th>Descripción</th><th class="r">Pendiente</th>
         </tr></thead>
-        <tbody>${invoiceRows||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">Sin facturas registradas</td></tr>'}</tbody>
+        <tbody>${invoiceRows||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">Sin facturas</td></tr>'}</tbody>
         <tfoot><tr><td colspan="6"><b>TOTAL PENDIENTE</b></td><td class="r"><b>${fmtMFull(total)}</b></td></tr></tfoot>
       </table>
-
       <div class="doc-footer-note">
         Documento generado el ${fecha} · Sistema de Gestión Gstar Services S.A. · Solo para uso interno
       </div>
@@ -821,14 +922,11 @@ const CXC = (() => {
         body{font-family:'Inter',sans-serif;background:#fff;color:#334155}
         .doc-page{max-width:100%;padding:16mm 20mm}
         .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}
-        .doc-logo{height:50px}
-        .doc-header-right{text-align:right}
-        .doc-empresa{font-size:15px;font-weight:700;color:#0f172a}
-        .doc-sub,.doc-fecha{font-size:11px;color:#64748b;margin-top:1px}
+        .doc-logo{height:50px}.doc-header-right{text-align:right}
+        .doc-empresa{font-size:15px;font-weight:700;color:#0f172a}.doc-sub,.doc-fecha-doc{font-size:11px;color:#64748b;margin-top:1px}
         .doc-client-row{display:flex;align-items:center;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin-bottom:18px}
         .doc-client-ico{width:42px;height:42px;border-radius:50%;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:20px}
-        .doc-client-name{font-size:16px;font-weight:700;color:#0f172a}
-        .doc-client-sub{font-size:11px;color:#64748b;margin-top:2px}
+        .doc-client-name{font-size:16px;font-weight:700;color:#0f172a}.doc-client-sub{font-size:11px;color:#64748b;margin-top:2px}
         .doc-ec-title{background:#1B2B4B;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:18px}
         .doc-cards{display:flex;gap:10px;margin-bottom:18px}
         .doc-card{flex:1;border-radius:8px;padding:12px 14px;border:1px solid transparent}
@@ -887,65 +985,6 @@ const CXC = (() => {
       .catch(() => toast('Error al generar el PDF', true));
   }
 
-  /* ---- Filters ---- */
-  function filterTable() {
-    const q  = norm(document.getElementById('searchInput').value);
-    const cl = document.getElementById('filterCliente').value;
-    const bk = document.getElementById('filterBucket').value;
-
-    _filtered = _allRows.filter(r => {
-      if (q  && !norm(r.name).includes(q)) return false;
-      if (cl && r.name !== cl)             return false;
-      if (bk !== '' && r.buckets[+bk]===0) return false;
-      return true;
-    });
-    _render();
-  }
-
-  function clearFilters() {
-    document.getElementById('searchInput').value    = '';
-    document.getElementById('filterCliente').value  = '';
-    document.getElementById('filterBucket').value   = '';
-    _filtered = [..._allRows];
-    _render();
-  }
-
-  /* ---- Export Excel ---- */
-  function exportExcel() {
-    if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
-
-    const BUCKET_LABELS = ['0-15','16-30','31-45','46-60','61-120','121-365','365 +'];
-    const HEADER_LABELS = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','.+ DE UN AÑO','TOTALES'];
-
-    const aoa = [
-      ['Antigüedad de cuentas por cobrar'],
-      [],
-      HEADER_LABELS,
-      ['', ...BUCKET_LABELS, ''],
-      ..._filtered.map(r => [
-        r.name,
-        ...r.buckets.map(v => v===0 ? '-' : v),
-        r.total===0 ? '-' : r.total
-      ]),
-      [],
-      [
-        'TOTAL GENERAL',
-        ...[0,1,2,3,4,5,6].map(i => {
-          const v = _filtered.reduce((s,r)=>s+r.buckets[i],0);
-          return v===0 ? '-' : v;
-        }),
-        _filtered.reduce((s,r)=>s+r.total,0)
-      ]
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:38},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Antigüedad CXC');
-    XLSX.writeFile(wb, `Antiguedad_CXC_${new Date().toISOString().slice(0,10)}.xlsx`);
-    toast('Excel descargado correctamente');
-  }
-
   /* ---- Toast ---- */
   let _tt;
   function toast(msg, isErr) {
@@ -956,11 +995,14 @@ const CXC = (() => {
     ico.style.color = isErr ? '#f87171' : '#4ADE80';
     el.classList.add('show');
     clearTimeout(_tt);
-    _tt = setTimeout(()=>el.classList.remove('show'), 4000);
+    _tt = setTimeout(() => el.classList.remove('show'), 4000);
   }
 
-  return { loadFile, handleDrop, filterTable, clearFilters, exportExcel, reloadFile,
-           ecOnClientChange, ecPrint, ecExportPDF };
+  /* ---- Init ---- */
+  navigate('upload');
+
+  return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
+           navigate, toggleGroup, ecOnClientChange, ecPrint, ecExportPDF };
 })();
 </script>
 </body>
