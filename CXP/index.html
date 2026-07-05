@@ -242,6 +242,10 @@
         </div>
         <div class="topbar-actions">
           <button class="btn btn-soft" id="btnEditarSolicitud" style="display:none;">Editar</button>
+          <button class="btn btn-soft" onclick="SolicitudPago.abrirModalAgregar()" title="Agregar factura manualmente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar documento
+          </button>
           <button class="btn btn-primary" id="btnGuardarSolicitud" style="display:none;">Guardar solicitud</button>
           <button class="btn btn-primary" id="btnPagar" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border-color:transparent;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>
@@ -373,6 +377,58 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
       <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: AGREGAR DOCUMENTO MANUAL ===================== -->
+<div class="modal-overlay" id="modalAgregarItem">
+  <div class="modal" style="max-width:480px;width:95vw">
+    <div class="modal-head">
+      <h3>Agregar documento</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAgregarItem')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div class="field">
+        <label class="f-label">Suplidor <span style="color:var(--brand-red)">*</span></label>
+        <input type="text" class="input" id="miProveedor" placeholder="Nombre del proveedor"
+          onkeydown="if(event.key==='Enter')document.getElementById('miDetalle').focus()">
+      </div>
+      <div class="field">
+        <label class="f-label">Detalle / Concepto <span style="color:var(--brand-red)">*</span></label>
+        <input type="text" class="input" id="miDetalle" placeholder="Descripción del pago"
+          onkeydown="if(event.key==='Enter')document.getElementById('miValor').focus()">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field">
+          <label class="f-label">Valor <span style="color:var(--brand-red)">*</span></label>
+          <input type="number" class="input" id="miValor" placeholder="0.00" step="0.01" min="0"
+            onkeydown="if(event.key==='Enter')SolicitudPago.submitItemManual()">
+        </div>
+        <div class="field">
+          <label class="f-label">Moneda</label>
+          <select class="input" id="miMoneda">
+            <option value="RD$">RD$</option>
+            <option value="US$">US$</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Fecha</label>
+        <input type="date" class="input" id="miFecha">
+      </div>
+      <div class="field">
+        <label class="f-label">Observaciones</label>
+        <input type="text" class="input" id="miObservaciones" placeholder="Opcional"
+          onkeydown="if(event.key==='Enter')SolicitudPago.submitItemManual()">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalAgregarItem')">Cancelar</button>
+      <button class="btn btn-primary" onclick="SolicitudPago.submitItemManual()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar
+      </button>
     </div>
   </div>
 </div>

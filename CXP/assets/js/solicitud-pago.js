@@ -150,6 +150,72 @@ const SolicitudPago = (() => {
     UI.toast(`Solicitud #${_sol.numero} guardada`, 'ok');
   }
 
+  // ------ Agregar documento manual ------
+  function abrirModalAgregar(){
+    document.getElementById('miFecha').value      = Utils.todayISO();
+    document.getElementById('miProveedor').value  = '';
+    document.getElementById('miDetalle').value    = '';
+    document.getElementById('miValor').value      = '';
+    document.getElementById('miMoneda').value     = 'RD$';
+    document.getElementById('miObservaciones').value = '';
+    UI.openModal('modalAgregarItem');
+    setTimeout(() => document.getElementById('miProveedor')?.focus(), 120);
+  }
+
+  function submitItemManual(){
+    const proveedor = (document.getElementById('miProveedor')?.value || '').trim();
+    const detalle   = (document.getElementById('miDetalle')?.value  || '').trim();
+    const fecha     = document.getElementById('miFecha')?.value     || Utils.todayISO();
+    const valor     = parseFloat(document.getElementById('miValor')?.value) || 0;
+    const moneda    = document.getElementById('miMoneda')?.value    || 'RD$';
+    const obs       = (document.getElementById('miObservaciones')?.value || '').trim();
+
+    if(!proveedor){ UI.toast('El suplidor es requerido', 'err'); document.getElementById('miProveedor')?.focus(); return; }
+    if(!detalle)  { UI.toast('El detalle es requerido', 'err');   document.getElementById('miDetalle')?.focus();   return; }
+    if(valor <= 0){ UI.toast('El valor debe ser mayor a 0', 'err'); document.getElementById('miValor')?.focus();   return; }
+
+    const newItem = {
+      rowId:         Utils.uid('mi'),
+      fecha,
+      proveedor,
+      empresa:       Storage.getSettings().empresa?.nombre || 'Gstar Services',
+      moneda,
+      valor,
+      detalle,
+      observaciones: obs
+    };
+
+    const active = _getActive();
+    if(active){
+      _sol = { ...active, items: [...active.items, newItem] };
+      _sol.totalGeneral = _sol.items.reduce((s,i)=>s+(i.valor||0),0);
+      _sol.totalDocs    = _sol.items.length;
+      Storage.upsertSolicitud(_sol);
+      UI.toast(`Documento agregado a Solicitud #${_sol.numero}`, 'ok');
+    } else {
+      const numero = Storage.getNextNumero();
+      _sol = {
+        id:               Utils.uid('sol'),
+        numero,
+        fecha:            Utils.todayISO(),
+        guardadaEn:       new Date().toISOString(),
+        fechaPago:        null,
+        estado:           'Pendiente',
+        bank:             Storage.getBank(),
+        items:            [newItem],
+        totalGeneral:     valor,
+        totalPagado:      0,
+        totalDocs:        1,
+        totalDocsPagados: 0
+      };
+      Storage.upsertSolicitud(_sol);
+      UI.toast(`Solicitud #${numero} creada`, 'ok');
+    }
+    _locked = false;
+    UI.closeModal('modalAgregarItem');
+    render();
+  }
+
   // ------ Pagar: abre modal de checklist ------
   function pagar(){
     if(!_sol || _sol.items.length === 0){ UI.toast('No hay documentos en la solicitud', 'err'); return; }
@@ -523,6 +589,7 @@ const SolicitudPago = (() => {
   return {
     generar, cargar, loadActive, render, updatePreview,
     setObservacion, eliminarItem, habilitarEdicion, guardar,
+    abrirModalAgregar, submitItemManual,
     pagar, confirmarPago, toggleAllPagar, updatePagarSummary,
     printDoc, exportPDF, exportExcel
   };
