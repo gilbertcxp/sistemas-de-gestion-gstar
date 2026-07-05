@@ -248,6 +248,9 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast i{font-size:15px}
 
+/* ---- Sidebar collapsed ---- */
+.sidebar.collapsed{display:none!important}
+
 /* ---- Print ---- */
 @media print{
   .topbar,.toolbar,.stats-bar,.sidebar,.ec-hdr,.no-print{display:none!important}
@@ -273,6 +276,10 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
+    <button class="btn btn-ghost" id="btnSidebarToggle" onclick="CXC.toggleSidebar()"
+            title="Mostrar / ocultar panel" style="padding:8px 10px;margin-right:6px">
+      <i class="bi bi-layout-sidebar" id="sidebarToggleIcon"></i>
+    </button>
     <h1><i class="bi bi-clock-history"></i> CXC — Cuentas por Cobrar</h1>
     <p>Gstar Services S.A.</p>
   </div>
@@ -582,6 +589,14 @@ const CXC = (() => {
 
   function toggleGroup(id) {
     document.getElementById(id)?.classList.toggle('open');
+  }
+
+  function toggleSidebar() {
+    const sb  = document.querySelector('.sidebar');
+    const ico = document.getElementById('sidebarToggleIcon');
+    if (!sb) return;
+    const collapsed = sb.classList.toggle('collapsed');
+    if (ico) ico.className = collapsed ? 'bi bi-layout-sidebar-inset' : 'bi bi-layout-sidebar';
   }
 
   /* ---- Client matching ---- */
@@ -1117,7 +1132,7 @@ const CXC = (() => {
   })();
 
   return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
-           navigate, toggleGroup, ecOnClientChange, ecPrint, ecExportPDF, publicar };
+           navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportPDF, publicar };
 })();
 </script>
 </body>
