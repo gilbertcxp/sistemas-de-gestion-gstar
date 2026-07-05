@@ -453,6 +453,16 @@ const SolicitudPago = (() => {
   function render(){
     // Inputs del banco
     const bankData = _sol ? _sol.bank : Storage.getBank();
+    // Sincronizar balance/transito/transfer desde Disponibilidad Bancaria
+    try{
+      const raw = localStorage.getItem('gstar_disp_banco');
+      if(raw){
+        const d = JSON.parse(raw);
+        if(d.balance  !== undefined) bankData.balanceBanco    = d.balance;
+        if(d.transito !== undefined) bankData.chequesTransito = d.transito;
+        if(d.transfer !== undefined) bankData.depositos       = d.transfer;
+      }
+    }catch(e){}
     const set = (id,v) => { const el = document.getElementById(id); if(el) el.value = v ?? ''; };
     set('spCuentaLabel',     bankData.cuentaLabel);
     set('spBalanceBanco',    bankData.balanceBanco);

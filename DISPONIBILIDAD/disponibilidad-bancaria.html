@@ -463,6 +463,18 @@ const DATA = {
   }
 };
 
+/* ===== SHARED STORAGE — publica datos para CXP Solicitud de Pago ===== */
+(function(){
+  try{
+    const op = DATA.bancos.rows.find(r => r.ref && r.ref.includes('9600882715'));
+    if(op) localStorage.setItem('gstar_disp_banco', JSON.stringify({
+      balance:  op.balance,
+      transito: Math.abs(op.transito),
+      transfer: op.transfer
+    }));
+  }catch(e){}
+})();
+
 /* ===== LÓGICA (no se altera) ===== */
 const bancoUpd = r => r.balance + r.transito + r.transfer + r.pagos;
 const certUpd  = r => r.balance + r.intGan + r.intTasa + r.ret;
