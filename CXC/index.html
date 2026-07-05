@@ -248,6 +248,83 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast i{font-size:15px}
 
+/* ---- Dashboard ---- */
+.dash-inner{padding:0 24px 32px}
+.dash-filters{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 18px;margin:20px 0 16px;box-shadow:var(--shadow);
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dash-filters label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--ink-3)}
+.dash-kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px}
+.kpi-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
+.kpi-val{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--ink);line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--ink-2);margin-top:2px}
+.kpi-card.danger .kpi-val{color:var(--red)}
+.kpi-card.warn .kpi-val{color:var(--gold)}
+.kpi-card.ok .kpi-val{color:var(--green)}
+.dash-charts-row{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px}
+.dash-charts-row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--shadow)}
+.chart-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.chart-card-title{font-size:13px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif;
+  display:flex;align-items:center;gap:8px}
+.chart-card-sub{font-size:11px;color:var(--ink-3);margin-top:1px}
+.chart-canvas-wrap{position:relative;width:100%}
+.heatmap-wrap{overflow:auto}
+table.heatmap{width:100%;border-collapse:collapse;font-size:11px;min-width:460px}
+table.heatmap thead th{background:#1f3864;color:#fff;padding:7px 10px;font-size:9.5px;
+  text-transform:uppercase;letter-spacing:.3px;font-weight:700;white-space:nowrap}
+table.heatmap thead th:first-child{text-align:left;min-width:160px}
+table.heatmap tbody td{padding:6px 10px;border-bottom:1px solid var(--line-2);text-align:center;
+  cursor:pointer;transition:filter .12s}
+table.heatmap tbody td:first-child{text-align:left;font-weight:600;white-space:nowrap;color:var(--ink)}
+table.heatmap tbody td:hover{filter:brightness(.88)}
+.hm-0{background:#dcfce7;color:#15803d}.hm-1{background:#d1fae5;color:#065f46}
+.hm-2{background:#fef9c3;color:#854d0e}.hm-3{background:#ffedd5;color:#9a3412}
+.hm-4{background:#fee2e2;color:#b91c1c}.hm-5{background:#fecaca;color:#991b1b}
+.risk{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;
+  font-size:10.5px;font-weight:700}
+.risk-bajo{background:#dcfce7;color:#15803d}
+.risk-medio{background:#fef9c3;color:#854d0e}
+.risk-alto{background:#ffedd5;color:#9a3412}
+.risk-critico{background:#fee2e2;color:#b91c1c}
+.dd-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:1000;align-items:center;justify-content:center}
+.dd-overlay.open{display:flex}
+.dd-modal{background:#fff;border-radius:var(--r-lg);width:min(900px,95vw);
+  max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.dd-modal-hdr{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;
+  padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.dd-modal-title{font-size:15px;font-weight:800;font-family:'Sora',sans-serif}
+.dd-modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;
+  padding:2px 6px;border-radius:4px;opacity:.8;line-height:1}
+.dd-modal-close:hover{opacity:1;background:rgba(255,255,255,.15)}
+.dd-modal-body{padding:20px;overflow-y:auto;flex:1}
+table.dash-detail{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dash-detail thead th{background:#1f3864;color:#fff;padding:9px 11px;text-align:left;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+table.dash-detail thead th.r{text-align:right}
+table.dash-detail tbody td{padding:8px 11px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.dash-detail tbody td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
+table.dash-detail tbody tr:nth-child(even){background:#f8fafc}
+table.dash-detail tfoot td{background:#f1f5f9;font-weight:700;padding:9px 11px;
+  border-top:2px solid var(--line)}
+table.dash-detail tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
+.dash-tbl-wrap{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+table.dash-clients{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dash-clients thead th{background:#1f3864;color:#fff;padding:10px 12px;text-align:left;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;white-space:nowrap}
+table.dash-clients thead th.r{text-align:right}
+table.dash-clients tbody td{padding:9px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.dash-clients tbody td.r{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px}
+table.dash-clients tbody tr:nth-child(even){background:#fafbfc}
+table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
+
 /* ---- Sidebar collapsed ---- */
 .sidebar.collapsed{display:none!important}
 
@@ -328,6 +405,16 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
       <div class="nav-group-hdr" id="navEC" onclick="CXC.navigate('ec')">
         <i class="bi bi-file-person ng-ico"></i>
         <span class="ng-lbl">Estado de Cuenta</span>
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <!-- Módulo 3: Dashboard -->
+    <div class="nav-group" id="ng3">
+      <div class="nav-group-hdr" onclick="CXC.navigate('dashboard')">
+        <i class="bi bi-speedometer2 ng-ico"></i>
+        <span class="ng-lbl">Dashboard</span>
       </div>
     </div>
   </aside>
@@ -477,14 +564,187 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
       </div>
     </div>
 
+    <!-- PAGE: Dashboard -->
+    <div class="pg" id="pgDashboard">
+      <div class="dash-inner">
+
+        <!-- Filtros -->
+        <div class="dash-filters">
+          <label>Filtros:</label>
+          <select class="sel" id="dashFiltCliente" onchange="CXC.dashApplyFilters()">
+            <option value="">Todos los clientes</option>
+          </select>
+          <select class="sel" id="dashFiltVendedor" onchange="CXC.dashApplyFilters()">
+            <option value="">Todos los vendedores</option>
+          </select>
+          <select class="sel" id="dashFiltRiesgo" onchange="CXC.dashApplyFilters()">
+            <option value="">Todos los riesgos</option>
+            <option value="Bajo">🟢 Bajo</option>
+            <option value="Medio">🟡 Medio</option>
+            <option value="Alto">🟠 Alto</option>
+            <option value="Crítico">🔴 Crítico</option>
+          </select>
+          <select class="sel" id="dashFiltBucket" onchange="CXC.dashApplyFilters()">
+            <option value="">Todos los períodos</option>
+            <option value="0">Al Día (≤0d)</option>
+            <option value="1">1-30 días</option>
+            <option value="2">31-60 días</option>
+            <option value="3">61-90 días</option>
+            <option value="4">91-120 días</option>
+            <option value="5">+120 días</option>
+          </select>
+          <button class="btn btn-outline" onclick="CXC.dashReset()" style="padding:7px 12px">
+            <i class="bi bi-x-circle"></i> Limpiar
+          </button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="CXC.dashExport('excel')" style="padding:7px 12px">
+              <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+            <button class="btn btn-outline" onclick="CXC.dashExport('csv')" style="padding:7px 12px">
+              <i class="bi bi-filetype-csv"></i> CSV
+            </button>
+            <button class="btn btn-outline" onclick="CXC.dashExport('pdf')" style="padding:7px 12px">
+              <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="dash-kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-lbl">Total CxC</div>
+            <div class="kpi-val" id="kpiTotalCxc">—</div>
+          </div>
+          <div class="kpi-card danger">
+            <div class="kpi-lbl">Total Vencido</div>
+            <div class="kpi-val" id="kpiVencido">—</div>
+            <div class="kpi-sub" id="kpiVencidoPct">—</div>
+          </div>
+          <div class="kpi-card ok">
+            <div class="kpi-lbl">Total Al Día</div>
+            <div class="kpi-val" id="kpiAlDia">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Clientes con Saldo</div>
+            <div class="kpi-val" id="kpiClientes">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Facturas Pendientes</div>
+            <div class="kpi-val" id="kpiFacturas">—</div>
+          </div>
+          <div class="kpi-card warn">
+            <div class="kpi-lbl">DSO (días prom.)</div>
+            <div class="kpi-val" id="kpiDSO">—</div>
+          </div>
+          <div class="kpi-card warn">
+            <div class="kpi-lbl">% Cartera Vencida</div>
+            <div class="kpi-val" id="kpiPctVenc">—</div>
+          </div>
+          <div class="kpi-card danger">
+            <div class="kpi-lbl">Clientes Críticos</div>
+            <div class="kpi-val" id="kpiCriticos">—</div>
+          </div>
+        </div>
+
+        <!-- Charts fila 1: stacked bar + donut -->
+        <div class="dash-charts-row">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title"><i class="bi bi-bar-chart-steps"></i> Antigüedad de Saldos — Top 15</div>
+                <div class="chart-card-sub">Clic en barra para ver detalle de facturas</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" style="height:360px">
+              <canvas id="chartAging"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title"><i class="bi bi-pie-chart"></i> Distribución Cartera</div>
+                <div class="chart-card-sub">Por tramo de antigüedad · clic para ver facturas</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" style="height:360px">
+              <canvas id="chartDonut"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts fila 2: top10 + heatmap -->
+        <div class="dash-charts-row2">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title"><i class="bi bi-trophy"></i> Top 10 Clientes por Saldo</div>
+                <div class="chart-card-sub">Color indica nivel de riesgo · clic para ver detalle</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" style="height:290px">
+              <canvas id="chartTop10"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title"><i class="bi bi-grid-3x3-gap"></i> Mapa de Calor</div>
+                <div class="chart-card-sub">Cliente × tramo · clic celda para ver facturas</div>
+              </div>
+            </div>
+            <div class="heatmap-wrap" style="max-height:290px">
+              <div id="dashHeatmap"><div class="st-empty" style="padding:20px"><i class="bi bi-inbox ico"></i><span class="msg">Sin datos</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla detalle clientes -->
+        <div class="dash-tbl-wrap">
+          <table class="dash-clients">
+            <thead><tr>
+              <th>Cliente</th>
+              <th class="r">Total</th>
+              <th class="r">Al Día</th>
+              <th class="r">1-30d</th>
+              <th class="r">31-60d</th>
+              <th class="r">61-90d</th>
+              <th class="r">91-120d</th>
+              <th class="r">+120d</th>
+              <th>Riesgo</th>
+              <th class="r">Facturas</th>
+            </tr></thead>
+            <tbody id="dashClientsBody">
+              <tr><td colspan="10"><div class="st-empty"><i class="bi bi-inbox ico"></i><span class="msg">Sin datos</span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
   </div><!-- end content-area -->
 </div><!-- end app-body -->
+
+<!-- DRILL-DOWN OVERLAY -->
+<div class="dd-overlay" id="ddOverlay" onclick="if(event.target===this)CXC.ddClose()">
+  <div class="dd-modal">
+    <div class="dd-modal-hdr">
+      <div>
+        <div class="dd-modal-title" id="ddTitle">Detalle</div>
+        <div style="font-size:11px;opacity:.7;margin-top:3px" id="ddSubtitle"></div>
+      </div>
+      <button class="dd-modal-close" onclick="CXC.ddClose()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="dd-modal-body" id="ddContent"></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i><span id="toastMsg">OK</span></div>
 
 <script src="assets/vendor/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-client.js"></script>
 
@@ -540,22 +800,18 @@ const CXC = (() => {
 
   /* ---- Navigation ---- */
   function navigate(page) {
-    if (page === 'report' && !_allRows.length) {
-      toast('Primero carga el archivo frmRCxC.xlsx', true);
-      page = 'upload';
-    }
-    if (page === 'ec' && !_allRows.length) {
+    if (['report','ec','dashboard'].includes(page) && !_allRows.length) {
       toast('Primero carga el archivo frmRCxC.xlsx', true);
       page = 'upload';
     }
     _currentPage = page;
 
     // Show/hide pages
-    ['pgUpload','pgReport','pgEC'].forEach(id => {
+    ['pgUpload','pgReport','pgEC','pgDashboard'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove('active');
     });
-    const pageMap = { upload:'pgUpload', report:'pgReport', ec:'pgEC' };
+    const pageMap = { upload:'pgUpload', report:'pgReport', ec:'pgEC', dashboard:'pgDashboard' };
     const target = document.getElementById(pageMap[page]);
     if (target) target.classList.add('active');
 
@@ -566,8 +822,7 @@ const CXC = (() => {
     });
     const navEcHdr = document.getElementById('navEC');
     if (navEcHdr) navEcHdr.classList.remove('active-group');
-    document.getElementById('ng1')?.classList.remove('active-mod');
-    document.getElementById('ng2')?.classList.remove('active-mod');
+    ['ng1','ng2','ng3'].forEach(id => document.getElementById(id)?.classList.remove('active-mod'));
 
     if (page === 'upload') {
       document.getElementById('navUpload')?.classList.add('active');
@@ -578,6 +833,9 @@ const CXC = (() => {
     } else if (page === 'ec') {
       if (navEcHdr) navEcHdr.classList.add('active-group');
       document.getElementById('ng2')?.classList.add('active-mod');
+    } else if (page === 'dashboard') {
+      document.getElementById('ng3')?.classList.add('active-mod');
+      if (_allRows.length) dashInit();
     }
 
     // Topbar buttons
@@ -1025,6 +1283,367 @@ const CXC = (() => {
     _tt = setTimeout(() => el.classList.remove('show'), 4000);
   }
 
+  /* ---- Dashboard ---- */
+  const DASH_BKTS   = ['Al Día','1-30 días','31-60 días','61-90 días','91-120 días','+120 días'];
+  const DASH_COLORS = ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444','#7f1d1d'];
+  const DASH_BKTCSS = ['hm-0','hm-1','hm-2','hm-3','hm-4','hm-5'];
+
+  let _dashInvoices = [];
+  let _dashFilters  = { cliente:'', vendedor:'', riesgo:'', bucket:'' };
+  let _chartAging = null, _chartDonut = null, _chartTop10 = null;
+
+  function _dashBucket(dias) {
+    const d = Number(dias) || 0;
+    if (d <= 0)   return 0;
+    if (d <= 30)  return 1;
+    if (d <= 60)  return 2;
+    if (d <= 90)  return 3;
+    if (d <= 120) return 4;
+    return 5;
+  }
+
+  function _dashRisk(maxDias) {
+    if (maxDias <= 0)  return { label:'Bajo',     cls:'risk-bajo',    ico:'🟢' };
+    if (maxDias <= 60) return { label:'Medio',    cls:'risk-medio',   ico:'🟡' };
+    if (maxDias <= 90) return { label:'Alto',     cls:'risk-alto',    ico:'🟠' };
+    return                    { label:'Crítico',  cls:'risk-critico', ico:'🔴' };
+  }
+
+  function _dashBuildInvoices() {
+    _dashInvoices = [];
+    Object.entries(_rawByClient).forEach(([clientName, rows]) => {
+      rows.forEach(row => {
+        const dias = Number(row[6]) || 0;
+        const pend = parseFloat(String(row[10]).replace(/,/g,'')) || 0;
+        if (pend === 0) return;
+        _dashInvoices.push({
+          cliente:  clientName,
+          idDoc:    String(row[1]||'').trim(),
+          fecha:    String(row[3]||''),
+          vence:    String(row[4]||''),
+          vendedor: String(row[5]||'').trim(),
+          dias,
+          nota:     String(row[7]||'').trim(),
+          pend,
+          bucket:   _dashBucket(dias)
+        });
+      });
+    });
+  }
+
+  function _dashGetFilteredClients() {
+    const inv = _dashInvoices.filter(i => {
+      if (_dashFilters.cliente  && i.cliente  !== _dashFilters.cliente)  return false;
+      if (_dashFilters.vendedor && i.vendedor !== _dashFilters.vendedor)  return false;
+      if (_dashFilters.bucket !== '' && i.bucket !== +_dashFilters.bucket) return false;
+      return true;
+    });
+    const map = {};
+    inv.forEach(i => {
+      if (!map[i.cliente]) map[i.cliente] = { name:i.cliente, buckets:[0,0,0,0,0,0], total:0, invoices:[], maxDias:0 };
+      map[i.cliente].buckets[i.bucket] += i.pend;
+      map[i.cliente].total             += i.pend;
+      map[i.cliente].invoices.push(i);
+      if (i.dias > map[i.cliente].maxDias) map[i.cliente].maxDias = i.dias;
+    });
+    let clients = Object.values(map).sort((a,b) => b.total - a.total);
+    if (_dashFilters.riesgo) clients = clients.filter(c => _dashRisk(c.maxDias).label === _dashFilters.riesgo);
+    return { inv, clients };
+  }
+
+  function _dashRenderKPIs(inv, clients) {
+    const totalCxc = clients.reduce((s,c) => s + c.total, 0);
+    const alDia    = clients.reduce((s,c) => s + c.buckets[0], 0);
+    const vencido  = totalCxc - alDia;
+    const pctVenc  = totalCxc ? ((vencido / totalCxc) * 100).toFixed(1) : 0;
+    const sumWt    = inv.reduce((s,i) => s + i.dias * i.pend, 0);
+    const sumPend  = inv.reduce((s,i) => s + i.pend, 0);
+    const dso      = sumPend ? (sumWt / sumPend).toFixed(0) : 0;
+    const criticos = clients.filter(c => _dashRisk(c.maxDias).label === 'Crítico').length;
+    document.getElementById('kpiTotalCxc').textContent   = fmtMFull(totalCxc);
+    document.getElementById('kpiVencido').textContent    = fmtMFull(vencido);
+    document.getElementById('kpiVencidoPct').textContent = `${pctVenc}% del total`;
+    document.getElementById('kpiAlDia').textContent      = fmtMFull(alDia);
+    document.getElementById('kpiClientes').textContent   = clients.length;
+    document.getElementById('kpiFacturas').textContent   = inv.length;
+    document.getElementById('kpiDSO').textContent        = dso;
+    document.getElementById('kpiPctVenc').textContent    = `${pctVenc}%`;
+    document.getElementById('kpiCriticos').textContent   = criticos;
+  }
+
+  function _dashRenderAgingBars(clients) {
+    const top15    = clients.slice(0,15);
+    const labels   = top15.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
+    const datasets = DASH_BKTS.map((lbl,bi) => ({
+      label: lbl,
+      data:  top15.map(c => +c.buckets[bi].toFixed(2)),
+      backgroundColor: DASH_COLORS[bi],
+      borderWidth: 0
+    }));
+    const ctx = document.getElementById('chartAging').getContext('2d');
+    if (_chartAging) _chartAging.destroy();
+    _chartAging = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:  { position:'bottom', labels:{ font:{size:10}, boxWidth:11, padding:7 } },
+          tooltip: { callbacks:{ label: c => ` ${c.dataset.label}: ${fmtMFull(c.parsed.x)}` } }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ font:{size:10}, callback: v => (v/1000).toFixed(0)+'K' } },
+          y: { stacked:true, ticks:{ font:{size:10} } }
+        },
+        onClick: (_e, elems) => {
+          if (!elems.length) return;
+          _ddOpen(top15[elems[0].index].name, elems[0].datasetIndex);
+        }
+      }
+    });
+  }
+
+  function _dashRenderDonut(clients) {
+    const bktTotals = [0,0,0,0,0,0];
+    clients.forEach(c => c.buckets.forEach((v,i) => { bktTotals[i] += v; }));
+    const ctx = document.getElementById('chartDonut').getContext('2d');
+    if (_chartDonut) _chartDonut.destroy();
+    _chartDonut = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: DASH_BKTS,
+        datasets: [{ data: bktTotals.map(v=>+v.toFixed(2)), backgroundColor:DASH_COLORS, borderWidth:2, borderColor:'#fff' }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:  { position:'bottom', labels:{ font:{size:10}, boxWidth:11, padding:7 } },
+          tooltip: { callbacks:{ label: c => ` ${c.label}: ${fmtMFull(c.parsed)}` } }
+        },
+        onClick: (_e, elems) => {
+          if (!elems.length) return;
+          const bi = elems[0].index;
+          const filtered = _dashInvoices.filter(i =>
+            clients.some(c => c.name === i.cliente) && i.bucket === bi
+          );
+          _ddShowTable(DASH_BKTS[bi], filtered, ['Cliente','N° Doc','Fecha','Vence','Días','Pendiente'],
+            i => `<tr>
+              <td>${_esc(i.cliente)}</td><td>${_esc(i.idDoc)}</td>
+              <td>${_esc(i.fecha)}</td><td>${_esc(i.vence)}</td>
+              <td class="r">${i.dias}</td><td class="r">${fmtMFull(i.pend)}</td>
+            </tr>`
+          );
+        }
+      }
+    });
+  }
+
+  function _dashRenderTop10(clients) {
+    const top10  = clients.slice(0,10);
+    const labels = top10.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
+    const data   = top10.map(c => +c.total.toFixed(2));
+    const colors = top10.map(c => {
+      const r = _dashRisk(c.maxDias).label;
+      return r==='Bajo'?'#22c55e':r==='Medio'?'#f59e0b':r==='Alto'?'#f97316':'#ef4444';
+    });
+    const ctx = document.getElementById('chartTop10').getContext('2d');
+    if (_chartTop10) _chartTop10.destroy();
+    _chartTop10 = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets:[{ label:'Saldo Pendiente', data, backgroundColor:colors, borderWidth:0, borderRadius:4 }] },
+      options: {
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:  { display:false },
+          tooltip: { callbacks:{ label: c => ` ${fmtMFull(c.parsed.x)}` } }
+        },
+        scales: {
+          x: { ticks:{ font:{size:10}, callback: v => (v/1000).toFixed(0)+'K' } },
+          y: { ticks:{ font:{size:10} } }
+        },
+        onClick: (_e, elems) => {
+          if (!elems.length) return;
+          _ddOpen(top10[elems[0].index].name, -1);
+        }
+      }
+    });
+  }
+
+  function _dashRenderHeatmap(clients) {
+    const top20 = clients.slice(0,20);
+    if (!top20.length) {
+      document.getElementById('dashHeatmap').innerHTML =
+        '<div class="st-empty" style="padding:20px"><i class="bi bi-inbox ico"></i><span class="msg">Sin datos</span></div>';
+      return;
+    }
+    const rows = top20.map(c => {
+      const cells = c.buckets.map((v,bi) => v===0
+        ? `<td>—</td>`
+        : `<td class="${DASH_BKTCSS[bi]}" data-client="${_esc(c.name)}" data-bi="${bi}"
+             onclick="CXC.ddOpenCell(this.dataset.client,this.dataset.bi)"
+             title="${_esc(c.name)} · ${DASH_BKTS[bi]}: ${fmtMFull(v)}">${fmtM(v)}</td>`
+      ).join('');
+      return `<tr><td>${_esc(c.name)}</td>${cells}</tr>`;
+    }).join('');
+    document.getElementById('dashHeatmap').innerHTML = `
+      <table class="heatmap">
+        <thead><tr><th>Cliente</th>${DASH_BKTS.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function _dashRenderTable(clients) {
+    if (!clients.length) {
+      document.getElementById('dashClientsBody').innerHTML =
+        '<tr><td colspan="10"><div class="st-empty"><i class="bi bi-search ico"></i><span class="msg">Sin resultados</span></div></td></tr>';
+      return;
+    }
+    document.getElementById('dashClientsBody').innerHTML = clients.map(c => {
+      const risk  = _dashRisk(c.maxDias);
+      const bkCells = c.buckets.map(v => `<td class="r">${v===0?'—':fmtM(v)}</td>`).join('');
+      return `<tr data-client="${_esc(c.name)}" onclick="CXC.ddOpen(this.dataset.client,-1)">
+        <td>${_esc(c.name)}</td>
+        <td class="r"><b>${fmtM(c.total)}</b></td>
+        ${bkCells}
+        <td><span class="risk ${risk.cls}">${risk.ico} ${risk.label}</span></td>
+        <td class="r">${c.invoices.length}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function _dashRender() {
+    const { inv, clients } = _dashGetFilteredClients();
+    _dashRenderKPIs(inv, clients);
+    _dashRenderAgingBars(clients);
+    _dashRenderDonut(clients);
+    _dashRenderTop10(clients);
+    _dashRenderHeatmap(clients);
+    _dashRenderTable(clients);
+  }
+
+  function _ddShowTable(title, invoices, headers, rowFn) {
+    const total = invoices.reduce((s,i) => s + i.pend, 0);
+    const colCount = headers.length;
+    document.getElementById('ddTitle').textContent    = title;
+    document.getElementById('ddSubtitle').textContent =
+      `${invoices.length} factura${invoices.length!==1?'s':''} · Total: ${fmtMFull(total)}`;
+    const rHeader = headers.map((h,i) => `<th${i>=3?` class="r"`:''}>${h}</th>`).join('');
+    const rBody   = invoices.map(rowFn).join('') ||
+      `<tr><td colspan="${colCount}" style="text-align:center;padding:16px;color:#94a3b8">Sin facturas</td></tr>`;
+    document.getElementById('ddContent').innerHTML = `
+      <table class="dash-detail">
+        <thead><tr>${rHeader}</tr></thead>
+        <tbody>${rBody}</tbody>
+        <tfoot><tr>
+          <td colspan="${colCount-1}"><b>TOTAL</b></td>
+          <td class="r"><b>${fmtMFull(total)}</b></td>
+        </tr></tfoot>
+      </table>`;
+    document.getElementById('ddOverlay').classList.add('open');
+  }
+
+  function _ddOpen(clientName, bucketIdx) {
+    let invoices = _dashInvoices.filter(i => i.cliente === clientName);
+    if (bucketIdx >= 0) invoices = invoices.filter(i => i.bucket === bucketIdx);
+    const bi     = bucketIdx >= 0 ? ` — ${DASH_BKTS[bucketIdx]}` : '';
+    _ddShowTable(
+      `${clientName}${bi}`, invoices,
+      ['N° Doc','Fecha','Vence','Días','Tramo','Vendedor','Pendiente'],
+      i => `<tr>
+        <td>${_esc(i.idDoc)}</td>
+        <td>${_esc(i.fecha)}</td>
+        <td>${_esc(i.vence)}</td>
+        <td class="r">${i.dias}</td>
+        <td><span class="bkt bkt-${getBucket(i.dias)}">${DASH_BKTS[i.bucket]}</span></td>
+        <td>${_esc(i.vendedor)}</td>
+        <td class="r">${fmtMFull(i.pend)}</td>
+      </tr>`
+    );
+  }
+
+  function ddOpen(name, bi)     { _ddOpen(name, +bi); }
+  function ddOpenCell(name, bi) { _ddOpen(name, +bi); }
+  function ddClose()            { document.getElementById('ddOverlay').classList.remove('open'); }
+
+  function dashInit() {
+    if (!_allRows.length) return;
+    _dashBuildInvoices();
+    const clSel = document.getElementById('dashFiltCliente');
+    if (clSel) {
+      const names = [...new Set(_dashInvoices.map(i => i.cliente))].sort();
+      clSel.innerHTML = '<option value="">Todos los clientes</option>' +
+        names.map(n => `<option value="${_esc(n)}">${_esc(n)}</option>`).join('');
+    }
+    const vdSel = document.getElementById('dashFiltVendedor');
+    if (vdSel) {
+      const vds = [...new Set(_dashInvoices.map(i => i.vendedor).filter(Boolean))].sort();
+      vdSel.innerHTML = '<option value="">Todos los vendedores</option>' +
+        vds.map(n => `<option value="${_esc(n)}">${_esc(n)}</option>`).join('');
+    }
+    _dashFilters = { cliente:'', vendedor:'', riesgo:'', bucket:'' };
+    _dashRender();
+  }
+
+  function dashApplyFilters() {
+    _dashFilters.cliente  = document.getElementById('dashFiltCliente')?.value  || '';
+    _dashFilters.vendedor = document.getElementById('dashFiltVendedor')?.value || '';
+    _dashFilters.riesgo   = document.getElementById('dashFiltRiesgo')?.value   || '';
+    _dashFilters.bucket   = document.getElementById('dashFiltBucket')?.value   || '';
+    _dashRender();
+  }
+
+  function dashReset() {
+    ['dashFiltCliente','dashFiltVendedor','dashFiltRiesgo','dashFiltBucket'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    _dashFilters = { cliente:'', vendedor:'', riesgo:'', bucket:'' };
+    _dashRender();
+  }
+
+  function dashExport(type) {
+    if (!_dashInvoices.length) { toast('No hay datos para exportar', true); return; }
+    const { inv } = _dashGetFilteredClients();
+    if (type === 'excel' || type === 'csv') {
+      const headers = ['Cliente','N° Doc','Fecha','Vence','Días','Tramo','Vendedor','Descripción','Pendiente'];
+      const rows    = inv.map(i => [i.cliente, i.idDoc, i.fecha, i.vence, i.dias, DASH_BKTS[i.bucket], i.vendedor, i.nota, i.pend]);
+      if (type === 'excel') {
+        const aoa = [['Dashboard CxC — Gstar Services S.A.'],[],headers,...rows];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{wch:36},{wch:14},{wch:12},{wch:12},{wch:8},{wch:16},{wch:24},{wch:20},{wch:16}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Dashboard CXC');
+        XLSX.writeFile(wb, `Dashboard_CXC_${new Date().toISOString().slice(0,10)}.xlsx`);
+        toast('Excel descargado');
+      } else {
+        const csv = [headers,...rows].map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+        a.download = `Dashboard_CXC_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        toast('CSV descargado');
+      }
+    } else if (type === 'pdf') {
+      toast('Generando PDF…');
+      html2canvas(document.getElementById('pgDashboard'), {
+        scale:1.2, useCORS:true, backgroundColor:'#f1f5f9', logging:false
+      }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        const pgW = 297, pgH = 210;
+        const imgH = (canvas.height / canvas.width) * pgW;
+        let yOff = 0;
+        while (yOff < imgH) {
+          if (yOff > 0) pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, -yOff, pgW, imgH);
+          yOff += pgH;
+        }
+        pdf.save(`Dashboard_CXC_${new Date().toISOString().slice(0,10)}.pdf`);
+        toast('PDF descargado');
+      }).catch(() => toast('Error al generar PDF', true));
+    }
+  }
+
   /* ---- Supabase persistence ---- */
   function _isAdminUser() {
     try {
@@ -1132,7 +1751,8 @@ const CXC = (() => {
   })();
 
   return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
-           navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportPDF, publicar };
+           navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportPDF, publicar,
+           dashApplyFilters, dashReset, dashExport, ddOpen, ddOpenCell, ddClose };
 })();
 </script>
 </body>
