@@ -412,6 +412,24 @@ const SolicitudPago = (() => {
           </thead>
           <tbody>${tableRows}</tbody>
         </table>
+
+        <div class="doc-firmas">
+          <div class="doc-firma">
+            <div class="firma-line"></div>
+            <div class="firma-nombre">Sr. Gilbert Sanchez</div>
+            <div class="firma-cargo">Cuentas por Pagar</div>
+          </div>
+          <div class="doc-firma">
+            <div class="firma-line"></div>
+            <div class="firma-nombre">Sr. Carlos Montas</div>
+            <div class="firma-cargo">Vicepresidente Ejecutivo</div>
+          </div>
+          <div class="doc-firma">
+            <div class="firma-line"></div>
+            <div class="firma-nombre">Sra. Giselandia Carrasco</div>
+            <div class="firma-cargo">Gerente General</div>
+          </div>
+        </div>
       </div>`;
   }
 
@@ -594,6 +612,11 @@ const SolicitudPago = (() => {
     .doc-table2 td{padding:5px 10px;border-bottom:1px solid #f1f5f9}
     .doc-table2 td.r{font-weight:600}
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+    .doc-firmas{display:flex;justify-content:space-between;margin-top:64px;gap:32px}
+    .doc-firma{flex:1;text-align:center}
+    .firma-line{border-top:1px solid #1f2937;margin-bottom:8px}
+    .firma-nombre{font-size:11px;font-weight:700;color:#1f2937}
+    .firma-cargo{font-size:10px;color:#64748b;margin-top:2px}
   `; }
 
   return {
