@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antigüedad de Saldo CXC — Gstar Services</title>
+<link rel="icon" href="../CXP/assets/img/sello.png">
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+:root{
+  --navy:#1B2B4B;--navy-2:#2D3F5E;--blue:#2563eb;--green:#16a34a;--red:#dc2626;
+  --gold:#d97706;--ink:#0f172a;--ink-2:#475569;--ink-3:#94a3b8;
+  --bg:#f1f5f9;--bg-card:#ffffff;--line:#e2e8f0;--line-2:#f8fafc;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.12);--r:12px;--r-lg:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+
+/* ---- Topbar ---- */
+.topbar{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;
+  padding:15px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.topbar-left h1{font-size:17px;font-weight:800;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:9px}
+.topbar-left p{font-size:11.5px;color:#9DB0DA;margin-top:2px}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ---- Buttons ---- */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:none;border-radius:8px;
+  cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;transition:all .18s;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.btn-ghost:hover{background:rgba(255,255,255,.22)}
+.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn-outline:hover{background:var(--line-2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---- Upload zone ---- */
+.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:60px 40px;margin:24px;background:var(--bg-card);border:2px dashed var(--line);
+  border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.upload-zone:hover,.upload-zone.dragging{border-color:var(--blue);background:#eff6ff}
+.upload-ico{font-size:52px;color:var(--ink-3);transition:color .2s}
+.upload-zone:hover .upload-ico,.upload-zone.dragging .upload-ico{color:var(--blue)}
+.upload-title{font-size:19px;font-weight:700}
+.upload-sub{font-size:13px;color:var(--ink-2);max-width:420px;line-height:1.6}
+.upload-badge{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe;
+  border-radius:20px;padding:4px 14px;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.upload-step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.upload-step-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ---- Content ---- */
+.content{padding:0 24px 32px}
+
+/* ---- Stats bar ---- */
+.stats-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding-top:20px}
+.stat-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 18px;display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow);flex:1;min-width:170px}
+.stat-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;flex-shrink:0}
+.stat-ico.blue{background:#eff6ff;color:var(--blue)}
+.stat-ico.green{background:#f0fdf4;color:var(--green)}
+.stat-ico.red{background:#fef2f2;color:var(--red)}
+.stat-ico.amber{background:#fffbeb;color:var(--gold)}
+.stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
+.stat-val{font-size:18px;font-weight:800;color:var(--ink);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.stat-val.sm{font-size:13.5px}
+
+/* ---- Toolbar ---- */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap .bi{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
+.search-input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--line);border-radius:8px;
+  font-size:13px;background:var(--bg);font-family:'Inter',sans-serif;color:var(--ink)}
+.search-input:focus{outline:none;border-color:var(--blue);background:#fff}
+.sel{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;
+  background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;cursor:pointer}
+.sel:focus{outline:none;border-color:var(--blue)}
+.toolbar-sep{width:1px;height:26px;background:var(--line)}
+
+/* ---- Table container ---- */
+.table-wrap{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow);overflow:hidden}
+.table-scroll{overflow-x:auto}
+
+/* ---- Aging table ---- */
+table.aging{width:100%;border-collapse:collapse;font-size:12.5px}
+
+/* Header rows */
+table.aging thead tr:first-child th{
+  background:#1f3864;color:#fff;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;padding:10px 10px 5px;
+  border-right:1px solid rgba(255,255,255,.1);text-align:right;white-space:nowrap}
+table.aging thead tr:first-child th:first-child{text-align:left;min-width:230px}
+table.aging thead tr:nth-child(2) th{
+  background:#274a8a;color:#bfdbfe;font-size:10px;font-weight:600;
+  padding:4px 10px 8px;border-right:1px solid rgba(255,255,255,.1);text-align:right}
+table.aging thead tr:nth-child(2) th:first-child{color:transparent}
+
+/* Body */
+table.aging tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s}
+table.aging tbody tr:hover{background:#f8fafc}
+table.aging tbody tr:nth-child(even){background:#fafbfc}
+table.aging tbody tr:nth-child(even):hover{background:#f3f6fa}
+table.aging tbody td{padding:8px 10px;border-right:1px solid var(--line-2);vertical-align:middle}
+table.aging tbody td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+table.aging tbody td.m{
+  text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  font-weight:400;color:var(--ink-3);white-space:nowrap;min-width:110px}
+table.aging tbody td.m.v{color:var(--ink);font-weight:600}
+table.aging tbody td.m.neg{color:var(--red);font-weight:600}
+table.aging tbody td.tot{
+  text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  font-weight:700;background:#f1f5f9;white-space:nowrap;min-width:120px;
+  border-left:2px solid var(--line)}
+table.aging tbody td.tot.neg{color:var(--red)}
+
+/* Footer */
+table.aging tfoot td{
+  background:#1f3864;color:#fff;font-weight:800;padding:11px 10px;
+  text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  white-space:nowrap;border-right:1px solid rgba(255,255,255,.1)}
+table.aging tfoot td:first-child{
+  text-align:left;font-family:'Sora',sans-serif;font-size:11.5px;
+  letter-spacing:.4px;font-weight:700}
+table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,255,255,.2)}
+
+/* ---- Empty states ---- */
+.st-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;text-align:center;color:var(--ink-3);gap:12px}
+.st-empty .ico{font-size:44px}
+.st-empty .msg{font-size:14px;font-weight:500}
+
+/* ---- Table footer bar ---- */
+.tbl-footer{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 18px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--ink-3);flex-wrap:wrap;gap:8px}
+
+/* ---- Toast ---- */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#0f172a;color:#fff;padding:11px 20px;border-radius:9px;
+  font-size:13px;font-weight:500;opacity:0;transition:all .3s;
+  z-index:9999;white-space:nowrap;pointer-events:none;
+  display:flex;align-items:center;gap:9px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{font-size:15px}
+
+/* ---- Print ---- */
+@media print{
+  .topbar,.toolbar,.stats-bar,.upload-zone,.no-print{display:none!important}
+  body{background:#fff}
+  .table-wrap{box-shadow:none;border:none}
+  .content{padding:0}
+  table.aging{font-size:10px}
+  table.aging tbody td.m,table.aging tbody td.tot{min-width:70px}
+  @page{size:landscape;margin:8mm}
+  .print-title{display:block!important;text-align:center;font-size:14px;font-weight:700;
+    font-family:'Sora',sans-serif;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #1f3864}
+}
+.print-title{display:none}
+</style>
+</head>
+<body>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="CXC.loadFile(this)">
+
+<!-- ===== TOPBAR ===== -->
+<div class="topbar">
+  <div class="topbar-left">
+    <h1><i class="bi bi-clock-history"></i> Antigüedad de Saldo — CXC</h1>
+    <p>Cuentas por Cobrar · Gstar Services S.A.</p>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">
+      <i class="bi bi-folder2-open"></i> Cargar Archivo
+    </button>
+    <button class="btn btn-ghost no-print" id="btnExport" onclick="CXC.exportExcel()" disabled>
+      <i class="bi bi-file-earmark-excel"></i> Excel
+    </button>
+    <button class="btn btn-ghost no-print" id="btnPrint" onclick="window.print()" disabled>
+      <i class="bi bi-printer"></i> Imprimir
+    </button>
+  </div>
+</div>
+
+<!-- ===== UPLOAD ZONE ===== -->
+<div id="uploadZone" class="upload-zone"
+     onclick="document.getElementById('fileInput').click()"
+     ondragover="event.preventDefault();this.classList.add('dragging')"
+     ondragleave="this.classList.remove('dragging')"
+     ondrop="CXC.handleDrop(event)">
+  <i class="bi bi-file-earmark-arrow-up upload-ico"></i>
+  <div class="upload-title">Cargar Estado de Cuenta</div>
+  <div class="upload-sub">
+    Haz clic aquí o arrastra el archivo <strong>frmRCxC.xlsx</strong> exportado del sistema contable.
+    El sistema generará automáticamente la antigüedad de saldo.
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+    <div class="upload-step"><div class="upload-step-num">1</div> Exportar Estado de Cuenta del sistema</div>
+    <div class="upload-step"><div class="upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong></div>
+    <div class="upload-step"><div class="upload-step-num">3</div> El reporte se genera automáticamente</div>
+  </div>
+  <div class="upload-badge"><i class="bi bi-file-earmark-spreadsheet"></i> Solo archivos .xlsx — frmRCxC.xlsx</div>
+</div>
+
+<!-- ===== REPORT CONTENT ===== -->
+<div class="content" id="reportContent" style="display:none">
+
+  <!-- Print title -->
+  <div class="print-title">Antigüedad de Cuentas por Cobrar — Gstar Services S.A.</div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-ico blue"><i class="bi bi-people-fill"></i></div>
+      <div><div class="stat-lbl">Clientes</div><div class="stat-val" id="statClientes">—</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico green"><i class="bi bi-cash-stack"></i></div>
+      <div><div class="stat-lbl">Total CXC</div><div class="stat-val sm" id="statTotal">—</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico red"><i class="bi bi-hourglass-bottom"></i></div>
+      <div><div class="stat-lbl">+1 Año Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico amber"><i class="bi bi-calendar-check"></i></div>
+      <div><div class="stat-lbl">Generado</div><div class="stat-val sm" id="statFecha">—</div></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar no-print">
+    <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input type="text" class="search-input" placeholder="Buscar cliente…" id="searchInput" oninput="CXC.filterTable()">
+    </div>
+    <div class="toolbar-sep"></div>
+    <select class="sel" id="filterCliente" onchange="CXC.filterTable()">
+      <option value="">Todos los clientes</option>
+    </select>
+    <select class="sel" id="filterBucket" onchange="CXC.filterTable()">
+      <option value="">Todos los períodos</option>
+      <option value="0">0 – 15 días</option>
+      <option value="1">1 Mes (16-30)</option>
+      <option value="2">1½ Mes (31-45)</option>
+      <option value="3">2 Meses (46-60)</option>
+      <option value="4">4 Meses (61-120)</option>
+      <option value="5">1 Año (121-365)</option>
+      <option value="6">+1 Año (365+)</option>
+    </select>
+    <button class="btn btn-outline" onclick="CXC.clearFilters()" style="padding:8px 12px">
+      <i class="bi bi-x-circle"></i> Limpiar
+    </button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-outline" onclick="CXC.reloadFile()" style="padding:8px 12px" title="Cargar otro archivo">
+      <i class="bi bi-arrow-repeat"></i>
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="aging" id="agingTable">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
+            <th>15 DÍAS</th>
+            <th>1 MES</th>
+            <th>1 MES Y ½</th>
+            <th>2 MESES</th>
+            <th>4 MESES</th>
+            <th>1 AÑO</th>
+            <th>+1 AÑO</th>
+            <th style="background:#17306d">TOTALES</th>
+          </tr>
+          <tr>
+            <th>0 – 15</th>
+            <th>16 – 30</th>
+            <th>31 – 45</th>
+            <th>46 – 60</th>
+            <th>61 – 120</th>
+            <th>121 – 365</th>
+            <th>365 +</th>
+            <th style="background:#1d3d73"></th>
+          </tr>
+        </thead>
+        <tbody id="agingBody">
+          <tr><td colspan="9"><div class="st-empty"><i class="bi bi-inbox ico"></i><span class="msg">Carga un archivo para generar el reporte</span></div></td></tr>
+        </tbody>
+        <tfoot id="agingFoot" style="display:none">
+          <tr>
+            <td>TOTAL GENERAL</td>
+            <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
+            <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
+            <td id="ft6">—</td>
+            <td class="tot-ft" id="ftTotal">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="tbl-footer no-print" id="tblFooter" style="display:none">
+      <span id="footInfo">—</span>
+      <span id="footFile" style="font-style:italic;color:var(--ink-3)">—</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i><span id="toastMsg">OK</span></div>
+
+<!-- SheetJS -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+
+<script>
+/* ============================================================
+   CXC — Antigüedad de Saldo
+   ============================================================ */
+const CXC = (() => {
+
+  /* ---- Whitelist de clientes (frmBuscarClientes.xlsx) ---- */
+  const WHITELIST = [
+    'Ec Terceros','Ud Los Cibao','Consorcio Candelier Guzman','Ud Lc Higuey',
+    'Ud Lc Juan Dolio','Ud Lc Villa Altagracia','Ud Consorcio F','Ud Ocoa Kelvin',
+    'Ud Lc Hato Mayor','Ud Lc San Cristobal','Lc Sto. Dgo. Oeste',
+    'Consorcio Turín 2(Vendedores Turin)','Ud Merengue Terceros','Juan Terceros',
+    'Ud Yave Terceros','Ud Ocoa','Ud Sto. Dgo. Este','Ud Franco','Lc Terceros',
+    'Moca Terceros','Grupo Tito Dario','Ruta Constanza Alvaro %','Terceros Baní',
+    'Vld Constanza (Felix Y Vlady)','Grupo Sd -Soll','Grupo Tite',
+    'Grupo Marcos-Primera','Nelson Junior Terceros','Grupo Cleyris',
+    'Puerto Plata Sport Tercero','Grupo Wilton (Viva)','Consorcio Candelier Rosario',
+    'Ud Higuey','Grupo La Opcion Ureña & Ferna','Ruta Vld 01','Grupo Turin Moca 2',
+    'Grupo Terceros Higuey 1','Grupo Llueve Tablita','Grupo Lc San Pedro',
+    'Grupo Am- Terceros','Grupo Ana Tenares Principal','Grupo General Colmados/ Fey',
+    'Grupo Llueve - Fama','Monte Plata Terceros','Alex- Terceros',
+    'Fama Terceros- General','Wilson Junior Terceros','Grupo Candelier',
+    'Grupo Ocoa La Primera','Grupo Lenin Lc 04','Grupo Capellan','Grupo Estela',
+    'Grupo Midas','Ruta Vld  Matas De Farfan','Vld Constanza Ronny %',
+    'Ruta Constanza Felix %','Ruta Vld Padre De Las Casas','Ruta Constanza Monte Plata',
+    'Ruta Vld El Seibo','Vld Sabana De La Mar','Vld Constanza 01','Grupo San Pedro',
+    'Consorcio Aramis Bms','Juan Gutierrez','La Primera Monte Plata',
+    'Consorcio Nave Santiago','Turin Moca','Grupo Lenin Lc 02',
+    'Consorcio Vld Constanza','Consorcio Grupo Mayol','Consorcio Lenin Lc',
+    'Consorcio Lc Yao 03','Consorcio Nelson Junior','Consorcio Alex Bani',
+    'Consorcio Alex','Consorcio Faraon Moca','Consorcio Ud Faraon',
+    'Consorcio Wilson Junior','Consorcio Fama Stgo','Consorcio Bms La Primera',
+    'Consorcio Yoryi Sport','Consorcio Enriquito','Consorcio Llueve',
+    'Consorcio Sabana Grande De Boya','Consorcio Bancas Vida','Consorcio Henry Sport',
+    'Grupo Estrella','Ud Am La Primera','Consorcio La Romana',
+    'Consorcio La Famosa Amb','La Primera San Pedro','Consorcio Euro Navarrete',
+    'Consorcio Yamasa','Consorcio De Banca Mj','La Primera Yamasa',
+    'Grupo La Primera Cotui','Grupo Hacienda (Deivi Sport)','Grupo Ud (Grupo Sd)',
+    'Felix Goris Martinez (Grupo Ovalle)','Grupo Vld 2','Consorcio De Bancas Kenny',
+    'Juancito Sport','Consorcio Liniero Vc, Srl','Ud Group Dominicana'
+  ];
+
+  /* ---- Normalized whitelist cache ---- */
+  const norm = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
+  const WL_NORM = WHITELIST.map(w => norm(w));
+
+  /* ---- State ---- */
+  let _allRows = [];
+  let _filtered = [];
+  let _fileName = '';
+
+  /* ---- Client matching ---- */
+  function matchWhitelist(clientName) {
+    const cn = norm(clientName);
+    if (!cn || cn.length < 2) return null;
+    // 1. Exact match
+    const ei = WL_NORM.indexOf(cn);
+    if (ei >= 0) return WHITELIST[ei];
+    // 2. Whitelist entry contains client name (e.g. WL="Felix Goris Martinez (Grupo Ovalle)", client="Felix Goris Martinez")
+    for (let i = 0; i < WL_NORM.length; i++) {
+      if (WL_NORM[i].includes(cn) && cn.length >= 5) return WHITELIST[i];
+    }
+    // 3. Client name contains whitelist entry (e.g. client="Grupo Ud Especial", WL="Grupo Ud")
+    for (let i = 0; i < WL_NORM.length; i++) {
+      if (cn.includes(WL_NORM[i]) && WL_NORM[i].length >= 5) return WHITELIST[i];
+    }
+    return null;
+  }
+
+  /* ---- Aging bucket (based on Días column) ---- */
+  function getBucket(dias) {
+    const d = Number(dias) || 0;
+    if (d <= 15)  return 0; // 0-15
+    if (d <= 30)  return 1; // 16-30
+    if (d <= 45)  return 2; // 31-45
+    if (d <= 60)  return 3; // 46-60
+    if (d <= 120) return 4; // 61-120
+    if (d <= 365) return 5; // 121-365
+    return 6;               // 365+
+  }
+
+  /* ---- Format helpers ---- */
+  function fmtM(v) {
+    if (v === 0) return '-';
+    const abs = Math.abs(v);
+    const s = abs.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return v < 0 ? `(${s})` : s;
+  }
+  function fmtMFull(v) {
+    return 'RD$ ' + v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  /* ---- File drop / input ---- */
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('dragging');
+    const f = e.dataTransfer.files[0];
+    if (f) _processFile(f);
+  }
+
+  function loadFile(input) {
+    const f = input.files[0];
+    if (f) _processFile(f);
+    input.value = '';
+  }
+
+  function reloadFile() {
+    document.getElementById('reportContent').style.display = 'none';
+    document.getElementById('uploadZone').style.display = 'flex';
+    document.getElementById('btnExport').disabled = true;
+    document.getElementById('btnPrint').disabled = true;
+    _allRows = []; _filtered = [];
+  }
+
+  /* ---- Parse & process ---- */
+  function _processFile(file) {
+    if (!file.name.match(/\.xlsx?$/i)) { toast('Solo se aceptan archivos .xlsx', true); return; }
+    _fileName = file.name;
+    toast('Procesando archivo…');
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+        _parse(data);
+      } catch(err) {
+        toast('Error al leer el archivo: ' + err.message, true);
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function _parse(data) {
+    /* frmRCxC.xlsx layout (0-indexed columns):
+       0=Doc  1=IdDoc  2=Cliente  3=Fecha  4=Vence  5=Vendedor
+       6=Días  7=Nota  8=DeudaOriginal  9=TotalPagado  10=DeudaPendiente  11=Balance
+       Row 0 = headers, Row 1 = "Moneda: RD$" → skip; data starts at row 2 */
+
+    const map = {};   // wlName → buckets[7]
+    let skippedNotInList = 0;
+    let skippedZero = 0;
+    let totalInvoices = 0;
+
+    for (let i = 2; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.length < 11) continue;
+
+      const clientRaw  = String(row[2] || '').trim();
+      const diasRaw    = row[6];
+      const pendiente  = parseFloat(String(row[10]).replace(/,/g,'')) || 0;
+
+      if (!clientRaw) continue;
+      if (pendiente === 0) { skippedZero++; continue; }
+
+      totalInvoices++;
+      const wl = matchWhitelist(clientRaw);
+      if (!wl) { skippedNotInList++; continue; }
+
+      if (!map[wl]) map[wl] = [0,0,0,0,0,0,0];
+      map[wl][getBucket(diasRaw)] += pendiente;
+    }
+
+    // Build sorted array
+    _allRows = Object.entries(map)
+      .map(([name, buckets]) => ({
+        name,
+        buckets,
+        total: buckets.reduce((s,v) => s+v, 0)
+      }))
+      .sort((a,b) => a.name.localeCompare(b.name,'es'));
+
+    _filtered = [..._allRows];
+
+    // Show report
+    document.getElementById('uploadZone').style.display  = 'none';
+    document.getElementById('reportContent').style.display = 'block';
+    document.getElementById('btnExport').disabled = false;
+    document.getElementById('btnPrint').disabled  = false;
+
+    _updateStats();
+    _populateClientFilter();
+    _render();
+    document.getElementById('footFile').textContent = _fileName;
+
+    const processed = _allRows.length;
+    toast(`Reporte generado — ${processed} cliente${processed!==1?'s':''} · ${totalInvoices} facturas procesadas`);
+    if (skippedNotInList > 0) {
+      console.info(`[CXC] ${skippedNotInList} facturas no coincidieron con la lista de clientes`);
+    }
+  }
+
+  /* ---- Render table ---- */
+  function _render() {
+    const tbody = document.getElementById('agingBody');
+    const tfoot = document.getElementById('agingFoot');
+    const footer = document.getElementById('tblFooter');
+
+    if (_filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="st-empty"><i class="bi bi-search ico"></i><span class="msg">Sin resultados para los filtros aplicados</span></div></td></tr>`;
+      tfoot.style.display = 'none';
+      footer.style.display = 'none';
+      return;
+    }
+
+    const totals = [0,0,0,0,0,0,0];
+    let grandTotal = 0;
+
+    tbody.innerHTML = _filtered.map(row => {
+      const cells = row.buckets.map((v,i) => {
+        totals[i] += v;
+        const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
+        return `<td class="${cls}">${fmtM(v)}</td>`;
+      }).join('');
+      grandTotal += row.total;
+      const tCls = 'tot' + (row.total<0?' neg':'');
+      return `<tr><td title="${row.name}">${row.name}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+    }).join('');
+
+    totals.forEach((v,i) => {
+      const el = document.getElementById('ft'+i);
+      if (el) el.textContent = fmtM(v);
+    });
+    document.getElementById('ftTotal').textContent = fmtM(grandTotal);
+    tfoot.style.display = '';
+    footer.style.display = '';
+    document.getElementById('footInfo').textContent =
+      `${_filtered.length} cliente${_filtered.length!==1?'s':''} mostrados · ${_allRows.length} total`;
+  }
+
+  function _updateStats() {
+    const total   = _allRows.reduce((s,r)=>s+r.total, 0);
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[6], 0);
+    document.getElementById('statClientes').textContent  = _allRows.length;
+    document.getElementById('statTotal').textContent     = fmtMFull(total);
+    document.getElementById('statVencido').textContent   = fmtMFull(vencido);
+    document.getElementById('statFecha').textContent     =
+      new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'});
+  }
+
+  function _populateClientFilter() {
+    const sel = document.getElementById('filterCliente');
+    sel.innerHTML = '<option value="">Todos los clientes</option>' +
+      _allRows.map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+  }
+
+  /* ---- Filters ---- */
+  function filterTable() {
+    const q  = norm(document.getElementById('searchInput').value);
+    const cl = document.getElementById('filterCliente').value;
+    const bk = document.getElementById('filterBucket').value;
+
+    _filtered = _allRows.filter(r => {
+      if (q  && !norm(r.name).includes(q)) return false;
+      if (cl && r.name !== cl)             return false;
+      if (bk !== '' && r.buckets[+bk]===0) return false;
+      return true;
+    });
+    _render();
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value    = '';
+    document.getElementById('filterCliente').value  = '';
+    document.getElementById('filterBucket').value   = '';
+    _filtered = [..._allRows];
+    _render();
+  }
+
+  /* ---- Export Excel ---- */
+  function exportExcel() {
+    if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
+
+    const BUCKET_LABELS = ['0-15','16-30','31-45','46-60','61-120','121-365','365 +'];
+    const HEADER_LABELS = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','.+ DE UN AÑO','TOTALES'];
+
+    const aoa = [
+      ['Antigüedad de cuentas por cobrar'],
+      [],
+      HEADER_LABELS,
+      ['', ...BUCKET_LABELS, ''],
+      ..._filtered.map(r => [
+        r.name,
+        ...r.buckets.map(v => v===0 ? '-' : v),
+        r.total===0 ? '-' : r.total
+      ]),
+      [],
+      [
+        'TOTAL GENERAL',
+        ...[0,1,2,3,4,5,6].map(i => {
+          const v = _filtered.reduce((s,r)=>s+r.buckets[i],0);
+          return v===0 ? '-' : v;
+        }),
+        _filtered.reduce((s,r)=>s+r.total,0)
+      ]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:38},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Antigüedad CXC');
+    XLSX.writeFile(wb, `Antiguedad_CXC_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Excel descargado correctamente');
+  }
+
+  /* ---- Toast ---- */
+  let _tt;
+  function toast(msg, isErr) {
+    const el  = document.getElementById('toast');
+    const ico = el.querySelector('i');
+    document.getElementById('toastMsg').textContent = msg;
+    ico.className = isErr ? 'bi bi-exclamation-triangle-fill' : 'bi bi-check-circle-fill';
+    ico.style.color = isErr ? '#f87171' : '#4ADE80';
+    el.classList.add('show');
+    clearTimeout(_tt);
+    _tt = setTimeout(()=>el.classList.remove('show'), 4000);
+  }
+
+  return { loadFile, handleDrop, filterTable, clearFilters, exportExcel, reloadFile };
+})();
+</script>
+</body>
+</html>
