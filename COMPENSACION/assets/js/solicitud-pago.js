@@ -30,7 +30,7 @@ const SolicitudPago = (() => {
 
   function _calcTotals(){
     const { balanceComp, transferencia, balanceOp } = _getInputs();
-    const balanceCompAct = balanceComp + transferencia;
+    const balanceCompAct = balanceComp - transferencia;
     const totalPagar     = _rows.reduce((s,r) => s + Math.abs(r.pendiente), 0);
     const balanceDispOP  = balanceOp - totalPagar;
     return { balanceComp, transferencia, balanceOp, balanceCompAct, totalPagar, balanceDispOP };
