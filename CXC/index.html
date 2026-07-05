@@ -277,7 +277,7 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
     <p>Gstar Services S.A.</p>
   </div>
   <div class="topbar-right">
-    <button class="btn btn-ghost" onclick="CXC.navigate('upload')">
+    <button class="btn btn-ghost" id="btnCargar" onclick="CXC.navigate('upload')">
       <i class="bi bi-folder2-open"></i> Cargar Archivo
     </button>
     <button class="btn btn-ghost no-print" id="btnExport" onclick="CXC.exportExcel()" disabled>
@@ -285,6 +285,11 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
     </button>
     <button class="btn btn-ghost no-print" id="btnPrint" onclick="window.print()" disabled>
       <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <button id="btnPublicar" class="btn no-print"
+            style="display:none;background:linear-gradient(135deg,#2563eb,#8B5CF6);color:#fff;border:none"
+            onclick="CXC.publicar()">
+      <i class="bi bi-cloud-upload-fill"></i> Publicar
     </button>
   </div>
 </div>
@@ -473,6 +478,8 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 <script src="assets/vendor/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 
 <script>
 const CXC = (() => {
@@ -691,6 +698,11 @@ const CXC = (() => {
       console.info(`[CXC] ${skippedNotInList} facturas sin coincidencia en lista`);
 
     navigate('report');
+
+    if (_isAdminUser()) {
+      const btn = document.getElementById('btnPublicar');
+      if (btn) { btn.style.display = ''; btn.style.background = ''; btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.disabled = false; }
+    }
   }
 
   /* ---- Render table ---- */
@@ -998,11 +1010,114 @@ const CXC = (() => {
     _tt = setTimeout(() => el.classList.remove('show'), 4000);
   }
 
+  /* ---- Supabase persistence ---- */
+  function _isAdminUser() {
+    try {
+      const s = Auth.getSession();
+      const label = (s && s.user && s.user.role && s.user.role.label) || '';
+      return label.toLowerCase().includes('administrador');
+    } catch(e) { return false; }
+  }
+
+  async function _saveCxcToDB() {
+    if (!window.db) throw new Error('Sin conexión a base de datos.');
+    const session = Auth.getSession();
+    const { error } = await window.db.from('app_state').upsert({
+      key: 'cxc_data',
+      value: {
+        allRows:      _allRows,
+        rawByClient:  _rawByClient,
+        fileName:     _fileName,
+        generatedAt:  new Date().toISOString()
+      },
+      updated_at: new Date().toISOString(),
+      updated_by: session && session.user ? session.user.id : null
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async function _loadCxcFromDB() {
+    try {
+      if (!window.db) return false;
+      const { data, error } = await window.db
+        .from('app_state').select('value,updated_at').eq('key','cxc_data').single();
+      if (error || !data || !data.value) return false;
+      const v = data.value;
+      _allRows      = v.allRows      || [];
+      _rawByClient  = v.rawByClient  || {};
+      _filtered     = [..._allRows];
+      _fileName     = v.fileName     || '';
+      if (!_allRows.length) return false;
+      document.getElementById('btnExport').disabled = false;
+      document.getElementById('btnPrint').disabled  = false;
+      _updateStats();
+      _populateClientFilter();
+      _populateEcCliente();
+      _render();
+      document.getElementById('footFile').textContent = _fileName;
+      // Mostrar cuándo fue publicado
+      if (data.updated_at) {
+        const d   = new Date(data.updated_at);
+        const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})
+                  + ' ' + d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('footInfo').textContent =
+          `${_allRows.length} clientes · Publicado el ${fmt}`;
+      }
+      return true;
+    } catch(e) { console.error('loadCxcFromDB:', e); return false; }
+  }
+
+  async function publicar() {
+    const btn = document.getElementById('btnPublicar');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publicando...'; }
+    try {
+      await _saveCxcToDB();
+      toast('¡Datos publicados! Todos los usuarios pueden verlos ahora.');
+      if (btn) {
+        btn.innerHTML = '<i class="bi bi-cloud-check-fill"></i> ¡Publicado!';
+        btn.style.background = '#10B981';
+        setTimeout(() => {
+          if (btn) {
+            btn.style.background = '';
+            btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
+            btn.disabled = false;
+          }
+        }, 3000);
+      }
+    } catch(e) {
+      toast('Error al publicar: ' + e.message, true);
+      if (btn) { btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.disabled = false; }
+    }
+  }
+
   /* ---- Init ---- */
-  navigate('upload');
+  (async function _init() {
+    const isAdmin = _isAdminUser();
+
+    // Ocultar carga de archivos a no-admins
+    if (!isAdmin) {
+      const navUp   = document.getElementById('navUpload');
+      const btnCarg = document.getElementById('btnCargar');
+      if (navUp)   navUp.style.display   = 'none';
+      if (btnCarg) btnCarg.style.display = 'none';
+    }
+
+    // Intentar cargar datos publicados
+    const loaded = await _loadCxcFromDB();
+
+    if (loaded) {
+      navigate('report');
+      if (isAdmin) {
+        const btn = document.getElementById('btnPublicar');
+        if (btn) btn.style.display = '';
+      }
+    } else {
+      navigate(isAdmin ? 'upload' : 'report');
+    }
+  })();
 
   return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
-           navigate, toggleGroup, ecOnClientChange, ecPrint, ecExportPDF };
+           navigate, toggleGroup, ecOnClientChange, ecPrint, ecExportPDF, publicar };
 })();
 </script>
 </body>
