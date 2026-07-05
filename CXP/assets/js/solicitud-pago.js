@@ -589,7 +589,7 @@ const SolicitudPago = (() => {
 
   function _printCSS(){ return `
     @page{ size:A4 landscape; margin:12mm 14mm; }
-    *{box-sizing:border-box;margin:0;padding:0}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     body{font-family:Arial,sans-serif;color:#1f2937}
     .doc-page{max-width:100%}
     .doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px}
