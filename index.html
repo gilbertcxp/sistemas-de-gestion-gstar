@@ -524,6 +524,11 @@ function lazyLoadFrame(page){
     const f=document.getElementById('frame-compensacion');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
+  // CXC · Antigüedad de Saldo
+  if(page==='cxc'){
+    const f=document.getElementById('frame-cxc');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
   // CXP · Reporte de CXP
   if(page==='cxp-reporte'){
     const f=document.getElementById('frame-cxp-reporte');
