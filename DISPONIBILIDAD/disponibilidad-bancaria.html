@@ -667,14 +667,7 @@ function excRow(label,val,mode){
 }
 
 function renderResumen(totBancos,totCert){
-  const badge = '<div class="bank-badge">'
-    + '<svg viewBox="0 0 110 105" width="38" height="36" xmlns="http://www.w3.org/2000/svg" aria-label="Banreservas">'
-    +   '<path fill-rule="evenodd" fill="#1B3566"'
-    +     ' d="M10,4 L56,4 Q88,4 88,24 Q88,39 64,44 L88,62 L66,62 L48,44 L28,44 L28,62 L10,62 Z'
-    +        ' M28,15 L28,35 L48,35 Q64,35 64,24 Q64,15 48,15 Z"/>'
-    +   '<path d="M2,78 Q55,64 108,74" stroke="#00AEEF" stroke-width="8.5" fill="none" stroke-linecap="round"/>'
-    +   '<path d="M16,91 Q58,76 108,87" stroke="#F5A623" stroke-width="8.5" fill="none" stroke-linecap="round"/>'
-    + '</svg></div>';
+  const badge = '<div class="bank-badge"><i class="bi bi-bank2"></i></div>';
 
   /* Tarjetas de cuentas bancarias (Operativa y Compensación).
      Total Disponible = Balance + Pagos + Transferencias + Pendientes  (== bancoUpd) */
