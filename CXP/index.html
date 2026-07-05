@@ -238,6 +238,8 @@
           <p class="sub">Documentos seleccionados desde el Reporte de CXP</p>
         </div>
         <div class="topbar-actions">
+          <button class="btn btn-soft" id="btnEditarSolicitud" style="display:none;">Editar</button>
+          <button class="btn btn-primary" id="btnGuardarSolicitud">Guardar solicitud</button>
           <button class="btn btn-ghost" id="btnImprimirSolicitud">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
             Imprimir
@@ -250,42 +252,19 @@
         </div>
       </div>
 
-      <div class="two-col" style="grid-template-columns:290px 1fr;align-items:start;">
-        <div class="card" style="position:sticky;top:20px;">
-          <div class="card-head"><div><h3>Disponibilidad Bancaria</h3><p class="sub">Parámetros del documento</p></div></div>
-          <div class="card-body" id="spBankFields" style="gap:10px;display:flex;flex-direction:column;">
-            <div class="field">
-              <label class="f-label">Cuenta bancaria</label>
-              <input type="text" class="input" id="spCuentaLabel">
-            </div>
-            <div class="field">
-              <label class="f-label">Balance en banco (RD$)</label>
-              <input type="number" class="input" id="spBalanceBanco" value="0" step="0.01">
-            </div>
-            <div class="field">
-              <label class="f-label">Cheques/transferencias en tránsito (RD$)</label>
-              <input type="number" class="input" id="spChequesTransito" value="0" step="0.01">
-            </div>
-            <div class="field">
-              <label class="f-label">Provisiones y reservas (RD$)</label>
-              <input type="number" class="input" id="spProvisiones" value="0" step="0.01">
-            </div>
-            <div class="field">
-              <label class="f-label">Depósitos/transferencias entre cuentas (RD$)</label>
-              <input type="number" class="input" id="spDepositos" value="0" step="0.01">
-            </div>
-          </div>
-          <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);">
-            <button class="btn btn-soft" id="btnEditarSolicitud" style="display:none;">Editar</button>
-            <button class="btn btn-primary" id="btnGuardarSolicitud">Guardar solicitud</button>
-          </div>
-        </div>
+      <!-- Inputs ocultos requeridos por el JS -->
+      <div style="display:none" id="spBankFields">
+        <input type="text"   id="spCuentaLabel">
+        <input type="number" id="spBalanceBanco"    value="0" step="0.01">
+        <input type="number" id="spChequesTransito" value="0" step="0.01">
+        <input type="number" id="spProvisiones"     value="0" step="0.01">
+        <input type="number" id="spDepositos"       value="0" step="0.01">
+      </div>
 
-        <div id="spDocument" class="doc-preview">
-          <div class="t-empty" style="padding:60px 20px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
-            <div>Selecciona facturas en el Reporte de CXP para generar la solicitud.</div>
-          </div>
+      <div id="spDocument" class="doc-preview">
+        <div class="t-empty" style="padding:60px 20px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="36" height="36"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="m9 13 2 2 4-4"/></svg>
+          <div>Selecciona facturas en el Reporte de CXP para generar la solicitud.</div>
         </div>
       </div>
 
