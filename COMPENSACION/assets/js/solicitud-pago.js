@@ -54,7 +54,7 @@ const SolicitudPago = (() => {
     const balRow = (label, val, extra='') =>
       `<div class="doc-bal-row${extra}">
          <span class="doc-bal-label">${Utils.escapeHtml(label)}</span>
-         <span class="doc-bal-val${val<0?' neg':''}">${Utils.fmtMoney(val)}</span>
+         <span class="doc-bal-val${val<0?' neg':''}">${val<0 ? '('+Utils.fmtMoney(-val)+')' : Utils.fmtMoney(val)}</span>
        </div>`;
 
     const tableRows = _rows.length === 0
@@ -87,7 +87,7 @@ const SolicitudPago = (() => {
 
         <div class="doc-balance-grid">
           ${balRow('Balance en Cuenta Bancaria COMP', balanceComp)}
-          ${balRow('Transferencia entre Cuentas', transferencia)}
+          ${balRow('Transferencia entre Cuentas', -transferencia)}
           ${balRow('Balance COMP Actualizado', balanceCompAct, ' doc-bal-total')}
           ${balRow('Saldo a Favor en Cuenta Operativa', balanceOp)}
           ${balRow('Saldo a Pagar por Concepto de Corte', totalPagar)}
