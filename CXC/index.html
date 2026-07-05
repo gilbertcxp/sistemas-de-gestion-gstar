@@ -152,6 +152,72 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast i{font-size:15px}
 
+/* ---- Estado de Cuenta section ---- */
+.ec-section{margin-top:32px}
+.ec-section-header{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;margin-bottom:18px}
+.ec-section-title{font-size:18px;font-weight:800;font-family:'Sora',sans-serif;
+  display:flex;align-items:center;gap:10px;color:var(--navy)}
+.ec-sel-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ec-doc-frame{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);overflow:hidden}
+.ec-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;text-align:center;color:var(--ink-3);gap:12px}
+.ec-placeholder .ico{font-size:44px}
+.ec-placeholder .msg{font-size:14px;font-weight:500}
+
+/* Doc page */
+.doc-page{max-width:860px;margin:0 auto;padding:28px 32px;font-family:'Inter',sans-serif;color:#334155}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;
+  padding-bottom:18px;border-bottom:2px solid #e2e8f0;margin-bottom:20px}
+.doc-logo{height:52px;object-fit:contain}
+.doc-header-right{text-align:right}
+.doc-empresa{font-size:15px;font-weight:700;color:#0f172a;font-family:'Sora',sans-serif}
+.doc-sub{font-size:11px;color:#64748b;margin-top:1px}
+.doc-fecha{font-size:11px;color:#64748b;margin-top:3px;font-style:italic}
+.doc-client-row{display:flex;align-items:center;gap:14px;
+  background:#f8fafc;border:1px solid var(--line);border-radius:10px;
+  padding:14px 18px;margin-bottom:18px}
+.doc-client-ico{width:44px;height:44px;border-radius:50%;
+  background:#eff6ff;color:var(--blue);display:flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0}
+.doc-client-name{font-size:16px;font-weight:800;color:var(--ink);font-family:'Sora',sans-serif}
+.doc-client-sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.doc-ec-title{background:var(--navy);color:#fff;text-align:center;
+  padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:18px;font-family:'Sora',sans-serif}
+.doc-cards{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.doc-card{flex:1;min-width:140px;border-radius:10px;padding:14px 16px;border:1px solid transparent}
+.doc-card.blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.doc-card.green{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
+.doc-card.red{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.doc-card.amber{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.doc-card-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;opacity:.75}
+.doc-card-val{font-size:15px;font-weight:800;margin-top:4px;font-family:'IBM Plex Mono',monospace}
+.doc-total-block{text-align:center;padding:18px;background:#0f172a;border-radius:10px;
+  margin-bottom:22px;color:#fff}
+.doc-total-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+  opacity:.7;font-weight:700;margin-bottom:6px}
+.doc-total-amount{font-size:30px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:#4ade80}
+.doc-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.doc-tbl thead th{background:#1f3864;color:#fff;padding:9px 11px;text-align:left;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+.doc-tbl thead th.r{text-align:right}
+.doc-tbl tbody td{padding:8px 11px;border-bottom:1px solid #e2e8f0;vertical-align:middle}
+.doc-tbl tbody td.r{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.doc-tbl tbody tr:nth-child(even){background:#f8fafc}
+.doc-tbl tfoot td{background:#f1f5f9;font-weight:700;padding:9px 11px;border-top:2px solid #cbd5e1}
+.doc-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
+.doc-footer-note{text-align:center;font-size:10px;color:#94a3b8;margin-top:20px;
+  padding-top:12px;border-top:1px solid #e2e8f0}
+.bkt{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;white-space:nowrap}
+.bkt-0{background:#dcfce7;color:#15803d}.bkt-1{background:#d1fae5;color:#065f46}
+.bkt-2{background:#fef9c3;color:#854d0e}.bkt-3{background:#fef3c7;color:#92400e}
+.bkt-4{background:#ffedd5;color:#9a3412}.bkt-5{background:#fee2e2;color:#b91c1c}
+.bkt-6{background:#fecaca;color:#991b1b}
+.doc-sub-heading{font-size:11.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--ink-3);margin-bottom:8px}
+
 /* ---- Print ---- */
 @media print{
   .topbar,.toolbar,.stats-bar,.upload-zone,.no-print{display:none!important}
@@ -266,6 +332,34 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
     </button>
   </div>
 
+  <!-- ===== ESTADO DE CUENTA ===== -->
+  <div class="ec-section no-print" id="ecSection" style="display:none">
+    <div class="ec-section-header">
+      <div class="ec-section-title">
+        <i class="bi bi-file-person"></i> Estado de Cuenta por Cliente
+      </div>
+      <div class="ec-sel-wrap">
+        <select class="sel" id="ecClienteSel" onchange="CXC.ecOnClientChange(this.value)" style="min-width:260px">
+          <option value="">— Seleccionar cliente —</option>
+        </select>
+        <button class="btn btn-outline" id="ecBtnPrint" onclick="CXC.ecPrint()" disabled>
+          <i class="bi bi-printer"></i> Imprimir
+        </button>
+        <button class="btn btn-outline" id="ecBtnPDF" onclick="CXC.ecExportPDF()" disabled>
+          <i class="bi bi-file-earmark-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+    <div class="ec-doc-frame">
+      <div id="ecDocument">
+        <div class="ec-placeholder">
+          <i class="bi bi-person-lines-fill ico"></i>
+          <span class="msg">Selecciona un cliente para ver su estado de cuenta</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Table -->
   <div class="table-wrap">
     <div class="table-scroll">
@@ -320,6 +414,9 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 
 <!-- SheetJS -->
 <script src="assets/vendor/xlsx.full.min.js"></script>
+<!-- html2canvas + jsPDF (for EC PDF export) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
 /* ============================================================
@@ -369,8 +466,10 @@ const CXC = (() => {
 
   /* ---- State ---- */
   let _allRows = [];
+  let _rawByClient = {};
   let _filtered = [];
   let _fileName = '';
+  let _ecClientName = '';
 
   /* ---- Client matching ---- */
   function matchWhitelist(clientName) {
@@ -462,6 +561,7 @@ const CXC = (() => {
        Row 0 = headers, Row 1 = "Moneda: RD$" → skip; data starts at row 2 */
 
     const map = {};   // wlName → buckets[7]
+    _rawByClient = {};
     let skippedNotInList = 0;
     let skippedZero = 0;
     let totalInvoices = 0;
@@ -483,6 +583,9 @@ const CXC = (() => {
 
       if (!map[wl]) map[wl] = [0,0,0,0,0,0,0];
       map[wl][getBucket(diasRaw)] += pendiente;
+
+      if (!_rawByClient[wl]) _rawByClient[wl] = [];
+      _rawByClient[wl].push(row);
     }
 
     // Build sorted array
@@ -504,6 +607,7 @@ const CXC = (() => {
 
     _updateStats();
     _populateClientFilter();
+    _populateEcCliente();
     _render();
     document.getElementById('footFile').textContent = _fileName;
 
@@ -566,6 +670,221 @@ const CXC = (() => {
     const sel = document.getElementById('filterCliente');
     sel.innerHTML = '<option value="">Todos los clientes</option>' +
       _allRows.map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+  }
+
+  /* ---- Estado de Cuenta ---- */
+  const EC_BKT_NAMES  = ['0-15 días','16-30 días','31-45 días','46-60 días','61-120 días','121-365 días','+365 días'];
+  const EC_BKT_LABELS = ['15 DÍAS','1 MES','1 MES Y ½','2 MESES','4 MESES','1 AÑO','+1 AÑO'];
+
+  function _populateEcCliente() {
+    const sel = document.getElementById('ecClienteSel');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
+      _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
+    document.getElementById('ecSection').style.display = 'block';
+    // reset if previously selected client no longer in list
+    _ecClientName = '';
+    const btnP = document.getElementById('ecBtnPrint');
+    const btnD = document.getElementById('ecBtnPDF');
+    if (btnP) btnP.disabled = true;
+    if (btnD) btnD.disabled = true;
+    document.getElementById('ecDocument').innerHTML =
+      `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
+  }
+
+  function _esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function ecOnClientChange(name) {
+    _ecClientName = name;
+    const btnP = document.getElementById('ecBtnPrint');
+    const btnD = document.getElementById('ecBtnPDF');
+    if (!name) {
+      document.getElementById('ecDocument').innerHTML =
+        `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
+      if (btnP) btnP.disabled = true;
+      if (btnD) btnD.disabled = true;
+      return;
+    }
+    document.getElementById('ecDocument').innerHTML = _buildEstadoCuenta(name);
+    if (btnP) btnP.disabled = false;
+    if (btnD) btnD.disabled = false;
+  }
+
+  function _buildEstadoCuenta(name) {
+    const rowData  = _allRows.find(r => r.name === name);
+    const invoices = _rawByClient[name] || [];
+    if (!rowData) return `<div class="ec-placeholder"><i class="bi bi-exclamation-circle ico"></i><span class="msg">Cliente no encontrado</span></div>`;
+
+    const fecha    = new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+    const total    = rowData.total;
+    const corriente = rowData.buckets.slice(0,4).reduce((s,v)=>s+v,0);
+    const vencMedio = rowData.buckets[4] + rowData.buckets[5];
+    const vencPlus  = rowData.buckets[6];
+
+    const cards = `<div class="doc-cards">
+      <div class="doc-card blue"><div class="doc-card-lbl">Total Pendiente</div><div class="doc-card-val">${fmtMFull(total)}</div></div>
+      <div class="doc-card green"><div class="doc-card-lbl">Corriente (0-60 días)</div><div class="doc-card-val">${fmtMFull(corriente)}</div></div>
+      <div class="doc-card amber"><div class="doc-card-lbl">Vencido (61-365 días)</div><div class="doc-card-val">${fmtMFull(vencMedio)}</div></div>
+      <div class="doc-card red"><div class="doc-card-lbl">+1 Año Vencido</div><div class="doc-card-val">${fmtMFull(vencPlus)}</div></div>
+    </div>`;
+
+    const bucketRows = rowData.buckets.map((v,i) => v===0 ? '' :
+      `<tr>
+        <td><span class="bkt bkt-${i}">${EC_BKT_NAMES[i]}</span></td>
+        <td>${EC_BKT_LABELS[i]}</td>
+        <td class="r">${fmtMFull(v)}</td>
+      </tr>`
+    ).join('');
+
+    const invoiceRows = invoices.map(row => {
+      const idDoc = String(row[1]||'').trim();
+      const fec   = row[3]||'';
+      const vence = row[4]||'';
+      const dias  = Number(row[6])||0;
+      const nota  = String(row[7]||'').trim();
+      const pend  = parseFloat(String(row[10]).replace(/,/g,''))||0;
+      const b     = getBucket(dias);
+      return `<tr>
+        <td>${_esc(idDoc)}</td>
+        <td style="white-space:nowrap">${_esc(String(fec))}</td>
+        <td style="white-space:nowrap">${_esc(String(vence))}</td>
+        <td style="text-align:right">${dias}</td>
+        <td><span class="bkt bkt-${b}">${EC_BKT_NAMES[b]}</span></td>
+        <td>${_esc(nota)}</td>
+        <td class="r">${fmtMFull(pend)}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="doc-page">
+      <div class="doc-header">
+        <img src="../CXP/assets/img/logo.png" class="doc-logo" alt="Logo" onerror="this.style.display='none'">
+        <div class="doc-header-right">
+          <div class="doc-empresa">Gstar Services S.A.</div>
+          <div class="doc-sub">RNC 131-75101-6</div>
+          <div class="doc-fecha">${fecha}</div>
+        </div>
+      </div>
+
+      <div class="doc-client-row">
+        <div class="doc-client-ico"><i class="bi bi-building"></i></div>
+        <div>
+          <div class="doc-client-name">${_esc(name)}</div>
+          <div class="doc-client-sub">CXC · Cuentas por Cobrar</div>
+        </div>
+      </div>
+
+      <div class="doc-ec-title">Estado de Cuenta</div>
+
+      ${cards}
+
+      <div class="doc-total-block">
+        <div class="doc-total-label">Total Pendiente por Cobrar</div>
+        <div class="doc-total-amount">${fmtMFull(total)}</div>
+      </div>
+
+      <div class="doc-sub-heading">Antigüedad de Saldo</div>
+      <table class="doc-tbl" style="margin-bottom:24px">
+        <thead><tr><th>Período</th><th>Rango de Días</th><th class="r">Monto</th></tr></thead>
+        <tbody>${bucketRows||'<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">Sin movimientos</td></tr>'}</tbody>
+        <tfoot><tr><td colspan="2"><b>TOTAL</b></td><td class="r"><b>${fmtMFull(total)}</b></td></tr></tfoot>
+      </table>
+
+      <div class="doc-sub-heading">Detalle de Facturas (${invoices.length})</div>
+      <table class="doc-tbl">
+        <thead><tr>
+          <th>N° Doc</th><th>Fecha</th><th>Vence</th>
+          <th class="r">Días</th><th>Estado</th><th>Descripción</th><th class="r">Pendiente</th>
+        </tr></thead>
+        <tbody>${invoiceRows||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">Sin facturas registradas</td></tr>'}</tbody>
+        <tfoot><tr><td colspan="6"><b>TOTAL PENDIENTE</b></td><td class="r"><b>${fmtMFull(total)}</b></td></tr></tfoot>
+      </table>
+
+      <div class="doc-footer-note">
+        Documento generado el ${fecha} · Sistema de Gestión Gstar Services S.A. · Solo para uso interno
+      </div>
+    </div>`;
+  }
+
+  function ecPrint() {
+    if (!_ecClientName) return;
+    const content = document.getElementById('ecDocument').innerHTML;
+    const w = window.open('', '_blank', 'width=940,height=720');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Estado de Cuenta — ${_esc(_ecClientName)}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+      <style>
+        :root{--navy:#1B2B4B;--blue:#2563eb;--ink:#0f172a;--ink-2:#475569;--line:#e2e8f0}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Inter',sans-serif;background:#fff;color:#334155}
+        .doc-page{max-width:100%;padding:16mm 20mm}
+        .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}
+        .doc-logo{height:50px}
+        .doc-header-right{text-align:right}
+        .doc-empresa{font-size:15px;font-weight:700;color:#0f172a}
+        .doc-sub,.doc-fecha{font-size:11px;color:#64748b;margin-top:1px}
+        .doc-client-row{display:flex;align-items:center;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin-bottom:18px}
+        .doc-client-ico{width:42px;height:42px;border-radius:50%;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:20px}
+        .doc-client-name{font-size:16px;font-weight:700;color:#0f172a}
+        .doc-client-sub{font-size:11px;color:#64748b;margin-top:2px}
+        .doc-ec-title{background:#1B2B4B;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:18px}
+        .doc-cards{display:flex;gap:10px;margin-bottom:18px}
+        .doc-card{flex:1;border-radius:8px;padding:12px 14px;border:1px solid transparent}
+        .doc-card.blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+        .doc-card.green{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
+        .doc-card.red{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+        .doc-card.amber{background:#fffbeb;border-color:#fde68a;color:#92400e}
+        .doc-card-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.75}
+        .doc-card-val{font-size:13px;font-weight:700;margin-top:4px}
+        .doc-total-block{text-align:center;padding:16px;background:#0f172a;border-radius:10px;margin-bottom:18px;color:#fff}
+        .doc-total-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;opacity:.7;font-weight:700;margin-bottom:4px}
+        .doc-total-amount{font-size:26px;font-weight:800;color:#4ade80}
+        .doc-sub-heading{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:7px}
+        .doc-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px}
+        .doc-tbl thead th{background:#1f3864;color:#fff;padding:8px 10px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px}
+        .doc-tbl thead th.r{text-align:right}
+        .doc-tbl tbody td{padding:7px 10px;border-bottom:1px solid #e2e8f0}
+        .doc-tbl tbody td.r{text-align:right}
+        .doc-tbl tbody tr:nth-child(even){background:#f8fafc}
+        .doc-tbl tfoot td{background:#f1f5f9;font-weight:700;padding:8px 10px;border-top:2px solid #cbd5e1}
+        .doc-tbl tfoot td.r{text-align:right}
+        .bkt{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:600}
+        .bkt-0{background:#dcfce7;color:#15803d}.bkt-1{background:#d1fae5;color:#065f46}
+        .bkt-2{background:#fef9c3;color:#854d0e}.bkt-3{background:#fef3c7;color:#92400e}
+        .bkt-4{background:#ffedd5;color:#9a3412}.bkt-5{background:#fee2e2;color:#b91c1c}
+        .bkt-6{background:#fecaca;color:#991b1b}
+        .doc-footer-note{text-align:center;font-size:9.5px;color:#94a3b8;margin-top:18px;padding-top:10px;border-top:1px solid #e2e8f0}
+        @page{margin:0}
+      </style></head><body>${content}</body></html>`);
+    w.document.close(); w.focus();
+    w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+  }
+
+  function ecExportPDF() {
+    if (!_ecClientName) return;
+    const el = document.getElementById('ecDocument');
+    if (!el) return;
+    toast('Generando PDF…');
+    html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
+      .then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pgW = 210, pgH = 297;
+        const imgH = (canvas.height / canvas.width) * pgW;
+        let yOff = 0;
+        while (yOff < imgH) {
+          if (yOff > 0) pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, -yOff, pgW, imgH);
+          yOff += pgH;
+        }
+        const safe = _ecClientName.replace(/[^a-z0-9]/gi,'_');
+        pdf.save(`EstadoCuenta_CXC_${safe}_${new Date().toISOString().slice(0,10)}.pdf`);
+        toast('PDF descargado correctamente');
+      })
+      .catch(() => toast('Error al generar el PDF', true));
   }
 
   /* ---- Filters ---- */
@@ -640,7 +959,8 @@ const CXC = (() => {
     _tt = setTimeout(()=>el.classList.remove('show'), 4000);
   }
 
-  return { loadFile, handleDrop, filterTable, clearFilters, exportExcel, reloadFile };
+  return { loadFile, handleDrop, filterTable, clearFilters, exportExcel, reloadFile,
+           ecOnClientChange, ecPrint, ecExportPDF };
 })();
 </script>
 </body>
