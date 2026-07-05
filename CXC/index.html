@@ -1392,7 +1392,7 @@ const CXC = (() => {
           tooltip: { callbacks:{ label: c => ` ${c.dataset.label}: ${fmtMFull(c.parsed.x)}` } }
         },
         scales: {
-          x: { stacked:true, ticks:{ font:{size:10}, callback: v => (v/1000).toFixed(0)+'K' } },
+          x: { stacked:true, ticks:{ font:{size:10}, callback: v => (v/1000000).toFixed(1)+'MM' } },
           y: { stacked:true, ticks:{ font:{size:10} } }
         },
         onClick: (_e, elems) => {
@@ -1458,7 +1458,7 @@ const CXC = (() => {
           tooltip: { callbacks:{ label: c => ` ${fmtMFull(c.parsed.x)}` } }
         },
         scales: {
-          x: { ticks:{ font:{size:10}, callback: v => (v/1000).toFixed(0)+'K' } },
+          x: { ticks:{ font:{size:10}, callback: v => (v/1000000).toFixed(1)+'MM' } },
           y: { ticks:{ font:{size:10} } }
         },
         onClick: (_e, elems) => {
