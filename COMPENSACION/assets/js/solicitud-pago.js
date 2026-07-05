@@ -226,7 +226,7 @@ const SolicitudPago = (() => {
     body{font-family:Arial,sans-serif;padding:18mm 20mm;color:#334155}
     .doc-page{max-width:100%}
     .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}
-    .doc-logo{height:56px}
+    .doc-logo{height:130px}
     .doc-header-right{text-align:right}
     .doc-empresa{font-size:15px;font-weight:700;color:#0f172a}
     .doc-sub,.doc-fecha{font-size:11px;color:#64748b}

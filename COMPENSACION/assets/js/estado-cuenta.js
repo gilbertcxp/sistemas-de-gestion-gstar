@@ -217,7 +217,7 @@ const EstadoCuenta = (() => {
 
     .ec-head{display:flex;justify-content:space-between;align-items:flex-start;
       padding-bottom:18px;border-bottom:1px solid #e2e8f0;margin-bottom:22px}
-    .ec-logo{height:54px}
+    .ec-logo{height:130px}
     .ec-head-right{text-align:right}
     .ec-empresa{font-size:18px;font-weight:800;color:#0f172a}
     .ec-rnc{font-size:12px;color:#94a3b8;margin-top:2px}
