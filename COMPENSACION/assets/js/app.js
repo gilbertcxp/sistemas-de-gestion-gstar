@@ -391,13 +391,14 @@ const App = (() => {
 
   // ---------------- Reportes ----------------
   function renderReportes(){
-    const k = Dashboard.compute();
-    document.getElementById('repTotalFacturas').textContent = k.totalFacturas;
-    document.getElementById('repMontoTotal').textContent = Utils.fmtMoney(k.montoTotal);
-    document.getElementById('repTotal2').textContent = Utils.fmtMoney(k.total2);
-    document.getElementById('repClientes').textContent = k.clientesFacturados;
-
     const invoices = Storage.getInvoices();
+    const montoTotal = invoices.reduce((s,i) => s + (i.montoOriginal||0), 0);
+    const total2     = invoices.reduce((s,i) => s + (i.monto2||0), 0);
+    const clientesSet = new Set(invoices.map(i => i.clienteId||i.clienteNombre).filter(Boolean));
+    document.getElementById('repTotalFacturas').textContent = invoices.length;
+    document.getElementById('repMontoTotal').textContent = Utils.fmtMoney(montoTotal);
+    document.getElementById('repTotal2').textContent = Utils.fmtMoney(total2);
+    document.getElementById('repClientes').textContent = clientesSet.size;
     const map = {};
     invoices.forEach(i => {
       if(!map[i.clienteNombre]) map[i.clienteNombre] = { count:0, original:0, dos:0, total:0 };
@@ -418,6 +419,75 @@ const App = (() => {
           <td class="r num">${Utils.fmtNum(v.dos)}</td>
           <td class="r num"><b>${Utils.fmtNum(v.total)}</b></td>
         </tr>`).join('');
+
+    // ---- Historial de Recibos de Pago ----
+    const pagos = Storage.getPagos().slice().reverse();
+    const tbodyPagos = document.querySelector('#tblRepPagos tbody');
+    tbodyPagos.innerHTML = pagos.length === 0
+      ? `<tr><td colspan="5"><div class="t-empty">No hay recibos registrados todavía.</div></td></tr>`
+      : pagos.map(p => `
+        <tr>
+          <td><b>${p.numero}</b></td>
+          <td>${Utils.escapeHtml(p.consorcio||'—')}</td>
+          <td>${Utils.fmtDate(p.fecha)}</td>
+          <td class="r num"><b>${Utils.fmtMoney(p.total||0)}</b></td>
+          <td class="c">${p.registros||0}</td>
+        </tr>`).join('');
+
+    // ---- Historial de Solicitudes de Pago ----
+    const solicitudes = Storage.getSolicitudes().slice().reverse();
+    const tbodySol = document.querySelector('#tblRepSolicitudes tbody');
+    tbodySol.innerHTML = solicitudes.length === 0
+      ? `<tr><td colspan="6"><div class="t-empty">No hay solicitudes generadas todavía.</div></td></tr>`
+      : solicitudes.map(s => {
+          const total = (s.items||[]).reduce((acc,i)=>acc+(Number(i.monto)||0),0);
+          const estadoPill = s.estado === 'Aplicada'
+            ? `<span class="pill ok"><span class="pill-dot"></span>Aplicada</span>`
+            : `<span class="pill warn"><span class="pill-dot"></span>Pendiente</span>`;
+          return `<tr>
+            <td><b>${s.numero}</b></td>
+            <td>${Utils.escapeHtml(s.corte||'—')}</td>
+            <td>${Utils.fmtDate(s.fecha)}</td>
+            <td>${estadoPill}</td>
+            <td class="r num"><b>${Utils.fmtMoney(total)}</b></td>
+            <td class="c">${(s.items||[]).length}</td>
+          </tr>`;
+        }).join('');
+  }
+
+  function _exportPagosExcel(){
+    const pagos = Storage.getPagos();
+    if(!pagos.length){ UI.toast('No hay recibos para exportar', 'err'); return; }
+    const rows = pagos.map(p => ({
+      'No.': p.numero,
+      'Consorcio': p.consorcio||'',
+      'Fecha': p.fecha||'',
+      'Total Cobrado': p.total||0,
+      'Registros': p.registros||0
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Recibos');
+    XLSX.writeFile(wb, `Recibos_Pago_${Utils.todayISO()}.xlsx`);
+    UI.toast('Excel de recibos descargado', 'ok');
+  }
+
+  function _exportSolicitudesExcel(){
+    const sols = Storage.getSolicitudes();
+    if(!sols.length){ UI.toast('No hay solicitudes para exportar', 'err'); return; }
+    const rows = sols.map(s => ({
+      'No.': s.numero,
+      'Corte': s.corte||'',
+      'Fecha': s.fecha||'',
+      'Estado': s.estado||'',
+      'Total': (s.items||[]).reduce((a,i)=>a+(Number(i.monto)||0),0),
+      'Ítems': (s.items||[]).length
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Solicitudes');
+    XLSX.writeFile(wb, `Solicitudes_Pago_${Utils.todayISO()}.xlsx`);
+    UI.toast('Excel de solicitudes descargado', 'ok');
   }
 
   // ---------------- Configuración ----------------
@@ -573,6 +643,8 @@ const App = (() => {
     document.getElementById('btnRepExcel').addEventListener('click', () => { Invoices.clearFilters(); Exporters.exportGeneralExcel(); });
     document.getElementById('btnRepPdf').addEventListener('click', () => { Invoices.clearFilters(); Exporters.exportGeneralPDF(); });
     document.getElementById('btnRepClientesExcel').addEventListener('click', Exporters.exportClientesExcel);
+    document.getElementById('btnRepPagosExcel').addEventListener('click', _exportPagosExcel);
+    document.getElementById('btnRepSolicitudesExcel').addEventListener('click', _exportSolicitudesExcel);
 
     // ---- Configuración ----
     document.getElementById('btnGuardarConfig').addEventListener('click', saveConfig);

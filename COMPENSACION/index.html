@@ -683,6 +683,48 @@
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Historial de Recibos de Pago</h3><p class="sub">Cobros CXC registrados en el módulo Pagos</p></div>
+          <button class="btn btn-ghost btn-sm" id="btnRepPagosExcel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Excel
+          </button>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblRepPagos">
+              <thead><tr>
+                <th>No.</th><th>Consorcio</th><th>Fecha</th>
+                <th class="r">Total Cobrado</th><th class="c">Registros</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Historial de Solicitudes de Pago</h3><p class="sub">Solicitudes CXP generadas</p></div>
+          <button class="btn btn-ghost btn-sm" id="btnRepSolicitudesExcel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+            Excel
+          </button>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblRepSolicitudes">
+              <thead><tr>
+                <th>No.</th><th>Corte</th><th>Fecha</th>
+                <th>Estado</th><th class="r">Total</th><th class="c">Ítems</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===================== CONFIGURACIÓN ===================== -->
