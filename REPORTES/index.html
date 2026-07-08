@@ -54,16 +54,20 @@
     /* Content */
     .content{padding:18px 22px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
 
-    /* Upload card */
-    .upload-card{background:#fff;border:2px dashed var(--line);border-radius:10px;padding:22px 24px;display:flex;align-items:center;gap:18px;flex-shrink:0;cursor:pointer;transition:all .2s}
-    .upload-card:hover,.upload-card.drag{border-color:var(--blue);background:#eff6ff}
-    .upload-ico{width:44px;height:44px;border-radius:10px;background:#eff6ff;color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-    .upload-text .ut-title{font-size:13.5px;font-weight:700;color:#0f172a}
-    .upload-text .ut-sub{font-size:12px;color:var(--muted);margin-top:3px}
-    .upload-meta{margin-left:auto;text-align:right;flex-shrink:0}
-    .upload-meta .um-file{font-size:12px;font-weight:600;color:var(--green)}
-    .upload-meta .um-date{font-size:11px;color:var(--muted);margin-top:2px}
-    #fileInput{display:none}
+    /* Upload section */
+    .up-hero{background:linear-gradient(135deg,#0B1437,#1a1060);border-radius:10px;padding:20px 24px;flex-shrink:0}
+    .up-hero-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .up-hero-sub{font-size:12.5px;color:rgba(255,255,255,.5)}
+    .up-zone{border:2px dashed var(--line);border-radius:10px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff;position:relative;flex-shrink:0}
+    .up-zone:hover,.up-zone.drag{border-color:var(--blue);background:#eff6ff}
+    .up-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .up-zone.done{border-color:var(--green);background:#f0fdf4}
+    .up-zone-icon{font-size:36px;color:#94a3b8;display:block;margin-bottom:10px;transition:color .2s}
+    .up-zone.done .up-zone-icon{color:var(--green)}
+    .up-zone-name{font-size:14px;font-weight:600;color:#374151;margin-bottom:4px}
+    .up-zone-hint{font-size:12px;color:var(--muted)}
+    .btn-publicar{background:linear-gradient(135deg,var(--blue),#8B5CF6);color:#fff;border:none;padding:7px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:opacity .15s}
+    .btn-publicar:hover{opacity:.88}
 
     /* Filter bar */
     .fbar{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 18px;
@@ -161,7 +165,7 @@
     @media print{
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
       body{background:#fff}
-      .sidebar,.topbar,.upload-card,.fbar,.toast,.sb-footer{display:none!important}
+      .sidebar,.topbar,.up-hero,.up-zone,.fbar,.toast,.sb-footer{display:none!important}
       .main{min-height:unset;overflow:visible}
       .content{padding:0;overflow:visible}
       .rcard{border:none;border-radius:0;overflow:visible}
@@ -202,31 +206,30 @@
       <div class="tb-crumb">Reportes › Estado de Resultados</div>
     </div>
     <div class="tb-actions">
-      <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">
-        <i class="bi bi-upload"></i> Subir Archivo
+      <button id="btnPublicar" class="btn-publicar" style="display:none" onclick="publicarData()">
+        <i class="bi bi-cloud-upload-fill"></i> Publicar
       </button>
       <div class="sep"></div>
       <button class="btn btn-ghost" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
       <button class="btn btn-ghost" onclick="exportPrint()"><i class="bi bi-printer"></i> Imprimir</button>
-      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
     </div>
   </header>
 
   <div class="content">
 
-    <!-- Upload card -->
-    <div class="upload-card" id="uploadCard"
-         onclick="document.getElementById('fileInput').click()"
+    <!-- Upload hero -->
+    <div class="up-hero">
+      <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
+      <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="up-zone" id="uploadCard"
          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-      <div class="upload-ico"><i class="bi bi-file-earmark-arrow-up"></i></div>
-      <div class="upload-text">
-        <div class="ut-title">Subir Estado de Resultados</div>
-        <div class="ut-sub">Arrastra tu archivo .xlsx aquí o haz clic para seleccionar · Formato: frmREstadoIngresos.xlsx</div>
-      </div>
-      <div class="upload-meta" id="uploadMeta" style="display:none">
-        <div class="um-file" id="uploadFileName"></div>
-        <div class="um-date" id="uploadDate"></div>
-      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
+      <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
+      <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
+      <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
     </div>
 
     <!-- Filter bar (shown when data exists) -->
@@ -534,7 +537,7 @@ function processFile(file){
       saveStore();
       _year = parsed.year;
       populateYearSelector();
-      updateUploadMeta();
+      updateUploadZone(file.name);
       render();
       showToast(`Archivo cargado: ${parsed.months.length} meses del ${parsed.year}`);
     }catch(err){
@@ -544,12 +547,36 @@ function processFile(file){
   reader.readAsArrayBuffer(file);
 }
 
-function updateUploadMeta(){
+function updateUploadZone(fileName){
+  const zone = document.getElementById('uploadCard');
+  zone.classList.add('done');
+  document.getElementById('upIcon').className = 'bi bi-check-circle-fill up-zone-icon';
+  document.getElementById('upName').textContent = fileName || (_allData[_year]?.meta?.fileName || '');
+  document.getElementById('upHint').textContent = 'Cargado: ' + (_allData[_year]?.meta?.importedAt || '') + ' · Clic para reemplazar';
+  const btn = document.getElementById('btnPublicar');
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
+  btn.style.background = '';
+}
+
+function publicarData(){
   const data = _allData[_year];
-  if(!data?.meta) return;
-  document.getElementById('uploadMeta').style.display = '';
-  document.getElementById('uploadFileName').textContent = data.meta.fileName;
-  document.getElementById('uploadDate').textContent = 'Cargado: ' + data.meta.importedAt;
+  if(!data){ showToast('No hay datos para publicar'); return; }
+  data.meta.published = true;
+  data.meta.publishedAt = new Date().toLocaleString('es-DO');
+  saveStore();
+  const btn = document.getElementById('btnPublicar');
+  btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Publicado';
+  btn.style.background = 'var(--green)';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
+    btn.style.background = '';
+  }, 3000);
+  showToast('Estado de Resultados publicado correctamente');
 }
 
 /* ══════════════════════════════════════════════════════
@@ -567,7 +594,7 @@ function populateYearSelector(){
 }
 function onYearChange(){
   _year = document.getElementById('fYear').value;
-  updateUploadMeta();
+  updateUploadZone();
   render();
 }
 function onSearch(){
@@ -635,7 +662,7 @@ function showToast(msg, ms=3000){
   if(years.length > 0){
     _year = years[0];
     populateYearSelector();
-    updateUploadMeta();
+    updateUploadZone();
     render();
   } else {
     showEmpty();
