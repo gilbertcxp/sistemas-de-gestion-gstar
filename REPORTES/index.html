@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes — Gstar Services</title>
+  <link rel="icon" href="../CXP/assets/img/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-sidebar:#0f172a; --bg-app:#f1f5f9; --blue:#2563EB; --blue-dk:#1f3864;
+      --line:#e2e8f0; --red:#dc2626; --green:#16a34a; --muted:#64748b;
+    }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    body{ font-family:'Inter',sans-serif; background:var(--bg-app); color:#1f2937; display:flex; min-height:100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar{ width:228px; background:var(--bg-sidebar); display:flex; flex-direction:column; flex-shrink:0; }
+    .sb-logo{ padding:18px 16px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
+    .sb-logo img{ height:44px; width:auto; }
+    .sb-nav{ padding:10px 8px; flex:1; overflow-y:auto; }
+    .sb-label{ font-size:9.5px; font-weight:700; color:#3A5080; text-transform:uppercase; letter-spacing:1px; padding:14px 8px 5px; display:block; }
+    .sb-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:7px;
+      color:rgba(255,255,255,.5); font-size:13px; font-weight:500; cursor:pointer;
+      border:none; background:none; width:100%; text-align:left; transition:all .15s; }
+    .sb-item:hover:not(:disabled){ background:rgba(255,255,255,.07); color:#fff; }
+    .sb-item.active{ background:rgba(37,99,235,.22); color:#fff; border-left:3px solid var(--blue); padding-left:7px; }
+    .sb-item:disabled{ opacity:.32; cursor:not-allowed; }
+    .sb-item i{ font-size:15px; width:18px; text-align:center; flex-shrink:0; }
+    .soon{ margin-left:auto; font-size:9px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); padding:2px 7px; border-radius:20px; }
+    .sb-footer{ padding:12px 16px; font-size:10px; color:#3A5080; border-top:1px solid rgba(255,255,255,.04); }
+
+    /* ── Main ── */
+    .main{ flex:1; display:flex; flex-direction:column; min-height:100vh; overflow:auto; }
+
+    /* Topbar */
+    .topbar{ background:#fff; border-bottom:1px solid var(--line); padding:0 22px;
+      height:56px; display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0; position:sticky; top:0; z-index:10; gap:10px; }
+    .tb-left .tb-title{ font-size:15px; font-weight:700; color:#0f172a; line-height:1.2; }
+    .tb-left .tb-crumb{ font-size:11px; color:var(--muted); }
+    .tb-actions{ display:flex; gap:8px; align-items:center; }
+    .sep{ width:1px; height:24px; background:var(--line); }
+
+    /* Buttons */
+    .btn{ display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:7px;
+      font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:'Inter',sans-serif; transition:all .15s; }
+    .btn-ghost{ background:transparent; color:#374151; border:1px solid var(--line); }
+    .btn-ghost:hover{ background:#f8fafc; }
+    .btn-blue{ background:var(--blue); color:#fff; }
+    .btn-blue:hover{ background:#1d4ed8; }
+    .btn-green{ background:var(--green); color:#fff; }
+    .btn-green:hover{ background:#15803d; }
+
+    /* Content */
+    .content{ padding:20px 24px; flex:1; }
+
+    /* Filter bar */
+    .fbar{ background:#fff; border:1px solid var(--line); border-radius:10px;
+      padding:12px 18px; margin-bottom:18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .fg{ display:flex; align-items:center; gap:8px; }
+    .fg-lbl{ font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+    .fg select{ padding:6px 10px; border:1px solid var(--line); border-radius:6px;
+      font-size:13px; font-family:'Inter',sans-serif; color:#1f2937; background:#fff; cursor:pointer; }
+    .fg select:focus{ outline:none; border-color:var(--blue); }
+    .fsep{ width:1px; height:24px; background:var(--line); }
+
+    /* ── Report card ── */
+    .rcard{ background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+
+    /* Header */
+    .rhead{ display:flex; justify-content:space-between; align-items:flex-start; padding:20px 28px 16px; }
+    .rhead-logo{ height:90px; width:auto; object-fit:contain; }
+    .rhead-right{ text-align:right; }
+    .rhead-name{ font-size:15.5px; font-weight:800; color:#0f172a; }
+    .rhead-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .rhead-period{ font-size:13px; font-weight:700; color:var(--blue); margin-top:6px; }
+
+    /* Title bar */
+    .rtbar{ background:var(--blue-dk); color:#fff; text-align:center; font-weight:700;
+      font-size:14px; letter-spacing:.5px; padding:10px; }
+
+    /* ER Table */
+    .er-table{ width:100%; border-collapse:collapse; }
+    .er-table td{ padding:5px 28px; font-size:13px; vertical-align:middle; }
+    .er-table td.v{ text-align:right; min-width:170px; }
+
+    /* Section header */
+    .r-section td{ background:#f8fafc; padding-top:14px; padding-bottom:6px; }
+    .r-section .lbl{ font-size:10.5px; font-weight:800; color:var(--blue-dk); text-transform:uppercase; letter-spacing:.9px; }
+
+    /* Item */
+    .r-item td{ border-bottom:1px solid #f8fafc; }
+    .r-item .lbl{ color:#374151; padding-left:40px; font-size:12.5px; }
+    .r-item .v{ font-weight:600; color:#1f2937; }
+
+    /* Tax */
+    .r-tax td{ border-bottom:1px solid #f1f5f9; }
+    .r-tax .lbl{ color:#374151; padding-left:40px; font-size:12.5px; font-style:italic; }
+    .r-tax .v{ font-weight:600; }
+
+    /* Subtotal */
+    .r-sub td{ background:#eef2f9; border-top:1px solid #c8d6ec; border-bottom:1px solid #c8d6ec; }
+    .r-sub .lbl{ font-weight:700; color:var(--blue-dk); font-size:12.5px; }
+    .r-sub .v{ font-weight:800; color:var(--blue-dk); }
+
+    /* Result */
+    .r-res td{ background:var(--blue-dk); color:#fff; padding:9px 28px; }
+    .r-res .lbl,.r-res .v{ font-weight:800; font-size:13.5px; color:#fff; }
+
+    /* Final result */
+    .r-pos td{ background:var(--green); color:#fff; padding:11px 28px; }
+    .r-neg td{ background:var(--red); color:#fff; padding:11px 28px; }
+    .r-pos .lbl,.r-neg .lbl{ font-weight:800; font-size:14.5px; color:#fff; }
+    .r-pos .v,.r-neg .v{ font-weight:800; font-size:17px; color:#fff; }
+
+    /* Spacer */
+    .r-spacer td{ height:6px; background:transparent; }
+
+    /* Edit mode */
+    .edit-mode .r-item td,.edit-mode .r-tax td{ background:#f0f5ff; }
+    .inp{ text-align:right; border:1px solid #bfdbfe; border-radius:5px; background:#fff;
+      font-size:13px; font-family:'Inter',sans-serif; width:100%; padding:3px 6px;
+      font-weight:600; color:#1f2937; outline:none; }
+    .inp:focus{ border-color:var(--blue); background:#eff6ff; }
+
+    /* Neg value */
+    .neg{ color:var(--red); }
+    .zero{ color:#94a3b8; }
+
+    /* Footer info */
+    .rfooter{ padding:12px 28px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+
+    /* Toast */
+    .toast{ position:fixed; bottom:20px; right:20px; background:#1f2937; color:#fff;
+      padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
+      z-index:9999; display:none; align-items:center; gap:8px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
+    .toast.show{ display:flex; }
+
+    /* ── Print ── */
+    @media print {
+      *{ -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
+      body{ background:#fff!important; }
+      .sidebar,.topbar,.fbar,.rfooter,.toast{ display:none!important; }
+      .main{ min-height:unset; }
+      .content{ padding:0; }
+      .rcard{ border:none; border-radius:0; box-shadow:none; }
+    }
+
+    /* Responsive */
+    @media(max-width:768px){
+      .sidebar{ display:none; }
+      .er-table td{ padding:5px 12px; }
+      .er-table td.v{ min-width:110px; }
+      .fbar{ gap:8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <img src="../CXP/assets/img/logo.png" alt="Gstar Services" onerror="this.style.display='none'">
+  </div>
+  <nav class="sb-nav">
+    <span class="sb-label">Reportes Financieros</span>
+    <button class="sb-item active" onclick="showReport('er')" id="nav-er">
+      <i class="bi bi-file-earmark-bar-graph"></i> Estado de Resultados
+    </button>
+
+    <span class="sb-label" style="margin-top:8px;opacity:.5">Próximamente</span>
+    <button class="sb-item" disabled>
+      <i class="bi bi-bank2"></i> Balance General <span class="soon">Pronto</span>
+    </button>
+    <button class="sb-item" disabled>
+      <i class="bi bi-cash-stack"></i> Flujo de Efectivo <span class="soon">Pronto</span>
+    </button>
+    <button class="sb-item" disabled>
+      <i class="bi bi-graph-up"></i> Estado de Patrimonio <span class="soon">Pronto</span>
+    </button>
+    <button class="sb-item" disabled>
+      <i class="bi bi-clipboard-data"></i> Reportes Personalizados <span class="soon">Pronto</span>
+    </button>
+  </nav>
+  <div class="sb-footer">© 2026 Gstar Services · Módulo de Reportes</div>
+</aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="tb-title" id="tbTitle">Estado de Resultados</div>
+      <div class="tb-crumb">Reportes › Estado de Resultados</div>
+    </div>
+    <div class="tb-actions">
+      <button class="btn btn-ghost" onclick="toggleEdit()" id="btnEdit">
+        <i class="bi bi-pencil"></i> Editar
+      </button>
+      <button class="btn btn-green" onclick="saveData()" id="btnSave" style="display:none">
+        <i class="bi bi-check-lg"></i> Guardar
+      </button>
+      <button class="btn btn-ghost" onclick="cancelEdit()" id="btnCancel" style="display:none">
+        <i class="bi bi-x-lg"></i> Cancelar
+      </button>
+      <div class="sep"></div>
+      <button class="btn btn-ghost" onclick="exportExcel()" title="Exportar a Excel">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </button>
+      <button class="btn btn-ghost" onclick="exportPrint()" title="Imprimir / PDF">
+        <i class="bi bi-printer"></i> Imprimir
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Filter bar -->
+    <div class="fbar">
+      <div class="fg">
+        <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
+        <select id="fYear" onchange="onFilterChange()"></select>
+      </div>
+      <div class="fsep"></div>
+      <div class="fg">
+        <span class="fg-lbl">Mes</span>
+        <select id="fMonth" onchange="onFilterChange()">
+          <option value="00">Anual (Acumulado)</option>
+          <option value="01">Enero</option>
+          <option value="02">Febrero</option>
+          <option value="03">Marzo</option>
+          <option value="04">Abril</option>
+          <option value="05">Mayo</option>
+          <option value="06">Junio</option>
+          <option value="07">Julio</option>
+          <option value="08">Agosto</option>
+          <option value="09">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="fsep"></div>
+      <div class="fg">
+        <span class="fg-lbl"><i class="bi bi-building"></i> Consorcio</span>
+        <select id="fConsorcio" onchange="onFilterChange()">
+          <option value="TODOS">Todos los Consorcios</option>
+          <option value="CONSORCIO A">Consorcio A</option>
+          <option value="CONSORCIO B">Consorcio B</option>
+          <option value="CONSORCIO C">Consorcio C</option>
+          <option value="CONSORCIO D">Consorcio D</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Report card -->
+    <div class="rcard" id="reportCard">
+      <div class="rhead">
+        <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar Services" onerror="this.style.display='none'">
+        <div class="rhead-right">
+          <div class="rhead-name">Gstar Services S.A</div>
+          <div class="rhead-sub">RNC 131751016</div>
+          <div class="rhead-period" id="rPeriod">—</div>
+        </div>
+      </div>
+      <div class="rtbar">ESTADO DE RESULTADOS</div>
+      <table class="er-table" id="erTable">
+        <tbody id="erTbody"></tbody>
+      </table>
+      <div class="rfooter">
+        <i class="bi bi-info-circle"></i>
+        Los valores se guardan por período y consorcio seleccionado · Montos en RD$
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Guardado</span></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   DEFINICIÓN DE FILAS — ESTADO DE RESULTADOS
+══════════════════════════════════════════════════════════════ */
+const ER_ROWS = [
+  { type:'section',  label:'INGRESOS OPERATIVOS' },
+  { type:'item',     id:'ing_servicios',     label:'Ingresos por Servicios' },
+  { type:'item',     id:'ing_comisiones',    label:'Ingresos por Comisiones' },
+  { type:'item',     id:'ing_alquileres',    label:'Ingresos por Alquileres' },
+  { type:'item',     id:'ing_otros_op',      label:'Otros Ingresos Operativos' },
+  { type:'sub',      id:'total_ingresos',    label:'TOTAL INGRESOS',
+    calc: d => d.ing_servicios + d.ing_comisiones + d.ing_alquileres + d.ing_otros_op },
+
+  { type:'spacer' },
+  { type:'section',  label:'COSTO DE LOS SERVICIOS' },
+  { type:'item',     id:'costo_servicios',   label:'Costo de los Servicios Prestados' },
+  { type:'item',     id:'costo_mercancia',   label:'Costo de Mercancías Vendidas' },
+  { type:'sub',      id:'total_costos',      label:'TOTAL COSTOS',
+    calc: d => d.costo_servicios + d.costo_mercancia },
+  { type:'result',   id:'utilidad_bruta',    label:'UTILIDAD BRUTA',
+    calc: d => d.total_ingresos - d.total_costos },
+
+  { type:'spacer' },
+  { type:'section',  label:'GASTOS OPERATIVOS' },
+  { type:'item',     id:'gop_ventas',        label:'Gastos de Ventas y Mercadeo' },
+  { type:'item',     id:'gop_comisiones',    label:'Comisiones de Ventas' },
+  { type:'item',     id:'gop_otros',         label:'Otros Gastos Operativos' },
+  { type:'sub',      id:'total_gastos_op',   label:'TOTAL GASTOS OPERATIVOS',
+    calc: d => d.gop_ventas + d.gop_comisiones + d.gop_otros },
+
+  { type:'spacer' },
+  { type:'section',  label:'GASTOS ADMINISTRATIVOS' },
+  { type:'item',     id:'gadm_sueldos',      label:'Sueldos y Salarios' },
+  { type:'item',     id:'gadm_tss',          label:'Seguridad Social (TSS / AFP / SFS)' },
+  { type:'item',     id:'gadm_alquileres',   label:'Alquileres y Arrendamientos' },
+  { type:'item',     id:'gadm_servicios',    label:'Servicios Públicos (Agua, Luz, Tel.)' },
+  { type:'item',     id:'gadm_depreciacion', label:'Depreciación y Amortización' },
+  { type:'item',     id:'gadm_seguros',      label:'Seguros' },
+  { type:'item',     id:'gadm_suministros',  label:'Suministros de Oficina' },
+  { type:'item',     id:'gadm_otros',        label:'Otros Gastos Administrativos' },
+  { type:'sub',      id:'total_gastos_adm',  label:'TOTAL GASTOS ADMINISTRATIVOS',
+    calc: d => d.gadm_sueldos + d.gadm_tss + d.gadm_alquileres + d.gadm_servicios +
+               d.gadm_depreciacion + d.gadm_seguros + d.gadm_suministros + d.gadm_otros },
+  { type:'result',   id:'utilidad_op',       label:'UTILIDAD OPERATIVA (EBIT)',
+    calc: d => d.utilidad_bruta - d.total_gastos_op - d.total_gastos_adm },
+
+  { type:'spacer' },
+  { type:'section',  label:'OTROS INGRESOS' },
+  { type:'item',     id:'oi_intereses',      label:'Ingresos por Intereses' },
+  { type:'item',     id:'oi_diferencial',    label:'Ganancias en Diferencial Cambiario' },
+  { type:'item',     id:'oi_otros',          label:'Otros Ingresos No Operativos' },
+  { type:'sub',      id:'total_otros_ing',   label:'TOTAL OTROS INGRESOS',
+    calc: d => d.oi_intereses + d.oi_diferencial + d.oi_otros },
+
+  { type:'spacer' },
+  { type:'section',  label:'OTROS GASTOS' },
+  { type:'item',     id:'og_intereses',      label:'Gastos Financieros / Intereses' },
+  { type:'item',     id:'og_diferencial',    label:'Pérdidas en Diferencial Cambiario' },
+  { type:'item',     id:'og_otros',          label:'Otros Gastos No Operativos' },
+  { type:'sub',      id:'total_otros_gst',   label:'TOTAL OTROS GASTOS',
+    calc: d => d.og_intereses + d.og_diferencial + d.og_otros },
+  { type:'result',   id:'utilidad_ai',       label:'UTILIDAD ANTES DE IMPUESTOS',
+    calc: d => d.utilidad_op + d.total_otros_ing - d.total_otros_gst },
+
+  { type:'spacer' },
+  { type:'tax',      id:'impuesto_isr',      label:'Impuesto sobre la Renta (ISR)' },
+  { type:'final',    id:'utilidad_neta',     label:'UTILIDAD NETA',
+    calc: d => d.utilidad_ai - d.impuesto_isr }
+];
+
+/* ══════════════════════════════════════════════════════════════
+   ESTADO & STORAGE
+══════════════════════════════════════════════════════════════ */
+const MONTHS = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let _editMode = false;
+let _data = {};          // valores editables del período actual
+let _dataSnapshot = {};  // snapshot para cancelar edición
+
+function _key(){
+  const y = document.getElementById('fYear').value;
+  const m = document.getElementById('fMonth').value;
+  const c = document.getElementById('fConsorcio').value;
+  return `gstar_er_${y}_${m}_${c.replace(/\s/g,'_')}`;
+}
+function _load(){ try{ const r=localStorage.getItem(_key()); return r?JSON.parse(r):{};} catch(e){return{};} }
+function _save(d){ try{ localStorage.setItem(_key(), JSON.stringify(d)); }catch(e){} }
+
+function _calcAll(data){
+  const d = {};
+  ER_ROWS.forEach(r => { if(r.id && !r.calc) d[r.id] = parseFloat(data[r.id]||0); });
+  ER_ROWS.forEach(r => { if(r.calc) d[r.id] = r.calc(d); });
+  return d;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORMATO
+══════════════════════════════════════════════════════════════ */
+function fmt(n, showZero){
+  n = Number(n)||0;
+  if(n===0) return showZero ? '0.00' : '<span class="zero">—</span>';
+  const f = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return n<0 ? `<span class="neg">(${f})</span>` : f;
+}
+function fmtPlain(n){
+  n = Number(n)||0;
+  if(n===0) return '—';
+  const f = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return n<0 ? `(${f})` : f;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════════════ */
+function render(){
+  const y = document.getElementById('fYear').value;
+  const m = document.getElementById('fMonth').value;
+  const c = document.getElementById('fConsorcio').value;
+  const periodLabel = m==='00' ? `Año ${y}` : `${MONTHS[parseInt(m)]} ${y}`;
+  const consoLabel  = c==='TODOS' ? 'Todos los Consorcios' : c;
+  document.getElementById('rPeriod').textContent = `${periodLabel} · ${consoLabel}`;
+
+  const d = _calcAll(_data);
+  const tbody = document.getElementById('erTbody');
+  tbody.innerHTML = ER_ROWS.map(row => buildRow(row, d)).join('');
+
+  const tbl = document.getElementById('erTable');
+  tbl.className = 'er-table' + (_editMode ? ' edit-mode' : '');
+}
+
+function buildRow(row, d){
+  switch(row.type){
+    case 'section':
+      return `<tr class="r-section"><td class="lbl">${row.label}</td><td class="v"></td></tr>`;
+
+    case 'item':{
+      const val = d[row.id]||0;
+      const cell = _editMode
+        ? `<input class="inp" type="number" step="0.01" id="inp_${row.id}" value="${val||''}"
+             placeholder="0.00" oninput="App.onInput('${row.id}',this.value)">`
+        : fmt(val);
+      return `<tr class="r-item" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${cell}</td></tr>`;
+    }
+    case 'tax':{
+      const val = d[row.id]||0;
+      const cell = _editMode
+        ? `<input class="inp" type="number" step="0.01" id="inp_${row.id}" value="${val||''}"
+             placeholder="0.00" oninput="App.onInput('${row.id}',this.value)">`
+        : fmt(val);
+      return `<tr class="r-tax" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${cell}</td></tr>`;
+    }
+    case 'sub':
+      return `<tr class="r-sub" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmt(d[row.id])}</td></tr>`;
+
+    case 'result':
+      return `<tr class="r-res" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmtPlain(d[row.id])}</td></tr>`;
+
+    case 'final':{
+      const cls = (d[row.id]||0) >= 0 ? 'r-pos' : 'r-neg';
+      return `<tr class="${cls}" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmtPlain(d[row.id])}</td></tr>`;
+    }
+    case 'spacer':
+      return `<tr class="r-spacer"><td colspan="2"></td></tr>`;
+
+    default: return '';
+  }
+}
+
+function updateCalcRows(){
+  const d = _calcAll(_data);
+  ER_ROWS.forEach(row => {
+    if(!row.calc) return;
+    const tr = document.getElementById(`row_${row.id}`);
+    if(!tr) return;
+    const td = tr.querySelector('.v');
+    if(!td) return;
+    if(row.type === 'sub')   { td.innerHTML = fmt(d[row.id]); }
+    if(row.type === 'result'){ td.innerHTML = fmtPlain(d[row.id]); }
+    if(row.type === 'final') {
+      tr.className = (d[row.id]||0) >= 0 ? 'r-pos' : 'r-neg';
+      td.innerHTML = fmtPlain(d[row.id]);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CONTROLES
+══════════════════════════════════════════════════════════════ */
+function onFilterChange(){
+  if(_editMode) cancelEdit();
+  _data = _load();
+  render();
+}
+
+const App = {
+  onInput(id, val){
+    _data[id] = parseFloat(val)||0;
+    updateCalcRows();
+  }
+};
+
+function toggleEdit(){
+  _dataSnapshot = JSON.parse(JSON.stringify(_data));
+  _editMode = true;
+  render();
+  document.getElementById('btnEdit').style.display   = 'none';
+  document.getElementById('btnSave').style.display   = '';
+  document.getElementById('btnCancel').style.display = '';
+}
+
+function cancelEdit(){
+  _data = _dataSnapshot;
+  _editMode = false;
+  render();
+  document.getElementById('btnEdit').style.display   = '';
+  document.getElementById('btnSave').style.display   = 'none';
+  document.getElementById('btnCancel').style.display = 'none';
+}
+
+function saveData(){
+  _save(_data);
+  _editMode = false;
+  render();
+  document.getElementById('btnEdit').style.display   = '';
+  document.getElementById('btnSave').style.display   = 'none';
+  document.getElementById('btnCancel').style.display = 'none';
+  toast('Datos guardados correctamente');
+}
+
+function showReport(id){ /* reserved for future reports */ }
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORTAR
+══════════════════════════════════════════════════════════════ */
+function exportPrint(){
+  if(_editMode){ saveData(); }
+  window.print();
+}
+
+function exportExcel(){
+  const d = _calcAll(_data);
+  const period = document.getElementById('rPeriod').textContent;
+  const rows = [
+    ['ESTADO DE RESULTADOS — Gstar Services S.A'],
+    ['RNC 131751016'],
+    [period],
+    [''],
+    ['CONCEPTO', 'MONTO (RD$)']
+  ];
+  ER_ROWS.forEach(row => {
+    if(row.type === 'spacer') { rows.push(['']); return; }
+    if(row.type === 'section'){ rows.push([row.label, '']); return; }
+    if(!row.id) return;
+    const val = d[row.id]||0;
+    const indent = (row.type==='item'||row.type==='tax') ? '    ' : '';
+    rows.push([indent + row.label, val.toFixed(2)]);
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const bom = '﻿';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Estado_de_Resultados_${document.getElementById('fYear').value}_${document.getElementById('fMonth').value}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Archivo Excel descargado');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════ */
+function toast(msg, duration=2500){
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+(function init(){
+  // Populate year selector
+  const ysel = document.getElementById('fYear');
+  const now  = new Date();
+  for(let y = now.getFullYear()+1; y >= 2023; y--){
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = y;
+    if(y === now.getFullYear()) opt.selected = true;
+    ysel.appendChild(opt);
+  }
+  // Set current month
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('fMonth').value = m;
+
+  _data = _load();
+  render();
+})();
+</script>
+</body>
+</html>

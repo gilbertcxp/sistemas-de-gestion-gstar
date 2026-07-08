@@ -248,6 +248,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <button class="sub-btn" data-page="cxp-antiguedad"><span class="dot"></span> Antigüedad de Saldo</button>
       <button class="sub-btn" data-page="cxp-reporte"><span class="dot"></span> Reporte de CXP</button>
     </div>
+
+    <div class="nav-group-label">Análisis</div>
+    <button class="nav-btn" id="reportesToggle" onclick="toggleSub('reportes')">
+      <i class="bi bi-bar-chart-steps nav-ico"></i> Reportes
+      <i class="bi bi-chevron-right chev"></i>
+    </button>
+    <div class="submenu" id="sub-reportes">
+      <button class="sub-btn" data-page="er"><span class="dot"></span> Estado de Resultados</button>
+    </div>
   </nav>
 
   <div class="sidebar-footer">
@@ -361,6 +370,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="mc-desc">Reporte detallado de cuentas por pagar y gestión de facturas de proveedores.</div>
           <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
         </button>
+        <button class="mod-card" data-page="er">
+          <div class="mc-top"><div class="mc-icon g"><i class="bi bi-file-earmark-bar-graph"></i></div></div>
+          <div class="mc-title">Reportes · Estado de Resultados</div>
+          <div class="mc-desc">Reporte financiero de ingresos, costos, gastos y utilidad neta por período.</div>
+          <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
+        </button>
       </div>
     </div>
   </section>
@@ -454,6 +469,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
               title="Carta de Retención a Proveedores"></iframe>
     </div>
   </section>
+
+  <!-- ======= REPORTES · ESTADO DE RESULTADOS ======= -->
+  <section class="page" id="page-er">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-er"
+              data-src="REPORTES/index.html"
+              title="Estado de Resultados — Gstar Services"></iframe>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -468,7 +492,8 @@ const APPS = {
   erogaciones     : "EROGACIONES/dashboard-erogaciones.html",   // ✅ integrada
   compensacion    : "COMPENSACION/index.html",                  // ✅ integrada
   "cxp-reporte"   : "CXP/index.html",                           // ✅ integrada
-  "reportes-erog" : "EROGACIONES/reporte-erogaciones.html"      // ✅ integrada
+  "reportes-erog" : "EROGACIONES/reporte-erogaciones.html",     // ✅ integrada
+  "er"            : "REPORTES/index.html"                       // ✅ integrada
 };
 
 /* ===================================================================
@@ -484,7 +509,8 @@ const PAGES = {
   'cxc':             {title:'Cuentas por Cobrar',        crumb:'Cuentas por Cobrar',              sub:false},
   'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
-  'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'}
+  'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'},
+  'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'}
 };
 
 /* ===================== NAVEGACIÓN ===================== */
@@ -551,6 +577,11 @@ function lazyLoadFrame(page){
   // Banco · Reportes de Erogaciones
   if(page==='reportes-erog'){
     const f=document.getElementById('frame-reportes-erog');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Reportes · Estado de Resultados
+  if(page==='er'){
+    const f=document.getElementById('frame-er');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Erogaciones (pendiente de adjuntar)
