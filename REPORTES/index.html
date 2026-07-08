@@ -7,260 +7,246 @@
   <link rel="icon" href="../CXP/assets/img/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
-    :root {
+    :root{
       --bg-sidebar:#0f172a; --bg-app:#f1f5f9; --blue:#2563EB; --blue-dk:#1f3864;
       --line:#e2e8f0; --red:#dc2626; --green:#16a34a; --muted:#64748b;
     }
-    *{ box-sizing:border-box; margin:0; padding:0; }
-    body{ font-family:'Inter',sans-serif; background:var(--bg-app); color:#1f2937; display:flex; min-height:100vh; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg-app);color:#1f2937;display:flex;min-height:100vh}
 
-    /* ── Sidebar ── */
-    .sidebar{ width:228px; background:var(--bg-sidebar); display:flex; flex-direction:column; flex-shrink:0; }
-    .sb-logo{ padding:18px 16px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
-    .sb-logo img{ height:44px; width:auto; }
-    .sb-nav{ padding:10px 8px; flex:1; overflow-y:auto; }
-    .sb-label{ font-size:9.5px; font-weight:700; color:#3A5080; text-transform:uppercase; letter-spacing:1px; padding:14px 8px 5px; display:block; }
-    .sb-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:7px;
-      color:rgba(255,255,255,.5); font-size:13px; font-weight:500; cursor:pointer;
-      border:none; background:none; width:100%; text-align:left; transition:all .15s; }
-    .sb-item:hover:not(:disabled){ background:rgba(255,255,255,.07); color:#fff; }
-    .sb-item.active{ background:rgba(37,99,235,.22); color:#fff; border-left:3px solid var(--blue); padding-left:7px; }
-    .sb-item:disabled{ opacity:.32; cursor:not-allowed; }
-    .sb-item i{ font-size:15px; width:18px; text-align:center; flex-shrink:0; }
-    .soon{ margin-left:auto; font-size:9px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); padding:2px 7px; border-radius:20px; }
-    .sb-footer{ padding:12px 16px; font-size:10px; color:#3A5080; border-top:1px solid rgba(255,255,255,.04); }
+    /* Sidebar */
+    .sidebar{width:228px;background:var(--bg-sidebar);display:flex;flex-direction:column;flex-shrink:0}
+    .sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .sb-logo img{height:44px;width:auto}
+    .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
+    .sb-label{font-size:9.5px;font-weight:700;color:#3A5080;text-transform:uppercase;letter-spacing:1px;padding:14px 8px 5px;display:block}
+    .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;
+      color:rgba(255,255,255,.5);font-size:13px;font-weight:500;cursor:pointer;
+      border:none;background:none;width:100%;text-align:left;transition:all .15s}
+    .sb-item:hover:not(:disabled){background:rgba(255,255,255,.07);color:#fff}
+    .sb-item.active{background:rgba(37,99,235,.22);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
+    .sb-item:disabled{opacity:.32;cursor:not-allowed}
+    .sb-item i{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+    .soon{margin-left:auto;font-size:9px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);padding:2px 7px;border-radius:20px}
+    .sb-footer{padding:12px 16px;font-size:10px;color:#3A5080;border-top:1px solid rgba(255,255,255,.04)}
 
-    /* ── Main ── */
-    .main{ flex:1; display:flex; flex-direction:column; min-height:100vh; overflow:auto; }
+    /* Main */
+    .main{flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
 
     /* Topbar */
-    .topbar{ background:#fff; border-bottom:1px solid var(--line); padding:0 22px;
-      height:56px; display:flex; align-items:center; justify-content:space-between;
-      flex-shrink:0; position:sticky; top:0; z-index:10; gap:10px; }
-    .tb-left .tb-title{ font-size:15px; font-weight:700; color:#0f172a; line-height:1.2; }
-    .tb-left .tb-crumb{ font-size:11px; color:var(--muted); }
-    .tb-actions{ display:flex; gap:8px; align-items:center; }
-    .sep{ width:1px; height:24px; background:var(--line); }
+    .topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 22px;
+      height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;z-index:20}
+    .tb-left .tb-title{font-size:15px;font-weight:700;color:#0f172a;line-height:1.2}
+    .tb-left .tb-crumb{font-size:11px;color:var(--muted)}
+    .tb-actions{display:flex;gap:8px;align-items:center}
+    .sep{width:1px;height:24px;background:var(--line)}
 
     /* Buttons */
-    .btn{ display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:7px;
-      font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:'Inter',sans-serif; transition:all .15s; }
-    .btn-ghost{ background:transparent; color:#374151; border:1px solid var(--line); }
-    .btn-ghost:hover{ background:#f8fafc; }
-    .btn-blue{ background:var(--blue); color:#fff; }
-    .btn-blue:hover{ background:#1d4ed8; }
-    .btn-green{ background:var(--green); color:#fff; }
-    .btn-green:hover{ background:#15803d; }
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;
+      font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:all .15s}
+    .btn-ghost{background:transparent;color:#374151;border:1px solid var(--line)}
+    .btn-ghost:hover{background:#f8fafc}
+    .btn-blue{background:var(--blue);color:#fff}
+    .btn-blue:hover{background:#1d4ed8}
 
     /* Content */
-    .content{ padding:20px 24px; flex:1; }
+    .content{padding:18px 22px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+
+    /* Upload card */
+    .upload-card{background:#fff;border:2px dashed var(--line);border-radius:10px;padding:22px 24px;display:flex;align-items:center;gap:18px;flex-shrink:0;cursor:pointer;transition:all .2s}
+    .upload-card:hover,.upload-card.drag{border-color:var(--blue);background:#eff6ff}
+    .upload-ico{width:44px;height:44px;border-radius:10px;background:#eff6ff;color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .upload-text .ut-title{font-size:13.5px;font-weight:700;color:#0f172a}
+    .upload-text .ut-sub{font-size:12px;color:var(--muted);margin-top:3px}
+    .upload-meta{margin-left:auto;text-align:right;flex-shrink:0}
+    .upload-meta .um-file{font-size:12px;font-weight:600;color:var(--green)}
+    .upload-meta .um-date{font-size:11px;color:var(--muted);margin-top:2px}
+    #fileInput{display:none}
 
     /* Filter bar */
-    .fbar{ background:#fff; border:1px solid var(--line); border-radius:10px;
-      padding:12px 18px; margin-bottom:18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-    .fg{ display:flex; align-items:center; gap:8px; }
-    .fg-lbl{ font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
-    .fg select{ padding:6px 10px; border:1px solid var(--line); border-radius:6px;
-      font-size:13px; font-family:'Inter',sans-serif; color:#1f2937; background:#fff; cursor:pointer; }
-    .fg select:focus{ outline:none; border-color:var(--blue); }
-    .fsep{ width:1px; height:24px; background:var(--line); }
+    .fbar{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 18px;
+      display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0}
+    .fg{display:flex;align-items:center;gap:8px}
+    .fg-lbl{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+    .fg select,.fg input{padding:6px 10px;border:1px solid var(--line);border-radius:6px;
+      font-size:13px;font-family:'Inter',sans-serif;color:#1f2937;background:#fff;cursor:pointer}
+    .fg select:focus,.fg input:focus{outline:none;border-color:var(--blue)}
+    .fsep{width:1px;height:24px;background:var(--line)}
+    .data-info{margin-left:auto;font-size:11.5px;color:var(--muted)}
 
-    /* ── Report card ── */
-    .rcard{ background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    /* Report card */
+    .rcard{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
 
-    /* Header */
-    .rhead{ display:flex; justify-content:space-between; align-items:flex-start; padding:20px 28px 16px; }
-    .rhead-logo{ height:90px; width:auto; object-fit:contain; }
-    .rhead-right{ text-align:right; }
-    .rhead-name{ font-size:15.5px; font-weight:800; color:#0f172a; }
-    .rhead-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
-    .rhead-period{ font-size:13px; font-weight:700; color:var(--blue); margin-top:6px; }
+    /* Report header */
+    .rhead{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 14px;flex-shrink:0}
+    .rhead-logo{height:80px;width:auto;object-fit:contain}
+    .rhead-right{text-align:right}
+    .rhead-name{font-size:15px;font-weight:800;color:#0f172a}
+    .rhead-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .rhead-period{font-size:12.5px;font-weight:700;color:var(--blue);margin-top:5px}
+    .rtbar{background:var(--blue-dk);color:#fff;text-align:center;font-weight:700;font-size:13.5px;letter-spacing:.5px;padding:9px;flex-shrink:0}
 
-    /* Title bar */
-    .rtbar{ background:var(--blue-dk); color:#fff; text-align:center; font-weight:700;
-      font-size:14px; letter-spacing:.5px; padding:10px; }
+    /* Table wrap */
+    .table-wrap{overflow:auto;flex:1}
 
     /* ER Table */
-    .er-table{ width:100%; border-collapse:collapse; }
-    .er-table td{ padding:5px 28px; font-size:13px; vertical-align:middle; }
-    .er-table td.v{ text-align:right; min-width:170px; }
+    .er-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+    .er-table thead th{background:var(--blue-dk);color:#fff;padding:7px 12px;font-size:11px;font-weight:700;text-align:right;border-right:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:5}
+    .er-table thead th:first-child{text-align:left;min-width:80px}
+    .er-table thead th:nth-child(2){text-align:left;min-width:300px;position:sticky;left:0;z-index:6;background:var(--blue-dk)}
+    .er-table thead th.acc-col{position:sticky;left:80px;z-index:6;background:var(--blue-dk);padding-left:8px;border-right:2px solid rgba(255,255,255,.15)}
+    .er-table thead th.acum{background:#152a50;border-left:2px solid rgba(255,255,255,.2)}
 
-    /* Section header */
-    .r-section td{ background:#f8fafc; padding-top:14px; padding-bottom:6px; }
-    .r-section .lbl{ font-size:10.5px; font-weight:800; color:var(--blue-dk); text-transform:uppercase; letter-spacing:.9px; }
+    /* Row types */
+    .er-table td{padding:5px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    .er-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .er-table td.desc-cell{position:sticky;left:0;background:inherit;z-index:2}
+    .er-table td.cuenta-cell{position:sticky;left:0;background:inherit;z-index:2;min-width:80px;color:#94a3b8;font-size:11px}
 
-    /* Item */
-    .r-item td{ border-bottom:1px solid #f8fafc; }
-    .r-item .lbl{ color:#374151; padding-left:40px; font-size:12.5px; }
-    .r-item .v{ font-weight:600; color:#1f2937; }
+    /* Tipo header */
+    .r-tipo td{background:#1f3864;color:#fff;padding:9px 12px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+    .r-tipo td.cuenta-cell{background:#1f3864}
+    .r-tipo td.desc-cell{background:#1f3864;color:#fff}
 
-    /* Tax */
-    .r-tax td{ border-bottom:1px solid #f1f5f9; }
-    .r-tax .lbl{ color:#374151; padding-left:40px; font-size:12.5px; font-style:italic; }
-    .r-tax .v{ font-weight:600; }
+    /* CtaPadre header */
+    .r-ctapadre td{background:#e8eef8;padding:7px 12px;font-size:11px;font-weight:700;color:#1f3864;text-transform:uppercase;letter-spacing:.4px}
+    .r-ctapadre td.cuenta-cell{background:#e8eef8}
+    .r-ctapadre td.desc-cell{background:#e8eef8;color:#1f3864}
+
+    /* Item row */
+    .r-item td{font-size:12px;color:#374151}
+    .r-item:hover td{background:#f8fafc}
+    .r-item td.desc-cell{padding-left:28px;color:#374151}
 
     /* Subtotal */
-    .r-sub td{ background:#eef2f9; border-top:1px solid #c8d6ec; border-bottom:1px solid #c8d6ec; }
-    .r-sub .lbl{ font-weight:700; color:var(--blue-dk); font-size:12.5px; }
-    .r-sub .v{ font-weight:800; color:var(--blue-dk); }
+    .r-sub td{background:#eef2f9;border-top:1px solid #c8d6ec;border-bottom:1px solid #c8d6ec;font-weight:700;color:#1f3864}
+    .r-sub td.desc-cell{background:#eef2f9;color:#1f3864;padding-left:28px}
+    .r-sub td.cuenta-cell{background:#eef2f9}
 
-    /* Result */
-    .r-res td{ background:var(--blue-dk); color:#fff; padding:9px 28px; }
-    .r-res .lbl,.r-res .v{ font-weight:800; font-size:13.5px; color:#fff; }
+    /* Tipo total */
+    .r-tipo-total td{background:#1f3864;color:#fff;font-weight:800;padding:8px 12px;font-size:12.5px}
+    .r-tipo-total td.desc-cell{background:#1f3864;color:#fff}
+    .r-tipo-total td.cuenta-cell{background:#1f3864}
 
-    /* Final result */
-    .r-pos td{ background:var(--green); color:#fff; padding:11px 28px; }
-    .r-neg td{ background:var(--red); color:#fff; padding:11px 28px; }
-    .r-pos .lbl,.r-neg .lbl{ font-weight:800; font-size:14.5px; color:#fff; }
-    .r-pos .v,.r-neg .v{ font-weight:800; font-size:17px; color:#fff; }
+    /* Ingreso neto */
+    .r-neto td{background:var(--green);color:#fff;font-weight:800;padding:10px 12px;font-size:13.5px}
+    .r-neto td.desc-cell{background:var(--green);color:#fff}
+    .r-neto td.cuenta-cell{background:var(--green)}
+    .r-neto-neg td{background:var(--red) !important;color:#fff !important}
 
-    /* Spacer */
-    .r-spacer td{ height:6px; background:transparent; }
+    /* Accumulated column */
+    td.acum,th.acum{border-left:2px solid #c8d6ec;font-weight:800}
+    .r-tipo-total td.acum{border-left:2px solid rgba(255,255,255,.2)}
+    .r-neto td.acum{border-left:2px solid rgba(255,255,255,.2)}
 
-    /* Edit mode */
-    .edit-mode .r-item td,.edit-mode .r-tax td{ background:#f0f5ff; }
-    .inp{ text-align:right; border:1px solid #bfdbfe; border-radius:5px; background:#fff;
-      font-size:13px; font-family:'Inter',sans-serif; width:100%; padding:3px 6px;
-      font-weight:600; color:#1f2937; outline:none; }
-    .inp:focus{ border-color:var(--blue); background:#eff6ff; }
+    /* Negative value */
+    .neg{color:var(--red)}
 
-    /* Neg value */
-    .neg{ color:var(--red); }
-    .zero{ color:#94a3b8; }
-
-    /* Footer info */
-    .rfooter{ padding:12px 28px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+    /* Empty state */
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:60px 20px;gap:14px;color:var(--muted);text-align:center;flex:1}
+    .empty-ico{font-size:48px;color:#cbd5e1}
+    .empty-title{font-size:16px;font-weight:700;color:#475569}
+    .empty-sub{font-size:13px;max-width:360px}
 
     /* Toast */
-    .toast{ position:fixed; bottom:20px; right:20px; background:#1f2937; color:#fff;
-      padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
-      z-index:9999; display:none; align-items:center; gap:8px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
-    .toast.show{ display:flex; }
+    .toast{position:fixed;bottom:20px;right:20px;background:#1f2937;color:#fff;
+      padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;
+      z-index:9999;display:none;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+    .toast.show{display:flex}
 
-    /* ── Print ── */
-    @media print {
-      *{ -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
-      body{ background:#fff!important; }
-      .sidebar,.topbar,.fbar,.rfooter,.toast{ display:none!important; }
-      .main{ min-height:unset; }
-      .content{ padding:0; }
-      .rcard{ border:none; border-radius:0; box-shadow:none; }
+    /* Print */
+    @media print{
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      body{background:#fff}
+      .sidebar,.topbar,.upload-card,.fbar,.toast,.sb-footer{display:none!important}
+      .main{min-height:unset;overflow:visible}
+      .content{padding:0;overflow:visible}
+      .rcard{border:none;border-radius:0;overflow:visible}
+      .table-wrap{overflow:visible}
+      .er-table thead th{position:static}
+      .er-table td.cuenta-cell,.er-table td.desc-cell{position:static}
     }
 
-    /* Responsive */
-    @media(max-width:768px){
-      .sidebar{ display:none; }
-      .er-table td{ padding:5px 12px; }
-      .er-table td.v{ min-width:110px; }
-      .fbar{ gap:8px; }
-    }
+    @media(max-width:768px){.sidebar{display:none}}
   </style>
 </head>
 <body>
 
-<!-- ══════════ SIDEBAR ══════════ -->
+<!-- ── SIDEBAR ── -->
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="../CXP/assets/img/logo.png" alt="Gstar Services" onerror="this.style.display='none'">
+    <img src="../CXP/assets/img/logo.png" alt="Gstar" onerror="this.style.display='none'">
   </div>
   <nav class="sb-nav">
     <span class="sb-label">Reportes Financieros</span>
-    <button class="sb-item active" onclick="showReport('er')" id="nav-er">
+    <button class="sb-item active" id="nav-er">
       <i class="bi bi-file-earmark-bar-graph"></i> Estado de Resultados
     </button>
-
     <span class="sb-label" style="margin-top:8px;opacity:.5">Próximamente</span>
-    <button class="sb-item" disabled>
-      <i class="bi bi-bank2"></i> Balance General <span class="soon">Pronto</span>
-    </button>
-    <button class="sb-item" disabled>
-      <i class="bi bi-cash-stack"></i> Flujo de Efectivo <span class="soon">Pronto</span>
-    </button>
-    <button class="sb-item" disabled>
-      <i class="bi bi-graph-up"></i> Estado de Patrimonio <span class="soon">Pronto</span>
-    </button>
-    <button class="sb-item" disabled>
-      <i class="bi bi-clipboard-data"></i> Reportes Personalizados <span class="soon">Pronto</span>
-    </button>
+    <button class="sb-item" disabled><i class="bi bi-bank2"></i> Balance General <span class="soon">Pronto</span></button>
+    <button class="sb-item" disabled><i class="bi bi-cash-stack"></i> Flujo de Efectivo <span class="soon">Pronto</span></button>
+    <button class="sb-item" disabled><i class="bi bi-graph-up"></i> Estado de Patrimonio <span class="soon">Pronto</span></button>
   </nav>
-  <div class="sb-footer">© 2026 Gstar Services · Módulo de Reportes</div>
+  <div class="sb-footer">© 2026 Gstar Services · Reportes</div>
 </aside>
 
-<!-- ══════════ MAIN ══════════ -->
+<!-- ── MAIN ── -->
 <div class="main">
 
-  <!-- Topbar -->
   <header class="topbar">
     <div class="tb-left">
-      <div class="tb-title" id="tbTitle">Estado de Resultados</div>
+      <div class="tb-title">Estado de Resultados</div>
       <div class="tb-crumb">Reportes › Estado de Resultados</div>
     </div>
     <div class="tb-actions">
-      <button class="btn btn-ghost" onclick="toggleEdit()" id="btnEdit">
-        <i class="bi bi-pencil"></i> Editar
-      </button>
-      <button class="btn btn-green" onclick="saveData()" id="btnSave" style="display:none">
-        <i class="bi bi-check-lg"></i> Guardar
-      </button>
-      <button class="btn btn-ghost" onclick="cancelEdit()" id="btnCancel" style="display:none">
-        <i class="bi bi-x-lg"></i> Cancelar
+      <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">
+        <i class="bi bi-upload"></i> Subir Archivo
       </button>
       <div class="sep"></div>
-      <button class="btn btn-ghost" onclick="exportExcel()" title="Exportar a Excel">
-        <i class="bi bi-file-earmark-excel"></i> Excel
-      </button>
-      <button class="btn btn-ghost" onclick="exportPrint()" title="Imprimir / PDF">
-        <i class="bi bi-printer"></i> Imprimir
-      </button>
+      <button class="btn btn-ghost" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      <button class="btn btn-ghost" onclick="exportPrint()"><i class="bi bi-printer"></i> Imprimir</button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
     </div>
   </header>
 
-  <!-- Content -->
   <div class="content">
 
-    <!-- Filter bar -->
-    <div class="fbar">
-      <div class="fg">
-        <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
-        <select id="fYear" onchange="onFilterChange()"></select>
+    <!-- Upload card -->
+    <div class="upload-card" id="uploadCard"
+         onclick="document.getElementById('fileInput').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="upload-ico"><i class="bi bi-file-earmark-arrow-up"></i></div>
+      <div class="upload-text">
+        <div class="ut-title">Subir Estado de Resultados</div>
+        <div class="ut-sub">Arrastra tu archivo .xlsx aquí o haz clic para seleccionar · Formato: frmREstadoIngresos.xlsx</div>
       </div>
-      <div class="fsep"></div>
-      <div class="fg">
-        <span class="fg-lbl">Mes</span>
-        <select id="fMonth" onchange="onFilterChange()">
-          <option value="00">Anual (Acumulado)</option>
-          <option value="01">Enero</option>
-          <option value="02">Febrero</option>
-          <option value="03">Marzo</option>
-          <option value="04">Abril</option>
-          <option value="05">Mayo</option>
-          <option value="06">Junio</option>
-          <option value="07">Julio</option>
-          <option value="08">Agosto</option>
-          <option value="09">Septiembre</option>
-          <option value="10">Octubre</option>
-          <option value="11">Noviembre</option>
-          <option value="12">Diciembre</option>
-        </select>
-      </div>
-      <div class="fsep"></div>
-      <div class="fg">
-        <span class="fg-lbl"><i class="bi bi-building"></i> Consorcio</span>
-        <select id="fConsorcio" onchange="onFilterChange()">
-          <option value="TODOS">Todos los Consorcios</option>
-          <option value="CONSORCIO A">Consorcio A</option>
-          <option value="CONSORCIO B">Consorcio B</option>
-          <option value="CONSORCIO C">Consorcio C</option>
-          <option value="CONSORCIO D">Consorcio D</option>
-        </select>
+      <div class="upload-meta" id="uploadMeta" style="display:none">
+        <div class="um-file" id="uploadFileName"></div>
+        <div class="um-date" id="uploadDate"></div>
       </div>
     </div>
 
+    <!-- Filter bar (shown when data exists) -->
+    <div class="fbar" id="fbar" style="display:none">
+      <div class="fg">
+        <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
+        <select id="fYear" onchange="onYearChange()"></select>
+      </div>
+      <div class="fsep"></div>
+      <div class="fg">
+        <span class="fg-lbl"><i class="bi bi-search"></i> Buscar</span>
+        <input type="text" id="fSearch" placeholder="Cuenta o descripción…" oninput="onSearch()" style="width:200px">
+      </div>
+      <div class="data-info" id="dataInfo"></div>
+    </div>
+
     <!-- Report card -->
-    <div class="rcard" id="reportCard">
+    <div class="rcard" id="rcard" style="display:none">
       <div class="rhead">
-        <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar Services" onerror="this.style.display='none'">
+        <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar" onerror="this.style.display='none'">
         <div class="rhead-right">
           <div class="rhead-name">Gstar Services S.A</div>
           <div class="rhead-sub">RNC 131751016</div>
@@ -268,320 +254,405 @@
         </div>
       </div>
       <div class="rtbar">ESTADO DE RESULTADOS</div>
-      <table class="er-table" id="erTable">
-        <tbody id="erTbody"></tbody>
-      </table>
-      <div class="rfooter">
-        <i class="bi bi-info-circle"></i>
-        Los valores se guardan por período y consorcio seleccionado · Montos en RD$
+      <div class="table-wrap">
+        <table class="er-table">
+          <thead id="erHead"></thead>
+          <tbody id="erBody"></tbody>
+        </table>
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
+    <!-- Empty state (when no data) -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-ico"><i class="bi bi-file-earmark-bar-graph"></i></div>
+      <div class="empty-title">Sin datos cargados</div>
+      <div class="empty-sub">Sube el archivo <strong>frmREstadoIngresos.xlsx</strong> para visualizar el Estado de Resultados.</div>
+    </div>
 
-<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Guardado</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg"></span></div>
 
 <script>
-/* ══════════════════════════════════════════════════════════════
-   DEFINICIÓN DE FILAS — ESTADO DE RESULTADOS
-══════════════════════════════════════════════════════════════ */
-const ER_ROWS = [
-  { type:'section',  label:'INGRESOS OPERATIVOS' },
-  { type:'item',     id:'ing_servicios',     label:'Ingresos por Servicios' },
-  { type:'item',     id:'ing_comisiones',    label:'Ingresos por Comisiones' },
-  { type:'item',     id:'ing_alquileres',    label:'Ingresos por Alquileres' },
-  { type:'item',     id:'ing_otros_op',      label:'Otros Ingresos Operativos' },
-  { type:'sub',      id:'total_ingresos',    label:'TOTAL INGRESOS',
-    calc: d => d.ing_servicios + d.ing_comisiones + d.ing_alquileres + d.ing_otros_op },
+/* ══════════════════════════════════════════════════════
+   ESTADO Y STORAGE
+══════════════════════════════════════════════════════ */
+const MONTH_NAMES = {
+  '01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun',
+  '07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'
+};
+const MONTH_FULL = {
+  '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio',
+  '07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'
+};
 
-  { type:'spacer' },
-  { type:'section',  label:'COSTO DE LOS SERVICIOS' },
-  { type:'item',     id:'costo_servicios',   label:'Costo de los Servicios Prestados' },
-  { type:'item',     id:'costo_mercancia',   label:'Costo de Mercancías Vendidas' },
-  { type:'sub',      id:'total_costos',      label:'TOTAL COSTOS',
-    calc: d => d.costo_servicios + d.costo_mercancia },
-  { type:'result',   id:'utilidad_bruta',    label:'UTILIDAD BRUTA',
-    calc: d => d.total_ingresos - d.total_costos },
+let _allData   = {};   // keyed by year → { months, structure, meta }
+let _year      = null;
+let _searchQ   = '';
 
-  { type:'spacer' },
-  { type:'section',  label:'GASTOS OPERATIVOS' },
-  { type:'item',     id:'gop_ventas',        label:'Gastos de Ventas y Mercadeo' },
-  { type:'item',     id:'gop_comisiones',    label:'Comisiones de Ventas' },
-  { type:'item',     id:'gop_otros',         label:'Otros Gastos Operativos' },
-  { type:'sub',      id:'total_gastos_op',   label:'TOTAL GASTOS OPERATIVOS',
-    calc: d => d.gop_ventas + d.gop_comisiones + d.gop_otros },
+const STORE_KEY = 'gstar_er_v2';
 
-  { type:'spacer' },
-  { type:'section',  label:'GASTOS ADMINISTRATIVOS' },
-  { type:'item',     id:'gadm_sueldos',      label:'Sueldos y Salarios' },
-  { type:'item',     id:'gadm_tss',          label:'Seguridad Social (TSS / AFP / SFS)' },
-  { type:'item',     id:'gadm_alquileres',   label:'Alquileres y Arrendamientos' },
-  { type:'item',     id:'gadm_servicios',    label:'Servicios Públicos (Agua, Luz, Tel.)' },
-  { type:'item',     id:'gadm_depreciacion', label:'Depreciación y Amortización' },
-  { type:'item',     id:'gadm_seguros',      label:'Seguros' },
-  { type:'item',     id:'gadm_suministros',  label:'Suministros de Oficina' },
-  { type:'item',     id:'gadm_otros',        label:'Otros Gastos Administrativos' },
-  { type:'sub',      id:'total_gastos_adm',  label:'TOTAL GASTOS ADMINISTRATIVOS',
-    calc: d => d.gadm_sueldos + d.gadm_tss + d.gadm_alquileres + d.gadm_servicios +
-               d.gadm_depreciacion + d.gadm_seguros + d.gadm_suministros + d.gadm_otros },
-  { type:'result',   id:'utilidad_op',       label:'UTILIDAD OPERATIVA (EBIT)',
-    calc: d => d.utilidad_bruta - d.total_gastos_op - d.total_gastos_adm },
-
-  { type:'spacer' },
-  { type:'section',  label:'OTROS INGRESOS' },
-  { type:'item',     id:'oi_intereses',      label:'Ingresos por Intereses' },
-  { type:'item',     id:'oi_diferencial',    label:'Ganancias en Diferencial Cambiario' },
-  { type:'item',     id:'oi_otros',          label:'Otros Ingresos No Operativos' },
-  { type:'sub',      id:'total_otros_ing',   label:'TOTAL OTROS INGRESOS',
-    calc: d => d.oi_intereses + d.oi_diferencial + d.oi_otros },
-
-  { type:'spacer' },
-  { type:'section',  label:'OTROS GASTOS' },
-  { type:'item',     id:'og_intereses',      label:'Gastos Financieros / Intereses' },
-  { type:'item',     id:'og_diferencial',    label:'Pérdidas en Diferencial Cambiario' },
-  { type:'item',     id:'og_otros',          label:'Otros Gastos No Operativos' },
-  { type:'sub',      id:'total_otros_gst',   label:'TOTAL OTROS GASTOS',
-    calc: d => d.og_intereses + d.og_diferencial + d.og_otros },
-  { type:'result',   id:'utilidad_ai',       label:'UTILIDAD ANTES DE IMPUESTOS',
-    calc: d => d.utilidad_op + d.total_otros_ing - d.total_otros_gst },
-
-  { type:'spacer' },
-  { type:'tax',      id:'impuesto_isr',      label:'Impuesto sobre la Renta (ISR)' },
-  { type:'final',    id:'utilidad_neta',     label:'UTILIDAD NETA',
-    calc: d => d.utilidad_ai - d.impuesto_isr }
-];
-
-/* ══════════════════════════════════════════════════════════════
-   ESTADO & STORAGE
-══════════════════════════════════════════════════════════════ */
-const MONTHS = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-let _editMode = false;
-let _data = {};          // valores editables del período actual
-let _dataSnapshot = {};  // snapshot para cancelar edición
-
-function _key(){
-  const y = document.getElementById('fYear').value;
-  const m = document.getElementById('fMonth').value;
-  const c = document.getElementById('fConsorcio').value;
-  return `gstar_er_${y}_${m}_${c.replace(/\s/g,'_')}`;
-}
-function _load(){ try{ const r=localStorage.getItem(_key()); return r?JSON.parse(r):{};} catch(e){return{};} }
-function _save(d){ try{ localStorage.setItem(_key(), JSON.stringify(d)); }catch(e){} }
-
-function _calcAll(data){
-  const d = {};
-  ER_ROWS.forEach(r => { if(r.id && !r.calc) d[r.id] = parseFloat(data[r.id]||0); });
-  ER_ROWS.forEach(r => { if(r.calc) d[r.id] = r.calc(d); });
-  return d;
+function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(_allData)); }catch(e){} }
+function loadStore(){
+  try{ const r = localStorage.getItem(STORE_KEY); if(r) _allData = JSON.parse(r); }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+   PARSE EXCEL
+══════════════════════════════════════════════════════ */
+function parseExcelBuffer(buffer){
+  const wb = XLSX.read(buffer, { type:'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+
+  if(!rows || rows.length < 2) throw new Error('Formato de archivo no reconocido');
+
+  const header = rows[0];
+  // Detect month columns (format YYYY-MM)
+  const monthCols = [];
+  for(let i = 2; i < header.length; i++){
+    const h = String(header[i]||'').trim();
+    if(/^\d{4}-\d{2}$/.test(h)) monthCols.push({ idx: i, key: h });
+  }
+  // Acumulado is typically the last column
+  const acumIdx = header.length - 1;
+
+  if(monthCols.length === 0) throw new Error('No se encontraron columnas de meses');
+
+  const yearStr = monthCols[0].key.split('-')[0];
+
+  const structure = [];
+  let currentTipo = null;
+  let currentCtaPadre = null;
+  let ingresoNeto = null;
+
+  for(let r = 1; r < rows.length; r++){
+    const row = rows[r];
+    if(!row) continue;
+
+    const col0 = String(row[0]||'').trim();
+    const col1 = String(row[1]||'').trim();
+
+    if(col0.startsWith('Tipo:')){
+      currentTipo = { id: col0, label: col0, groups: [] };
+      structure.push(currentTipo);
+      currentCtaPadre = null;
+      continue;
+    }
+    if(col0.startsWith('CtaPadre:')){
+      currentCtaPadre = { id: col0, label: col0.replace(/^CtaPadre:\s*/,''), accounts: [] };
+      if(currentTipo) currentTipo.groups.push(currentCtaPadre);
+      continue;
+    }
+    if(!col0 && col1 === 'Ingreso Neto'){
+      ingresoNeto = { label: 'INGRESO NETO', valores: extractValores(row, monthCols, acumIdx) };
+      continue;
+    }
+    if(col0 && !isNaN(parseInt(col0)) && col1){
+      const acc = { cuenta: col0, descripcion: col1, valores: extractValores(row, monthCols, acumIdx) };
+      if(currentCtaPadre) currentCtaPadre.accounts.push(acc);
+    }
+  }
+
+  if(ingresoNeto) structure.push({ id:'ingreso_neto', label:'INGRESO NETO', valores: ingresoNeto.valores });
+
+  return { year: yearStr, months: monthCols, structure };
+}
+
+function extractValores(row, monthCols, acumIdx){
+  const v = {};
+  monthCols.forEach(m => { v[m.key] = parseFloat(row[m.idx])||0; });
+  v['acumulado'] = parseFloat(row[acumIdx])||0;
+  return v;
+}
+
+/* ══════════════════════════════════════════════════════
    FORMATO
-══════════════════════════════════════════════════════════════ */
-function fmt(n, showZero){
+══════════════════════════════════════════════════════ */
+function fmt(n){
   n = Number(n)||0;
-  if(n===0) return showZero ? '0.00' : '<span class="zero">—</span>';
+  if(n === 0) return '<span style="color:#cbd5e1">—</span>';
   const f = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return n<0 ? `<span class="neg">(${f})</span>` : f;
+  return n < 0 ? `<span class="neg">(${f})</span>` : f;
 }
 function fmtPlain(n){
   n = Number(n)||0;
-  if(n===0) return '—';
   const f = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return n<0 ? `(${f})` : f;
+  return n < 0 ? `(${f})` : (n===0?'—':f);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+   CÁLCULO DE SUBTOTALES
+══════════════════════════════════════════════════════ */
+function sumAccounts(accounts, monthCols){
+  const totals = { acumulado: 0 };
+  monthCols.forEach(m => totals[m.key] = 0);
+  accounts.forEach(acc => {
+    monthCols.forEach(m => totals[m.key] += acc.valores[m.key]||0);
+    totals.acumulado += acc.valores.acumulado||0;
+  });
+  return totals;
+}
+
+/* ══════════════════════════════════════════════════════
    RENDER
-══════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function render(){
-  const y = document.getElementById('fYear').value;
-  const m = document.getElementById('fMonth').value;
-  const c = document.getElementById('fConsorcio').value;
-  const periodLabel = m==='00' ? `Año ${y}` : `${MONTHS[parseInt(m)]} ${y}`;
-  const consoLabel  = c==='TODOS' ? 'Todos los Consorcios' : c;
-  document.getElementById('rPeriod').textContent = `${periodLabel} · ${consoLabel}`;
+  const data = _allData[_year];
+  if(!data){ showEmpty(); return; }
 
-  const d = _calcAll(_data);
-  const tbody = document.getElementById('erTbody');
-  tbody.innerHTML = ER_ROWS.map(row => buildRow(row, d)).join('');
+  const { months, structure } = data;
+  const q = _searchQ.toLowerCase();
 
-  const tbl = document.getElementById('erTable');
-  tbl.className = 'er-table' + (_editMode ? ' edit-mode' : '');
-}
+  // Update period label
+  const firstM = months[0]?.key; const lastM = months[months.length-1]?.key;
+  const pLabel = firstM === lastM
+    ? `${MONTH_FULL[firstM?.split('-')[1]]} ${_year}`
+    : `${MONTH_FULL[firstM?.split('-')[1]]} – ${MONTH_FULL[lastM?.split('-')[1]]} ${_year}`;
+  document.getElementById('rPeriod').textContent = pLabel;
+  document.getElementById('dataInfo').textContent = `${months.length} meses · ${_year}`;
 
-function buildRow(row, d){
-  switch(row.type){
-    case 'section':
-      return `<tr class="r-section"><td class="lbl">${row.label}</td><td class="v"></td></tr>`;
+  // Build header
+  const head = document.getElementById('erHead');
+  head.innerHTML = `<tr>
+    <th style="text-align:left">Cuenta</th>
+    <th class="acc-col" style="text-align:left">Descripción</th>
+    ${months.map(m=>`<th>${MONTH_NAMES[m.key.split('-')[1]]}</th>`).join('')}
+    <th class="acum">Acumulado</th>
+  </tr>`;
 
-    case 'item':{
-      const val = d[row.id]||0;
-      const cell = _editMode
-        ? `<input class="inp" type="number" step="0.01" id="inp_${row.id}" value="${val||''}"
-             placeholder="0.00" oninput="App.onInput('${row.id}',this.value)">`
-        : fmt(val);
-      return `<tr class="r-item" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${cell}</td></tr>`;
+  // Build body
+  const rows = [];
+  structure.forEach(tipo => {
+    if(tipo.id === 'ingreso_neto'){
+      // Final row
+      const cls = (tipo.valores.acumulado||0) < 0 ? 'r-neto r-neto-neg' : 'r-neto';
+      rows.push(`<tr class="${cls}">
+        <td class="cuenta-cell"></td>
+        <td class="desc-cell">${tipo.label}</td>
+        ${months.map(m=>`<td class="num">${fmtPlain(tipo.valores[m.key])}</td>`).join('')}
+        <td class="num acum">${fmtPlain(tipo.valores.acumulado)}</td>
+      </tr>`);
+      return;
     }
-    case 'tax':{
-      const val = d[row.id]||0;
-      const cell = _editMode
-        ? `<input class="inp" type="number" step="0.01" id="inp_${row.id}" value="${val||''}"
-             placeholder="0.00" oninput="App.onInput('${row.id}',this.value)">`
-        : fmt(val);
-      return `<tr class="r-tax" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${cell}</td></tr>`;
-    }
-    case 'sub':
-      return `<tr class="r-sub" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmt(d[row.id])}</td></tr>`;
 
-    case 'result':
-      return `<tr class="r-res" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmtPlain(d[row.id])}</td></tr>`;
+    // Tipo header
+    const tipoLabel = tipo.label.replace(/^Tipo:\s*/,'').replace(/-/,' – ');
+    rows.push(`<tr class="r-tipo">
+      <td class="cuenta-cell"></td>
+      <td class="desc-cell">${tipoLabel}</td>
+      ${months.map(()=>'<td></td>').join('')}
+      <td class="acum"></td>
+    </tr>`);
 
-    case 'final':{
-      const cls = (d[row.id]||0) >= 0 ? 'r-pos' : 'r-neg';
-      return `<tr class="${cls}" id="row_${row.id}"><td class="lbl">${row.label}</td><td class="v">${fmtPlain(d[row.id])}</td></tr>`;
-    }
-    case 'spacer':
-      return `<tr class="r-spacer"><td colspan="2"></td></tr>`;
+    const tipoTotals = { acumulado: 0 };
+    months.forEach(m => tipoTotals[m.key] = 0);
 
-    default: return '';
-  }
-}
+    tipo.groups.forEach(grp => {
+      // Filter accounts if searching
+      const visibleAccounts = q
+        ? grp.accounts.filter(a => a.cuenta.toLowerCase().includes(q) || a.descripcion.toLowerCase().includes(q))
+        : grp.accounts;
 
-function updateCalcRows(){
-  const d = _calcAll(_data);
-  ER_ROWS.forEach(row => {
-    if(!row.calc) return;
-    const tr = document.getElementById(`row_${row.id}`);
-    if(!tr) return;
-    const td = tr.querySelector('.v');
-    if(!td) return;
-    if(row.type === 'sub')   { td.innerHTML = fmt(d[row.id]); }
-    if(row.type === 'result'){ td.innerHTML = fmtPlain(d[row.id]); }
-    if(row.type === 'final') {
-      tr.className = (d[row.id]||0) >= 0 ? 'r-pos' : 'r-neg';
-      td.innerHTML = fmtPlain(d[row.id]);
+      if(q && visibleAccounts.length === 0) return;
+
+      // CtaPadre header
+      rows.push(`<tr class="r-ctapadre">
+        <td class="cuenta-cell"></td>
+        <td class="desc-cell">${grp.label}</td>
+        ${months.map(()=>'<td></td>').join('')}
+        <td class="acum"></td>
+      </tr>`);
+
+      // Account rows
+      visibleAccounts.forEach(acc => {
+        rows.push(`<tr class="r-item">
+          <td class="cuenta-cell">${acc.cuenta}</td>
+          <td class="desc-cell">${acc.descripcion}</td>
+          ${months.map(m=>`<td class="num">${fmt(acc.valores[m.key])}</td>`).join('')}
+          <td class="num acum">${fmt(acc.valores.acumulado)}</td>
+        </tr>`);
+      });
+
+      // CtaPadre subtotal
+      const sub = sumAccounts(grp.accounts, months);
+      rows.push(`<tr class="r-sub">
+        <td class="cuenta-cell"></td>
+        <td class="desc-cell">Subtotal ${grp.label}</td>
+        ${months.map(m=>`<td class="num">${fmt(sub[m.key])}</td>`).join('')}
+        <td class="num acum">${fmt(sub.acumulado)}</td>
+      </tr>`);
+
+      // Add to tipo totals
+      months.forEach(m => tipoTotals[m.key] += sub[m.key]||0);
+      tipoTotals.acumulado += sub.acumulado||0;
+    });
+
+    // Tipo total
+    if(!q){
+      const tipoName = tipo.label.replace(/^Tipo:\s*/,'').replace(/\d+-/,'').trim();
+      rows.push(`<tr class="r-tipo-total">
+        <td class="cuenta-cell"></td>
+        <td class="desc-cell">TOTAL ${tipoName.toUpperCase()}</td>
+        ${months.map(m=>`<td class="num">${fmtPlain(tipoTotals[m.key])}</td>`).join('')}
+        <td class="num acum">${fmtPlain(tipoTotals.acumulado)}</td>
+      </tr><tr><td colspan="${months.length+2}" style="height:4px;background:#f8fafc"></td></tr>`);
     }
   });
+
+  document.getElementById('erBody').innerHTML = rows.join('');
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('fbar').style.display      = '';
+  document.getElementById('rcard').style.display     = '';
 }
 
-/* ══════════════════════════════════════════════════════════════
-   CONTROLES
-══════════════════════════════════════════════════════════════ */
-function onFilterChange(){
-  if(_editMode) cancelEdit();
-  _data = _load();
+function showEmpty(){
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('fbar').style.display      = 'none';
+  document.getElementById('rcard').style.display     = 'none';
+}
+
+/* ══════════════════════════════════════════════════════
+   FILE UPLOAD
+══════════════════════════════════════════════════════ */
+function onFileSelect(e){
+  const file = e.target.files[0];
+  if(file) processFile(file);
+  e.target.value = '';
+}
+function onDragOver(e){ e.preventDefault(); document.getElementById('uploadCard').classList.add('drag'); }
+function onDragLeave(){ document.getElementById('uploadCard').classList.remove('drag'); }
+function onDrop(e){
+  e.preventDefault();
+  document.getElementById('uploadCard').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if(file) processFile(file);
+}
+
+function processFile(file){
+  if(!file.name.match(/\.xlsx?$/i)){ showToast('Solo se aceptan archivos .xlsx'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = parseExcelBuffer(new Uint8Array(e.target.result));
+      _allData[parsed.year] = {
+        months: parsed.months,
+        structure: parsed.structure,
+        meta: { fileName: file.name, importedAt: new Date().toLocaleString('es-DO') }
+      };
+      saveStore();
+      _year = parsed.year;
+      populateYearSelector();
+      updateUploadMeta();
+      render();
+      showToast(`Archivo cargado: ${parsed.months.length} meses del ${parsed.year}`);
+    }catch(err){
+      showToast('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function updateUploadMeta(){
+  const data = _allData[_year];
+  if(!data?.meta) return;
+  document.getElementById('uploadMeta').style.display = '';
+  document.getElementById('uploadFileName').textContent = data.meta.fileName;
+  document.getElementById('uploadDate').textContent = 'Cargado: ' + data.meta.importedAt;
+}
+
+/* ══════════════════════════════════════════════════════
+   FILTROS
+══════════════════════════════════════════════════════ */
+function populateYearSelector(){
+  const sel = document.getElementById('fYear');
+  sel.innerHTML = '';
+  Object.keys(_allData).sort().reverse().forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if(y === _year) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function onYearChange(){
+  _year = document.getElementById('fYear').value;
+  updateUploadMeta();
+  render();
+}
+function onSearch(){
+  _searchQ = document.getElementById('fSearch').value.trim();
   render();
 }
 
-const App = {
-  onInput(id, val){
-    _data[id] = parseFloat(val)||0;
-    updateCalcRows();
-  }
-};
-
-function toggleEdit(){
-  _dataSnapshot = JSON.parse(JSON.stringify(_data));
-  _editMode = true;
-  render();
-  document.getElementById('btnEdit').style.display   = 'none';
-  document.getElementById('btnSave').style.display   = '';
-  document.getElementById('btnCancel').style.display = '';
-}
-
-function cancelEdit(){
-  _data = _dataSnapshot;
-  _editMode = false;
-  render();
-  document.getElementById('btnEdit').style.display   = '';
-  document.getElementById('btnSave').style.display   = 'none';
-  document.getElementById('btnCancel').style.display = 'none';
-}
-
-function saveData(){
-  _save(_data);
-  _editMode = false;
-  render();
-  document.getElementById('btnEdit').style.display   = '';
-  document.getElementById('btnSave').style.display   = 'none';
-  document.getElementById('btnCancel').style.display = 'none';
-  toast('Datos guardados correctamente');
-}
-
-function showReport(id){ /* reserved for future reports */ }
-
-/* ══════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    EXPORTAR
-══════════════════════════════════════════════════════════════ */
-function exportPrint(){
-  if(_editMode){ saveData(); }
-  window.print();
-}
+══════════════════════════════════════════════════════ */
+function exportPrint(){ window.print(); }
 
-function exportExcel(){
-  const d = _calcAll(_data);
-  const period = document.getElementById('rPeriod').textContent;
-  const rows = [
-    ['ESTADO DE RESULTADOS — Gstar Services S.A'],
+function exportCSV(){
+  const data = _allData[_year];
+  if(!data){ showToast('No hay datos para exportar'); return; }
+  const { months, structure } = data;
+  const csvRows = [
+    ['Estado de Resultados — Gstar Services S.A'],
     ['RNC 131751016'],
-    [period],
+    ['Período: ' + document.getElementById('rPeriod').textContent],
     [''],
-    ['CONCEPTO', 'MONTO (RD$)']
+    ['Cuenta','Descripción',...months.map(m=>MONTH_FULL[m.key.split('-')[1]]),'Acumulado']
   ];
-  ER_ROWS.forEach(row => {
-    if(row.type === 'spacer') { rows.push(['']); return; }
-    if(row.type === 'section'){ rows.push([row.label, '']); return; }
-    if(!row.id) return;
-    const val = d[row.id]||0;
-    const indent = (row.type==='item'||row.type==='tax') ? '    ' : '';
-    rows.push([indent + row.label, val.toFixed(2)]);
+
+  structure.forEach(tipo => {
+    if(tipo.id === 'ingreso_neto'){
+      csvRows.push(['','INGRESO NETO',...months.map(m=>tipo.valores[m.key]),tipo.valores.acumulado]);
+      return;
+    }
+    csvRows.push(['',tipo.label.replace(/^Tipo:\s*/,'')]);
+    tipo.groups.forEach(grp => {
+      csvRows.push(['',grp.label]);
+      grp.accounts.forEach(acc => {
+        csvRows.push([acc.cuenta,acc.descripcion,...months.map(m=>acc.valores[m.key]),acc.valores.acumulado]);
+      });
+      const sub = sumAccounts(grp.accounts, months);
+      csvRows.push(['','Subtotal '+grp.label,...months.map(m=>sub[m.key]),sub.acumulado]);
+    });
   });
 
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const bom = '﻿';
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const csv = csvRows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `Estado_de_Resultados_${document.getElementById('fYear').value}_${document.getElementById('fMonth').value}.csv`;
+  a.href = URL.createObjectURL(blob);
+  a.download = `EstadoResultados_${_year}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
-  toast('Archivo Excel descargado');
+  URL.revokeObjectURL(a.href);
+  showToast('Archivo Excel descargado');
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    TOAST
-══════════════════════════════════════════════════════════════ */
-function toast(msg, duration=2500){
+══════════════════════════════════════════════════════ */
+function showToast(msg, ms=3000){
   const el = document.getElementById('toast');
   document.getElementById('toastMsg').textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), duration);
+  setTimeout(()=>el.classList.remove('show'), ms);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    INIT
-══════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 (function init(){
-  // Populate year selector
-  const ysel = document.getElementById('fYear');
-  const now  = new Date();
-  for(let y = now.getFullYear()+1; y >= 2023; y--){
-    const opt = document.createElement('option');
-    opt.value = String(y);
-    opt.textContent = y;
-    if(y === now.getFullYear()) opt.selected = true;
-    ysel.appendChild(opt);
+  loadStore();
+  const years = Object.keys(_allData).sort().reverse();
+  if(years.length > 0){
+    _year = years[0];
+    populateYearSelector();
+    updateUploadMeta();
+    render();
+  } else {
+    showEmpty();
   }
-  // Set current month
-  const m = String(now.getMonth()+1).padStart(2,'0');
-  document.getElementById('fMonth').value = m;
-
-  _data = _load();
-  render();
 })();
 </script>
 </body>
