@@ -53,6 +53,7 @@
 
     /* Content */
     .content{padding:18px 22px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+    .pg{display:flex;flex-direction:column;gap:14px;flex:1}
 
     /* Upload section */
     .up-hero{background:linear-gradient(135deg,#0B1437,#1a1060);border-radius:10px;padding:20px 24px;flex-shrink:0}
@@ -165,7 +166,7 @@
     @media print{
       *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
       body{background:#fff}
-      .sidebar,.topbar,.up-hero,.up-zone,.fbar,.toast,.sb-footer{display:none!important}
+      .sidebar,.topbar,.up-hero,.up-zone,.fbar,.toast,.sb-footer,#page-upload{display:none!important}
       .main{min-height:unset;overflow:visible}
       .content{padding:0;overflow:visible}
       .rcard{border:none;border-radius:0;overflow:visible}
@@ -185,8 +186,11 @@
     <img src="../CXP/assets/img/logo.png" alt="Gstar" onerror="this.style.display='none'">
   </div>
   <nav class="sb-nav">
-    <span class="sb-label">Reportes Financieros</span>
-    <button class="sb-item active" id="nav-er">
+    <span class="sb-label">Principal</span>
+    <button class="sb-item" id="nav-upload" onclick="nav('upload')">
+      <i class="bi bi-cloud-upload"></i> Cargar Archivos
+    </button>
+    <button class="sb-item" id="nav-er" onclick="nav('er')">
       <i class="bi bi-file-earmark-bar-graph"></i> Estado de Resultados
     </button>
     <span class="sb-label" style="margin-top:8px;opacity:.5">Próximamente</span>
@@ -202,74 +206,77 @@
 
   <header class="topbar">
     <div class="tb-left">
-      <div class="tb-title">Estado de Resultados</div>
-      <div class="tb-crumb">Reportes › Estado de Resultados</div>
+      <div class="tb-title" id="tbTitle">Cargar Archivos</div>
+      <div class="tb-crumb" id="tbCrumb">Reportes › Cargar Archivos</div>
     </div>
     <div class="tb-actions">
       <button id="btnPublicar" class="btn-publicar" style="display:none" onclick="publicarData()">
         <i class="bi bi-cloud-upload-fill"></i> Publicar
       </button>
-      <div class="sep"></div>
-      <button class="btn btn-ghost" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-      <button class="btn btn-ghost" onclick="exportPrint()"><i class="bi bi-printer"></i> Imprimir</button>
+      <div class="sep" id="sepExport" style="display:none"></div>
+      <button class="btn btn-ghost" id="btnExcelExport" style="display:none" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      <button class="btn btn-ghost" id="btnPrint" style="display:none" onclick="exportPrint()"><i class="bi bi-printer"></i> Imprimir</button>
     </div>
   </header>
 
   <div class="content">
 
-    <!-- Filter bar (shown when data exists) -->
-    <div class="fbar" id="fbar" style="display:none">
-      <div class="fg">
-        <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
-        <select id="fYear" onchange="onYearChange()"></select>
+    <!-- PAGE: CARGAR ARCHIVOS -->
+    <div class="pg" id="page-upload">
+      <div class="up-hero">
+        <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
+        <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
       </div>
-      <div class="fsep"></div>
-      <div class="fg">
-        <span class="fg-lbl"><i class="bi bi-search"></i> Buscar</span>
-        <input type="text" id="fSearch" placeholder="Cuenta o descripción…" oninput="onSearch()" style="width:200px">
+      <div class="up-zone" id="uploadCard"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
+        <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
+        <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
+        <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
       </div>
-      <div class="data-info" id="dataInfo"></div>
     </div>
 
-    <!-- Report card -->
-    <div class="rcard" id="rcard" style="display:none">
-      <div class="rhead">
-        <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar" onerror="this.style.display='none'">
-        <div class="rhead-right">
-          <div class="rhead-name">Gstar Services S.A</div>
-          <div class="rhead-sub">RNC 131751016</div>
-          <div class="rhead-period" id="rPeriod">—</div>
+    <!-- PAGE: ESTADO DE RESULTADOS -->
+    <div class="pg" id="page-er" style="display:none">
+      <!-- Filter bar (shown when data exists) -->
+      <div class="fbar" id="fbar" style="display:none">
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
+          <select id="fYear" onchange="onYearChange()"></select>
+        </div>
+        <div class="fsep"></div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-search"></i> Buscar</span>
+          <input type="text" id="fSearch" placeholder="Cuenta o descripción…" oninput="onSearch()" style="width:200px">
+        </div>
+        <div class="data-info" id="dataInfo"></div>
+      </div>
+
+      <!-- Report card -->
+      <div class="rcard" id="rcard" style="display:none">
+        <div class="rhead">
+          <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar" onerror="this.style.display='none'">
+          <div class="rhead-right">
+            <div class="rhead-name">Gstar Services S.A</div>
+            <div class="rhead-sub">RNC 131751016</div>
+            <div class="rhead-period" id="rPeriod">—</div>
+          </div>
+        </div>
+        <div class="rtbar">ESTADO DE RESULTADOS</div>
+        <div class="table-wrap">
+          <table class="er-table">
+            <thead id="erHead"></thead>
+            <tbody id="erBody"></tbody>
+          </table>
         </div>
       </div>
-      <div class="rtbar">ESTADO DE RESULTADOS</div>
-      <div class="table-wrap">
-        <table class="er-table">
-          <thead id="erHead"></thead>
-          <tbody id="erBody"></tbody>
-        </table>
+
+      <!-- Empty state (when no data) -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-ico"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div class="empty-title">Sin datos cargados</div>
+        <div class="empty-sub">Ve a <strong>Cargar Archivos</strong> para subir el archivo <strong>frmREstadoIngresos.xlsx</strong>.</div>
       </div>
-    </div>
-
-    <!-- Empty state (when no data) -->
-    <div class="empty-state" id="emptyState">
-      <div class="empty-ico"><i class="bi bi-file-earmark-bar-graph"></i></div>
-      <div class="empty-title">Sin datos cargados</div>
-      <div class="empty-sub">Sube el archivo <strong>frmREstadoIngresos.xlsx</strong> para visualizar el Estado de Resultados.</div>
-    </div>
-
-    <!-- Upload hero -->
-    <div class="up-hero">
-      <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
-      <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
-    </div>
-
-    <!-- Upload zone -->
-    <div class="up-zone" id="uploadCard"
-         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
-      <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
-      <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
-      <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
     </div>
 
   </div>
@@ -539,6 +546,7 @@ function processFile(file){
       populateYearSelector();
       updateUploadZone(file.name);
       render();
+      nav('er');
       showToast(`Archivo cargado: ${parsed.months.length} meses del ${parsed.year}`);
     }catch(err){
       showToast('Error al leer el archivo: ' + err.message);
@@ -654,6 +662,26 @@ function showToast(msg, ms=3000){
 }
 
 /* ══════════════════════════════════════════════════════
+   NAVEGACIÓN
+══════════════════════════════════════════════════════ */
+const PAGE_META = {
+  upload: { title:'Cargar Archivos',       crumb:'Reportes › Cargar Archivos' },
+  er:     { title:'Estado de Resultados',  crumb:'Reportes › Estado de Resultados' }
+};
+function nav(page){
+  Object.keys(PAGE_META).forEach(p => {
+    document.getElementById('page-'+p).style.display  = p === page ? '' : 'none';
+    document.getElementById('nav-'+p).classList.toggle('active', p === page);
+  });
+  document.getElementById('tbTitle').textContent = PAGE_META[page].title;
+  document.getElementById('tbCrumb').textContent = PAGE_META[page].crumb;
+  const onEr = page === 'er';
+  document.getElementById('sepExport').style.display    = onEr ? '' : 'none';
+  document.getElementById('btnExcelExport').style.display = onEr ? '' : 'none';
+  document.getElementById('btnPrint').style.display       = onEr ? '' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════ */
 (function init(){
@@ -664,7 +692,9 @@ function showToast(msg, ms=3000){
     populateYearSelector();
     updateUploadZone();
     render();
+    nav('er');
   } else {
+    nav('upload');
     showEmpty();
   }
 })();
