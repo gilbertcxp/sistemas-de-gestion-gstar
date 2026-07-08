@@ -434,6 +434,9 @@ function render(){
 
   // Build body
   const rows = [];
+  const netoTotals = { acumulado: 0 };
+  months.forEach(m => netoTotals[m.key] = 0);
+
   structure.forEach(tipo => {
     if(tipo.id === 'ingreso_neto') return;
 
@@ -499,7 +502,24 @@ function render(){
         <td class="num acum">${fmtPlain(tipoTotals.acumulado)}</td>
       </tr><tr><td colspan="${months.length+2}" style="height:4px;background:#f8fafc"></td></tr>`);
     }
+
+    // Acumular para Ingreso Neto: Tipo 1 = Ingreso (+), Tipo 2/3 = Costo/Gasto (-)
+    const tipoNum = parseInt(tipo.label.match(/\d+/)?.[0] || '0');
+    const sign = tipoNum === 1 ? 1 : -1;
+    months.forEach(m => netoTotals[m.key] += sign * (tipoTotals[m.key]||0));
+    netoTotals.acumulado += sign * (tipoTotals.acumulado||0);
   });
+
+  // Fila INGRESO NETO calculada
+  if(!q){
+    const cls = netoTotals.acumulado < 0 ? 'r-neto r-neto-neg' : 'r-neto';
+    rows.push(`<tr class="${cls}">
+      <td class="cuenta-cell"></td>
+      <td class="desc-cell">INGRESO NETO</td>
+      ${months.map(m=>`<td class="num">${fmtPlain(netoTotals[m.key])}</td>`).join('')}
+      <td class="num acum">${fmtPlain(netoTotals.acumulado)}</td>
+    </tr>`);
+  }
 
   document.getElementById('erBody').innerHTML = rows.join('');
   document.getElementById('emptyState').style.display = 'none';
