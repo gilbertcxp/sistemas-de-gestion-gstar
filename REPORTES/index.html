@@ -355,7 +355,7 @@ function parseExcelBuffer(buffer){
     }
   }
 
-  if(ingresoNeto) structure.push({ id:'ingreso_neto', label:'INGRESO NETO', valores: ingresoNeto.valores });
+  // ingreso_neto row omitted — calculated automatically from totals
 
   return { year: yearStr, months: monthCols, structure };
 }
@@ -425,17 +425,7 @@ function render(){
   // Build body
   const rows = [];
   structure.forEach(tipo => {
-    if(tipo.id === 'ingreso_neto'){
-      // Final row
-      const cls = (tipo.valores.acumulado||0) < 0 ? 'r-neto r-neto-neg' : 'r-neto';
-      rows.push(`<tr class="${cls}">
-        <td class="cuenta-cell"></td>
-        <td class="desc-cell">${tipo.label}</td>
-        ${months.map(m=>`<td class="num">${fmtPlain(tipo.valores[m.key])}</td>`).join('')}
-        <td class="num acum">${fmtPlain(tipo.valores.acumulado)}</td>
-      </tr>`);
-      return;
-    }
+    if(tipo.id === 'ingreso_neto') return;
 
     // Tipo header
     const tipoLabel = tipo.label.replace(/^Tipo:\s*/,'').replace(/-/,' – ');
@@ -603,10 +593,7 @@ function exportCSV(){
   ];
 
   structure.forEach(tipo => {
-    if(tipo.id === 'ingreso_neto'){
-      csvRows.push(['','INGRESO NETO',...months.map(m=>tipo.valores[m.key]),tipo.valores.acumulado]);
-      return;
-    }
+    if(tipo.id === 'ingreso_neto') return;
     csvRows.push(['',tipo.label.replace(/^Tipo:\s*/,'')]);
     tipo.groups.forEach(grp => {
       csvRows.push(['',grp.label]);
