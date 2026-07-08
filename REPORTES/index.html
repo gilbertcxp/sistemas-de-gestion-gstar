@@ -217,21 +217,6 @@
 
   <div class="content">
 
-    <!-- Upload hero -->
-    <div class="up-hero">
-      <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
-      <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
-    </div>
-
-    <!-- Upload zone -->
-    <div class="up-zone" id="uploadCard"
-         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
-      <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
-      <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
-      <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
-    </div>
-
     <!-- Filter bar (shown when data exists) -->
     <div class="fbar" id="fbar" style="display:none">
       <div class="fg">
@@ -270,6 +255,21 @@
       <div class="empty-ico"><i class="bi bi-file-earmark-bar-graph"></i></div>
       <div class="empty-title">Sin datos cargados</div>
       <div class="empty-sub">Sube el archivo <strong>frmREstadoIngresos.xlsx</strong> para visualizar el Estado de Resultados.</div>
+    </div>
+
+    <!-- Upload hero -->
+    <div class="up-hero">
+      <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
+      <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="up-zone" id="uploadCard"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
+      <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
+      <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
+      <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
     </div>
 
   </div>
