@@ -438,7 +438,8 @@ function render(){
   months.forEach(m => netoTotals[m.key] = 0);
 
   structure.forEach(tipo => {
-    if(tipo.id === 'ingreso_neto') return;
+    // Skip tipo 4 (Ingreso Neto del Excel) — se calcula y renderiza abajo
+    if(tipo.id === 'ingreso_neto' || /^Tipo:\s*4/i.test(tipo.label)) return;
 
     // Tipo header
     const tipoLabel = tipo.label.replace(/^Tipo:\s*/,'').replace(/-/,' – ');
@@ -648,7 +649,7 @@ function exportCSV(){
   ];
 
   structure.forEach(tipo => {
-    if(tipo.id === 'ingreso_neto') return;
+    if(tipo.id === 'ingreso_neto' || /^Tipo:\s*4/i.test(tipo.label)) return;
     csvRows.push(['',tipo.label.replace(/^Tipo:\s*/,'')]);
     tipo.groups.forEach(grp => {
       csvRows.push(['',grp.label]);
