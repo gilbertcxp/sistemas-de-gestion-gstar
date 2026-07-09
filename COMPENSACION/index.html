@@ -122,6 +122,62 @@
   .sidebar-collapse-btn { display: none !important; }
 }
 
+/* ---- Antigüedad de Saldo ---- */
+.aging-page{display:none}
+.aging-page.active{display:block}
+.ag-upload-zone{border:2px dashed var(--brd,#e2e8f0);border-radius:12px;padding:52px 32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff;margin:24px;position:relative}
+.ag-upload-zone:hover,.ag-upload-zone.drag{border-color:#3B82F6;background:#eff6ff}
+.ag-upload-icon{display:block;margin-bottom:14px;color:#94a3b8}
+.ag-upload-title{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
+.ag-upload-sub{font-size:13px;color:#64748b;max-width:420px;margin:0 auto 16px;line-height:1.6}
+.ag-upload-step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#64748b;justify-content:center}
+.ag-upload-step-num{width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ag-upload-badge{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:20px;padding:4px 14px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;margin-top:8px}
+.ag-stats-bar{display:flex;gap:12px;flex-wrap:wrap;padding:20px 24px 4px}
+.ag-stat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;flex:1;min-width:150px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ag-stat-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ag-stat-ico.blue{background:#eff6ff;color:#2563eb}
+.ag-stat-ico.green{background:#f0fdf4;color:#16a34a}
+.ag-stat-ico.red{background:#fef2f2;color:#dc2626}
+.ag-stat-ico.amber{background:#fffbeb;color:#d97706}
+.ag-stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8}
+.ag-stat-val{font-size:17px;font-weight:800;color:#0f172a;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.ag-stat-val.sm{font-size:13px}
+.ag-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;margin:12px 24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ag-search{position:relative;flex:1;min-width:200px}
+.ag-search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8}
+.ag-search-input{width:100%;padding:8px 12px 8px 32px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;font-family:'Inter',sans-serif;color:#0f172a}
+.ag-search-input:focus{outline:none;border-color:#3B82F6;background:#fff}
+.ag-sel{padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;background:#f8fafc;color:#0f172a;font-family:'Inter',sans-serif;cursor:pointer}
+.ag-sel:focus{outline:none;border-color:#3B82F6}
+.ag-sep{width:1px;height:26px;background:#e2e8f0}
+.ag-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;color:#0f172a;font-family:'Inter',sans-serif;transition:background .15s}
+.ag-btn:hover{background:#f1f5f9}
+.ag-tbl-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;margin:0 24px 32px}
+.ag-tbl-scroll{overflow-x:auto}
+table.ag-aging{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ag-aging thead tr:first-child th{background:#1f3864;color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 10px 5px;border-right:1px solid rgba(255,255,255,.1);text-align:right;white-space:nowrap}
+table.ag-aging thead tr:first-child th:first-child{text-align:left;min-width:220px}
+table.ag-aging thead tr:nth-child(2) th{background:#274a8a;color:#bfdbfe;font-size:10px;font-weight:600;padding:4px 10px 8px;border-right:1px solid rgba(255,255,255,.1);text-align:right}
+table.ag-aging thead tr:nth-child(2) th:first-child{color:transparent}
+table.ag-aging tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+table.ag-aging tbody tr:hover{background:#f8fafc}
+table.ag-aging tbody tr:nth-child(even){background:#fafbfc}
+table.ag-aging tbody tr:nth-child(even):hover{background:#f3f6fa}
+table.ag-aging tbody td{padding:8px 10px;border-right:1px solid #f1f5f9;vertical-align:middle}
+table.ag-aging tbody td:first-child{font-weight:600;color:#0f172a;white-space:nowrap}
+table.ag-aging tbody td.m{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:400;color:#94a3b8;white-space:nowrap;min-width:110px}
+table.ag-aging tbody td.m.v{color:#0f172a;font-weight:600}
+table.ag-aging tbody td.m.neg{color:#dc2626;font-weight:600}
+table.ag-aging tbody td.tot{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:700;background:#f1f5f9;white-space:nowrap;min-width:120px;border-left:2px solid #e2e8f0}
+table.ag-aging tbody td.tot.neg{color:#dc2626}
+table.ag-aging tfoot td{background:#1f3864;color:#fff;font-weight:800;padding:11px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.1)}
+table.ag-aging tfoot td:first-child{text-align:left;font-family:'Sora',sans-serif;font-size:11.5px;letter-spacing:.4px;font-weight:700}
+table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,255,255,.2)}
+.ag-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;color:#94a3b8;gap:12px}
+.ag-empty-msg{font-size:14px;font-weight:500}
+.ag-foot-bar{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;border-top:1px solid #e2e8f0;font-size:11.5px;color:#94a3b8;flex-wrap:wrap;gap:8px}
+
 /* ---- Sidebar: Conciliadora style overrides ---- */
 .sidebar { background: #0B1437; }
 
@@ -309,6 +365,10 @@
       <button class="nav-item" data-view="pagos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
         Pagos
+      </button>
+      <button class="nav-item" data-view="antiguedad">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Antigüedad de Saldo
       </button>
 
       <div class="nav-group-label">DOCUMENTOS</div>
@@ -1114,6 +1174,153 @@
       </div>
     </section>
 
+    <!-- ===================== ANTIGÜEDAD DE SALDO ===================== -->
+    <section class="view" id="view-antiguedad">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Antigüedad de Saldo</h1>
+          <p class="sub">Análisis de antigüedad de cuentas por cobrar</p>
+        </div>
+        <div class="topbar-actions" id="agTopbarActions" style="display:none">
+          <button class="btn btn-ghost" onclick="AgingComp.exportExcel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Excel
+          </button>
+          <button class="btn btn-ghost" onclick="window.print()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-página: Subir archivo -->
+      <div id="agPageUpload" class="aging-page active">
+        <div class="ag-upload-zone" id="agUploadZone"
+             onclick="document.getElementById('agFileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="AgingComp.handleDrop(event)">
+          <input type="file" id="agFileInput" accept=".xlsx,.xls" onchange="AgingComp.loadFile(this)" style="display:none">
+          <span class="ag-upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          </span>
+          <div class="ag-upload-title">Cargar Estado de Cuenta</div>
+          <div class="ag-upload-sub">
+            Haz clic aquí o arrastra el archivo <strong>frmRCxC.xlsx</strong> exportado del sistema contable.<br>
+            El sistema generará automáticamente la antigüedad de saldo.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:14px">
+            <div class="ag-upload-step"><div class="ag-upload-step-num">1</div> Exportar Estado de Cuenta del sistema</div>
+            <div class="ag-upload-step"><div class="ag-upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong></div>
+            <div class="ag-upload-step"><div class="ag-upload-step-num">3</div> El reporte se genera automáticamente</div>
+          </div>
+          <span class="ag-upload-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+            Solo archivos .xlsx — frmRCxC.xlsx
+          </span>
+        </div>
+      </div>
+
+      <!-- Sub-página: Reporte -->
+      <div id="agPageReport" class="aging-page">
+        <div class="ag-stats-bar">
+          <div class="ag-stat">
+            <div class="ag-stat-ico blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div><div class="ag-stat-lbl">Clientes</div><div class="ag-stat-val" id="agStatClientes">—</div></div>
+          </div>
+          <div class="ag-stat">
+            <div class="ag-stat-ico green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <div><div class="ag-stat-lbl">Total CXC</div><div class="ag-stat-val sm" id="agStatTotal">—</div></div>
+          </div>
+          <div class="ag-stat">
+            <div class="ag-stat-ico red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div><div class="ag-stat-lbl">+1 Año Vencido</div><div class="ag-stat-val sm" id="agStatVencido">—</div></div>
+          </div>
+          <div class="ag-stat">
+            <div class="ag-stat-ico amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div><div class="ag-stat-lbl">Generado</div><div class="ag-stat-val sm" id="agStatFecha">—</div></div>
+          </div>
+        </div>
+        <div class="ag-toolbar">
+          <div class="ag-search">
+            <svg class="ag-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" class="ag-search-input" placeholder="Buscar cliente…" id="agSearch" oninput="AgingComp.filter()">
+          </div>
+          <div class="ag-sep"></div>
+          <select class="ag-sel" id="agFilterCliente" onchange="AgingComp.filter()">
+            <option value="">Todos los clientes</option>
+          </select>
+          <select class="ag-sel" id="agFilterBucket" onchange="AgingComp.filter()">
+            <option value="">Todos los períodos</option>
+            <option value="0">0 – 15 días</option>
+            <option value="1">1 Mes (16-30)</option>
+            <option value="2">1½ Mes (31-45)</option>
+            <option value="3">2 Meses (46-60)</option>
+            <option value="4">4 Meses (61-120)</option>
+            <option value="5">1 Año (121-365)</option>
+            <option value="6">+1 Año (365+)</option>
+          </select>
+          <button class="ag-btn" onclick="AgingComp.clearFilters()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            Limpiar
+          </button>
+          <div class="ag-sep"></div>
+          <button class="ag-btn" onclick="AgingComp.navUpload()" title="Cargar otro archivo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3.87"/></svg>
+          </button>
+        </div>
+        <div class="ag-tbl-wrap">
+          <div class="ag-tbl-scroll">
+            <table class="ag-aging">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
+                  <th>15 DÍAS</th><th>1 MES</th><th>1 MES Y ½</th><th>2 MESES</th>
+                  <th>4 MESES</th><th>1 AÑO</th><th>+1 AÑO</th>
+                  <th style="background:#17306d">TOTALES</th>
+                </tr>
+                <tr>
+                  <th>0 – 15</th><th>16 – 30</th><th>31 – 45</th><th>46 – 60</th>
+                  <th>61 – 120</th><th>121 – 365</th><th>365 +</th>
+                  <th style="background:#1d3d73"></th>
+                </tr>
+              </thead>
+              <tbody id="agBody">
+                <tr><td colspan="9"><div class="ag-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+                  <span class="ag-empty-msg">Carga un archivo para generar el reporte</span>
+                </div></td></tr>
+              </tbody>
+              <tfoot id="agFoot" style="display:none">
+                <tr>
+                  <td>TOTAL GENERAL</td>
+                  <td id="agFt0">—</td><td id="agFt1">—</td><td id="agFt2">—</td>
+                  <td id="agFt3">—</td><td id="agFt4">—</td><td id="agFt5">—</td>
+                  <td id="agFt6">—</td>
+                  <td class="tot-ft" id="agFtTotal">—</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="ag-foot-bar" id="agFootBar" style="display:none">
+            <span id="agFootInfo">—</span>
+            <span id="agFootFile" style="font-style:italic">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -1310,5 +1517,191 @@ function toggleCompSidebar(){
 <script src="assets/js/estado-cuenta.js"></script>
 <script src="assets/js/pagos.js"></script>
 <script src="assets/js/app.js"></script>
+<script>
+const AgingComp = (() => {
+  let _allRows = [], _filtered = [], _fileName = '';
+
+  const norm = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
+  const _esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  function fmtM(v){
+    if(v===0) return '-';
+    const abs = Math.abs(v);
+    const s = abs.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return v < 0 ? `(${s})` : s;
+  }
+  function fmtMFull(v){
+    return 'RD$ '+v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function getBucket(dias){
+    const d = Number(dias)||0;
+    if(d<=15)  return 0;
+    if(d<=30)  return 1;
+    if(d<=45)  return 2;
+    if(d<=60)  return 3;
+    if(d<=120) return 4;
+    if(d<=365) return 5;
+    return 6;
+  }
+
+  function handleDrop(e){
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if(f) _processFile(f);
+  }
+  function loadFile(input){
+    const f = input.files[0];
+    if(f) _processFile(f);
+    input.value = '';
+  }
+  function _processFile(file){
+    if(!file.name.match(/\.xlsx?$/i)){
+      if(typeof UI!=='undefined') UI.toast('Solo se aceptan archivos .xlsx','error');
+      return;
+    }
+    _fileName = file.name;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try{
+        const wb = XLSX.read(ev.target.result,{type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        _parse(data);
+      } catch(err){
+        if(typeof UI!=='undefined') UI.toast('Error al leer el archivo: '+err.message,'error');
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function _parse(data){
+    const map = {};
+    for(let i=2;i<data.length;i++){
+      const row = data[i];
+      if(!row||row.length<11) continue;
+      const client = String(row[2]||'').trim();
+      const dias   = row[6];
+      const amount = parseFloat(String(row[10]).replace(/,/g,''))||0;
+      if(!client||amount===0) continue;
+      if(!map[client]) map[client]=[0,0,0,0,0,0,0];
+      map[client][getBucket(dias)] += amount;
+    }
+    _allRows = Object.entries(map)
+      .map(([name,buckets]) => ({name,buckets,total:buckets.reduce((s,v)=>s+v,0)}))
+      .sort((a,b) => a.name.localeCompare(b.name,'es'));
+    _filtered = [..._allRows];
+    _updateStats();
+    _populateFilters();
+    _render();
+    _navPage('report');
+    document.getElementById('agFootFile').textContent = _fileName;
+    document.getElementById('agTopbarActions').style.display = '';
+  }
+
+  function _navPage(page){
+    document.getElementById('agPageUpload').classList.toggle('active', page==='upload');
+    document.getElementById('agPageReport').classList.toggle('active', page==='report');
+  }
+  function navUpload(){
+    _navPage('upload');
+    document.getElementById('agTopbarActions').style.display = 'none';
+  }
+
+  function _updateStats(){
+    const total   = _allRows.reduce((s,r)=>s+r.total,0);
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[6],0);
+    document.getElementById('agStatClientes').textContent = _allRows.length;
+    document.getElementById('agStatTotal').textContent    = fmtMFull(total);
+    document.getElementById('agStatVencido').textContent  = fmtMFull(vencido);
+    document.getElementById('agStatFecha').textContent    =
+      new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'});
+  }
+
+  function _populateFilters(){
+    const sel = document.getElementById('agFilterCliente');
+    sel.innerHTML = '<option value="">Todos los clientes</option>'+
+      _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
+  }
+
+  function _render(){
+    const tbody   = document.getElementById('agBody');
+    const tfoot   = document.getElementById('agFoot');
+    const footBar = document.getElementById('agFootBar');
+    if(_filtered.length===0){
+      tbody.innerHTML = `<tr><td colspan="9"><div class="ag-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <span class="ag-empty-msg">Sin resultados para los filtros aplicados</span>
+      </div></td></tr>`;
+      tfoot.style.display = 'none';
+      footBar.style.display = 'none';
+      return;
+    }
+    const totals = [0,0,0,0,0,0,0];
+    let grand = 0;
+    tbody.innerHTML = _filtered.map(row => {
+      const cells = row.buckets.map((v,i) => {
+        totals[i] += v;
+        const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
+        return `<td class="${cls}">${fmtM(v)}</td>`;
+      }).join('');
+      grand += row.total;
+      const tCls = 'tot'+(row.total<0?' neg':'');
+      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+    }).join('');
+    totals.forEach((v,i) => { const el=document.getElementById('agFt'+i); if(el) el.textContent=fmtM(v); });
+    document.getElementById('agFtTotal').textContent = fmtM(grand);
+    tfoot.style.display = '';
+    footBar.style.display = '';
+    document.getElementById('agFootInfo').textContent =
+      `${_filtered.length} cliente${_filtered.length!==1?'s':''} mostrados · ${_allRows.length} total`;
+  }
+
+  function filter(){
+    const q  = norm(document.getElementById('agSearch').value);
+    const cl = document.getElementById('agFilterCliente').value;
+    const bk = document.getElementById('agFilterBucket').value;
+    _filtered = _allRows.filter(r => {
+      if(q  && !norm(r.name).includes(q)) return false;
+      if(cl && r.name !== cl)             return false;
+      if(bk !== '' && r.buckets[+bk]===0) return false;
+      return true;
+    });
+    _render();
+  }
+
+  function clearFilters(){
+    document.getElementById('agSearch').value = '';
+    document.getElementById('agFilterCliente').value = '';
+    document.getElementById('agFilterBucket').value = '';
+    _filtered = [..._allRows];
+    _render();
+  }
+
+  function exportExcel(){
+    if(!_allRows.length){ if(typeof UI!=='undefined') UI.toast('No hay datos para exportar','error'); return; }
+    const HDR = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','+1 AÑO','TOTALES'];
+    const SUB = ['','0-15','16-30','31-45','46-60','61-120','121-365','365+',''];
+    const aoa = [
+      ['Antigüedad de Cuentas por Cobrar — Compensación'],[],
+      HDR,SUB,
+      ..._filtered.map(r=>[r.name,...r.buckets.map(v=>v===0?'-':v),r.total===0?'-':r.total]),
+      [],
+      ['TOTAL GENERAL',...[0,1,2,3,4,5,6].map(i=>_filtered.reduce((s,r)=>s+r.buckets[i],0)),_filtered.reduce((s,r)=>s+r.total,0)]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:38},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Antigüedad');
+    XLSX.writeFile(wb,`Antiguedad_Comp_${new Date().toISOString().slice(0,10)}.xlsx`);
+    if(typeof UI!=='undefined') UI.toast('Excel descargado correctamente');
+  }
+
+  function render(){ /* state persists between nav switches */ }
+
+  return { handleDrop, loadFile, filter, clearFilters, exportExcel, navUpload, render };
+})();
+</script>
 </body>
 </html>
