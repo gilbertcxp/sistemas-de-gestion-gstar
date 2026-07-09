@@ -73,8 +73,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav-btn.active{background:rgba(37,99,235,.2);color:#fff;border-left:3px solid var(--blue);padding-left:7px}
 .nav-btn i.nav-ico{font-size:16px;width:18px;text-align:center;flex-shrink:0}
-.nav-btn .chev{margin-left:auto;font-size:12px;transition:transform .2s}
-.nav-btn.open .chev{transform:rotate(90deg)}
+.nav-btn .chev{margin-left:auto;flex-shrink:0;width:24px;height:22px;background:rgba(255,255,255,.08);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.55);transition:transform .22s,background .15s,color .15s}
+.nav-btn.open .chev{transform:rotate(90deg);background:rgba(37,99,235,.4);color:#fff}
 .nav-badge{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;background:rgba(245,158,11,.2);color:#FBBF24;text-transform:uppercase;letter-spacing:.4px}
 /* Submenu */
 .submenu{max-height:0;overflow:hidden;transition:max-height .28s ease;margin-left:8px;border-left:1px solid rgba(255,255,255,.07);padding-left:6px}
@@ -224,7 +224,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <!-- BANCO (con submenú) -->
     <button class="nav-btn open" id="bancoToggle" onclick="toggleSub('banco')">
       <i class="bi bi-bank2 nav-ico"></i> Banco
-      <i class="bi bi-chevron-right chev"></i>
+      <i class="bi bi-chevron-double-right chev"></i>
     </button>
     <div class="submenu open" id="sub-banco">
       <button class="sub-btn" data-page="erogaciones"><span class="dot"></span> Dashboard de Erogaciones</button>
@@ -242,7 +242,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <!-- CUENTAS POR PAGAR (con submenú) -->
     <button class="nav-btn" id="cxpToggle" onclick="toggleSub('cxp')">
       <i class="bi bi-receipt nav-ico"></i> Cuentas por Pagar
-      <i class="bi bi-chevron-right chev"></i>
+      <i class="bi bi-chevron-double-right chev"></i>
     </button>
     <div class="submenu" id="sub-cxp">
       <button class="sub-btn" data-page="cxp-antiguedad"><span class="dot"></span> Antigüedad de Saldo</button>
@@ -252,7 +252,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <div class="nav-group-label">Análisis</div>
     <button class="nav-btn" id="reportesToggle" onclick="toggleSub('reportes')">
       <i class="bi bi-bar-chart-steps nav-ico"></i> Reportes
-      <i class="bi bi-chevron-right chev"></i>
+      <i class="bi bi-chevron-double-right chev"></i>
     </button>
     <div class="submenu" id="sub-reportes">
       <button class="sub-btn" data-page="er"><span class="dot"></span> Estado de Resultados</button>
