@@ -64,8 +64,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .topbar-actions{display:flex;align-items:center;gap:10px}
 .icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
 .icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
-.mobile-toggle{display:flex;align-items:center;background:none;border:none;font-size:20px;color:var(--text-primary);cursor:pointer;padding:4px 6px;border-radius:7px;transition:color .15s,background .15s}
-.mobile-toggle:hover{color:var(--blue);background:var(--blue-lt)}
+.mobile-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:30px;background:#1e293b;border:none;border-radius:8px;color:#fff;font-size:14px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.mobile-toggle:hover{background:#334155}
 
 .page{padding:24px}
 
@@ -225,7 +225,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 <main class="main-content">
   <div class="topbar">
     <div class="d-flex align-items-center gap-3" style="display:flex;align-items:center;gap:12px">
-      <button class="mobile-toggle" onclick="toggleSidebar()" title="Mostrar / ocultar panel lateral"><i class="bi bi-layout-sidebar" id="sidebarToggleIcon"></i></button>
+      <button class="mobile-toggle" onclick="toggleSidebar()" title="Mostrar / ocultar panel lateral"><i class="bi bi-chevron-double-left" id="sidebarToggleIcon"></i></button>
       <span class="topbar-title">Reporte de Erogaciones</span>
     </div>
     <div class="topbar-actions">
@@ -370,7 +370,7 @@ function toggleSidebar(){
   main.classList.toggle('sidebar-collapsed', collapsed);
   sessionStorage.setItem('repErogSidebarCollapsed', collapsed?'1':'0');
   const icon = document.getElementById('sidebarToggleIcon');
-  if(icon) icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+  if(icon) icon.className = collapsed ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
 }
 
 (function initSidebar(){
@@ -382,7 +382,7 @@ function toggleSidebar(){
     document.querySelector('.main-content').classList.add('sidebar-collapsed');
   }
   const icon = document.getElementById('sidebarToggleIcon');
-  if(icon) icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+  if(icon) icon.className = collapsed ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
 })();
 
 function showSp(){ document.getElementById('spOv').style.display='flex'; }
