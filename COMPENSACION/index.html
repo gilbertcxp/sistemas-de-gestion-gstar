@@ -1582,8 +1582,7 @@ const AgingComp = (() => {
         return `<td class="${cls}">${fmtM(v)}</td>`;
       }).join('');
       grand += row.total;
-      const tCls = 'tot'+(row.total<0?' neg':'');
-      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="tot"></td></tr>`;
     }).join('');
 
     totals.forEach((v,i) => { const el=document.getElementById('agFt'+i); if(el) el.textContent=fmtM(v); });
