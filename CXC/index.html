@@ -342,6 +342,12 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
   @page{size:landscape;margin:8mm}
   .print-title{display:block!important;text-align:center;font-size:14px;font-weight:700;
     font-family:'Sora',sans-serif;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #1f3864}
+  body.printing-mora-detail .topbar,
+  body.printing-mora-detail .sidebar,
+  body.printing-mora-detail .app-body>*:not(#moraDetailOverlay),
+  body.printing-mora-detail .no-print{display:none!important}
+  body.printing-mora-detail #moraDetailOverlay{position:static!important;background:#fff!important;display:block!important;inset:auto!important}
+  body.printing-mora-detail .dd-modal{width:100%!important;max-width:100%!important;max-height:none!important;box-shadow:none!important}
 }
 .print-title{display:none}
 </style>
@@ -672,19 +678,22 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
           </div>
         </div>
 
-        <!-- Charts fila 2: top10 + heatmap -->
-        <div class="dash-charts-row2">
-          <div class="chart-card">
-            <div class="chart-card-hdr">
-              <div>
-                <div class="chart-card-title"><i class="bi bi-trophy"></i> Top 10 Clientes por Saldo</div>
-                <div class="chart-card-sub">Color indica nivel de riesgo · clic para ver detalle</div>
-              </div>
-            </div>
-            <div class="chart-canvas-wrap" style="height:290px">
-              <canvas id="chartTop10"></canvas>
+        <!-- Reporte: Antigüedad de Saldos por Clientes con Mayor Tiempo con Facturas Vencidas -->
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-card-hdr">
+            <div>
+              <div class="chart-card-title"><i class="bi bi-trophy"></i> Reporte de Antigüedad de Saldos por Clientes con Mayor Tiempo con Facturas Vencidas</div>
+              <div class="chart-card-sub">Top 10 · ordenado por días de mora de la factura vencida más antigua de cada cliente · doble clic en la barra o en la fila para ver el detalle</div>
             </div>
           </div>
+          <div class="chart-canvas-wrap" style="height:230px">
+            <canvas id="chartTop10"></canvas>
+          </div>
+          <div id="top10MoraTblWrap" style="margin-top:14px;overflow-x:auto"></div>
+        </div>
+
+        <!-- Charts fila 2: heatmap -->
+        <div class="dash-charts-row2" style="grid-template-columns:1fr">
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
@@ -736,6 +745,49 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
       <button class="dd-modal-close" onclick="CXC.ddClose()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="dd-modal-body" id="ddContent"></div>
+  </div>
+</div>
+
+<!-- MORA DETAIL OVERLAY (Antigüedad de Saldos — detalle por cliente) -->
+<div class="dd-overlay" id="moraDetailOverlay" onclick="if(event.target===this)CXC.moraClose()">
+  <div class="dd-modal" style="width:min(1100px,96vw)">
+    <div class="dd-modal-hdr">
+      <div>
+        <div class="dd-modal-title" id="moraDetName">Detalle de Cliente</div>
+        <div style="font-size:11px;opacity:.7;margin-top:3px" id="moraDetSub">—</div>
+      </div>
+      <button class="dd-modal-close no-print" onclick="CXC.moraClose()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="dd-modal-body">
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px" class="no-print">
+        <div class="kpi-card"><div class="kpi-lbl">Total Pendiente</div><div class="kpi-val" id="moraKpiTotal">—</div></div>
+        <div class="kpi-card danger"><div class="kpi-lbl">Facturas Vencidas</div><div class="kpi-val" id="moraKpiCount">—</div></div>
+        <div class="kpi-card warn"><div class="kpi-lbl">Promedio Días de Mora</div><div class="kpi-val" id="moraKpiAvg">—</div></div>
+      </div>
+      <!-- Toolbar -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px" class="no-print">
+        <div style="position:relative">
+          <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>
+          <input class="sel" style="padding-left:26px;width:180px" placeholder="Buscar factura/nota..." id="moraQ" oninput="CXC.moraApplyFilters()">
+        </div>
+        <input type="date" class="sel" id="moraD1" onchange="CXC.moraApplyFilters()">
+        <input type="date" class="sel" id="moraD2" onchange="CXC.moraApplyFilters()">
+        <select class="sel" id="moraSort" onchange="CXC.moraApplyFilters()">
+          <option value="vence_asc">Fecha vencimiento (más antigua primero)</option>
+          <option value="vence_desc">Fecha vencimiento (más reciente primero)</option>
+          <option value="pend_desc">Monto (mayor a menor)</option>
+          <option value="pend_asc">Monto (menor a mayor)</option>
+        </select>
+        <button class="btn btn-outline" onclick="CXC.moraClearFilters()" style="padding:7px 12px"><i class="bi bi-x-circle"></i> Limpiar</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="CXC.moraExportExcel()" style="padding:7px 12px"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+          <button class="btn btn-outline" onclick="CXC.moraPrint()" style="padding:7px 12px"><i class="bi bi-printer"></i> Imprimir</button>
+        </div>
+      </div>
+      <!-- Table -->
+      <div id="moraTblWrap" style="overflow-x:auto"></div>
+    </div>
   </div>
 </div>
 
@@ -1437,10 +1489,44 @@ const CXC = (() => {
     });
   }
 
-  function _dashRenderTop10(clients) {
-    const top10  = clients.slice(0,10);
-    const labels = top10.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
-    const data   = top10.map(c => +c.total.toFixed(2));
+  /* ---- Reporte: Antigüedad de Saldos por Clientes con Mayor Tiempo con Facturas Vencidas ---- */
+  let _moraTop10 = [];
+  let _moraGrandTotal = 0;
+  let _moraDetail = { client:'', all:[], filtered:[] };
+
+  function _dashComputeMoraTop10(inv) {
+    const overdue = inv.filter(i => i.dias > 0);
+    const map = {};
+    overdue.forEach(i => {
+      if (!map[i.cliente]) map[i.cliente] = { name:i.cliente, count:0, total:0, maxDias:0, oldestVence:'', invoices:[] };
+      const c = map[i.cliente];
+      c.count++;
+      c.total += i.pend;
+      c.invoices.push(i);
+      if (i.dias > c.maxDias) { c.maxDias = i.dias; c.oldestVence = i.vence; }
+    });
+    const all   = Object.values(map);
+    const grand = all.reduce((s,c) => s + c.total, 0);
+    all.forEach(c => { c.pct = grand ? (c.total / grand * 100) : 0; });
+    all.sort((a,b) => b.maxDias - a.maxDias);
+    return { top10: all.slice(0,10), grand };
+  }
+
+  function _dashRenderTop10(_clients, inv) {
+    const { top10, grand } = _dashComputeMoraTop10(inv);
+    _moraTop10 = top10;
+    _moraGrandTotal = grand;
+
+    const tblWrap = document.getElementById('top10MoraTblWrap');
+
+    if (!top10.length) {
+      if (_chartTop10) { _chartTop10.destroy(); _chartTop10 = null; }
+      tblWrap.innerHTML = '<div class="st-empty" style="padding:24px"><i class="bi bi-inbox ico"></i><span class="msg">No existen clientes con facturas vencidas.</span></div>';
+      return;
+    }
+
+    const labels = top10.map(c => c.name.length > 26 ? c.name.slice(0,24)+'…' : c.name);
+    const data   = top10.map(c => c.maxDias);
     const colors = top10.map(c => {
       const r = _dashRisk(c.maxDias).label;
       return r==='Bajo'?'#22c55e':r==='Medio'?'#f59e0b':r==='Alto'?'#f97316':'#ef4444';
@@ -1449,23 +1535,162 @@ const CXC = (() => {
     if (_chartTop10) _chartTop10.destroy();
     _chartTop10 = new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets:[{ label:'Saldo Pendiente', data, backgroundColor:colors, borderWidth:0, borderRadius:4 }] },
+      data: { labels, datasets:[{ label:'Días de Mora', data, backgroundColor:colors, borderWidth:0, borderRadius:4 }] },
       options: {
         indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins: {
           legend:  { display:false },
-          tooltip: { callbacks:{ label: c => ` ${fmtMFull(c.parsed.x)}` } }
+          tooltip: { callbacks:{ label: c => ` ${c.parsed.x} días de mora` } }
         },
         scales: {
-          x: { ticks:{ font:{size:10}, callback: v => (v/1000000).toFixed(1)+'MM' } },
-          y: { ticks:{ font:{size:10} } }
-        },
-        onClick: (_e, elems) => {
-          if (!elems.length) return;
-          _ddOpen(top10[elems[0].index].name, -1);
+          x: { ticks:{ font:{size:10} }, title:{ display:true, text:'Días de mora', font:{size:10} } },
+          y: { ticks:{ font:{size:10}, autoSkip:false } }
         }
       }
     });
+    _setupMoraChartDblClick();
+
+    tblWrap.innerHTML = `
+      <table class="dash-detail">
+        <thead><tr>
+          <th>Cliente</th><th class="r">Facturas Vencidas</th><th class="r">Monto Total Vencido</th>
+          <th>Fecha Vcto. Más Antigua</th><th class="r">Días de Mora</th><th class="r">% Cartera Vencida</th>
+        </tr></thead>
+        <tbody>${top10.map(c => `
+          <tr data-client="${_esc(c.name)}" style="cursor:pointer" ondblclick="CXC.moraOpen(this.dataset.client)" title="Doble clic para ver el detalle de facturas">
+            <td>${_esc(c.name)}</td>
+            <td class="r">${c.count}</td>
+            <td class="r">${fmtMFull(c.total)}</td>
+            <td>${_esc(c.oldestVence)||'—'}</td>
+            <td class="r"><b>${c.maxDias}</b></td>
+            <td class="r">${c.pct.toFixed(1)}%</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function _setupMoraChartDblClick() {
+    const canvas = document.getElementById('chartTop10');
+    if (!canvas || canvas._moraDblBound) return;
+    canvas._moraDblBound = true;
+    canvas.addEventListener('dblclick', evt => {
+      if (!_chartTop10) return;
+      const points = _chartTop10.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
+      if (!points.length) return;
+      const c = _moraTop10[points[0].index];
+      if (c) _moraOpen(c.name);
+    });
+  }
+
+  function _moraOpen(clientName) {
+    const invoices = _dashInvoices.filter(i => i.cliente === clientName && i.dias > 0);
+    _moraDetail.client = clientName;
+    _moraDetail.all    = invoices;
+
+    ['moraQ','moraD1','moraD2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('moraSort').value = 'vence_asc';
+
+    const total   = invoices.reduce((s,i) => s + i.pend, 0);
+    const avgDias = invoices.length ? Math.round(invoices.reduce((s,i) => s + i.dias, 0) / invoices.length) : 0;
+    document.getElementById('moraDetName').textContent = clientName;
+    document.getElementById('moraDetSub').textContent  =
+      `${invoices.length} factura${invoices.length!==1?'s':''} vencida${invoices.length!==1?'s':''} · ${fmtMFull(total)}`;
+    document.getElementById('moraKpiTotal').textContent = fmtMFull(total);
+    document.getElementById('moraKpiCount').textContent = invoices.length;
+    document.getElementById('moraKpiAvg').textContent   = avgDias + ' días';
+
+    _moraApplyFilters();
+    document.getElementById('moraDetailOverlay').classList.add('open');
+  }
+  function moraOpen(name) { _moraOpen(name); }
+  function moraClose()    { document.getElementById('moraDetailOverlay').classList.remove('open'); }
+
+  function _moraApplyFilters() {
+    const q  = (document.getElementById('moraQ').value||'').toLowerCase();
+    const d1 = document.getElementById('moraD1').value;
+    const d2 = document.getElementById('moraD2').value;
+    let recs = _moraDetail.all.filter(i => {
+      if (q && !((i.idDoc||'').toLowerCase().includes(q) || (i.nota||'').toLowerCase().includes(q))) return false;
+      if (d1 && i.vence && i.vence < d1) return false;
+      if (d2 && i.vence && i.vence > d2) return false;
+      return true;
+    });
+    const [key,dir] = document.getElementById('moraSort').value.split('_');
+    const mul = dir==='asc' ? 1 : -1;
+    recs = recs.sort((a,b) => {
+      let av,bv;
+      if (key==='pend') { av=a.pend; bv=b.pend; }
+      else { av=a.vence||''; bv=b.vence||''; }
+      if (av<bv) return -1*mul;
+      if (av>bv) return 1*mul;
+      return 0;
+    });
+    _moraDetail.filtered = recs;
+    _moraRenderTable();
+  }
+  function moraApplyFilters() { _moraApplyFilters(); }
+
+  function moraClearFilters() {
+    ['moraQ','moraD1','moraD2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('moraSort').value = 'vence_asc';
+    _moraApplyFilters();
+  }
+
+  function _moraRenderTable() {
+    const recs = _moraDetail.filtered;
+    const wrap = document.getElementById('moraTblWrap');
+    if (!recs.length) {
+      wrap.innerHTML = '<div class="st-empty" style="padding:24px"><i class="bi bi-inbox ico"></i><span class="msg">No existen clientes con facturas vencidas.</span></div>';
+      return;
+    }
+    const totalPend = recs.reduce((s,i) => s + i.pend, 0);
+    wrap.innerHTML = `
+      <table class="dash-detail">
+        <thead><tr>
+          <th>N° Factura</th><th>Fecha Emisión</th><th>Fecha Vencimiento</th><th class="r">Días de Mora</th>
+          <th class="r">Monto Pendiente</th><th class="r">Balance Pendiente</th><th>Estado</th><th>Consorcio</th><th>Observaciones</th>
+        </tr></thead>
+        <tbody>${recs.map(i => `
+          <tr>
+            <td>${_esc(i.idDoc)||'—'}</td>
+            <td>${_esc(i.fecha)||'—'}</td>
+            <td>${_esc(i.vence)||'—'}</td>
+            <td class="r">${i.dias}</td>
+            <td class="r">${fmtMFull(i.pend)}</td>
+            <td class="r">${fmtMFull(i.pend)}</td>
+            <td><span class="bkt bkt-${getBucket(i.dias)}">Vencida</span></td>
+            <td>${_esc(i.cliente)}</td>
+            <td>${_esc(i.nota)||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td colspan="4"><b>TOTAL</b></td>
+          <td class="r"><b>${fmtMFull(totalPend)}</b></td>
+          <td class="r"><b>${fmtMFull(totalPend)}</b></td>
+          <td colspan="3"></td>
+        </tr></tfoot>
+      </table>`;
+  }
+
+  function moraExportExcel() {
+    const recs = _moraDetail.filtered;
+    if (!recs.length) { toast('No hay facturas para exportar', true); return; }
+    const headers = ['N° Factura','Fecha Emisión','Fecha Vencimiento','Días de Mora','Monto Pendiente','Balance Pendiente','Estado','Consorcio','Observaciones'];
+    const rows = recs.map(i => [i.idDoc, i.fecha, i.vence, i.dias, i.pend, i.pend, 'Vencida', i.cliente, i.nota]);
+    const aoa = [[`Facturas Vencidas — ${_moraDetail.client}`],[],headers,...rows];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:14},{wch:12},{wch:14},{wch:10},{wch:16},{wch:16},{wch:12},{wch:30},{wch:24}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Facturas Vencidas');
+    XLSX.writeFile(wb, `Facturas_Vencidas_${_moraDetail.client.replace(/[^a-z0-9]+/gi,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Excel descargado');
+  }
+
+  function moraPrint() {
+    document.body.classList.add('printing-mora-detail');
+    const cleanup = () => { document.body.classList.remove('printing-mora-detail'); window.removeEventListener('afterprint', cleanup); };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
   }
 
   function _dashRenderHeatmap(clients) {
@@ -1515,7 +1740,7 @@ const CXC = (() => {
     _dashRenderKPIs(inv, clients);
     _dashRenderAgingBars(clients);
     _dashRenderDonut(clients);
-    _dashRenderTop10(clients);
+    _dashRenderTop10(clients, inv);
     _dashRenderHeatmap(clients);
     _dashRenderTable(clients);
   }
@@ -1751,7 +1976,8 @@ const CXC = (() => {
 
   return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
            navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportPDF, publicar,
-           dashApplyFilters, dashReset, dashExport, ddOpen, ddOpenCell, ddClose };
+           dashApplyFilters, dashReset, dashExport, ddOpen, ddOpenCell, ddClose,
+           moraOpen, moraClose, moraApplyFilters, moraClearFilters, moraExportExcel, moraPrint };
 })();
 </script>
 </body>
