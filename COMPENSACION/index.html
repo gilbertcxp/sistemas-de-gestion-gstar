@@ -1213,7 +1213,7 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
           <div class="ag-stat-ico red">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           </div>
-          <div><div class="ag-stat-lbl">+1 Año Vencido</div><div class="ag-stat-val sm" id="agStatVencido">—</div></div>
+          <div><div class="ag-stat-lbl">+120 Días Vencido</div><div class="ag-stat-val sm" id="agStatVencido">—</div></div>
         </div>
         <div class="ag-stat">
           <div class="ag-stat-ico amber">
@@ -1234,13 +1234,12 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
         </select>
         <select class="ag-sel" id="agFilterBucket" onchange="AgingComp.filter()">
           <option value="">Todos los períodos</option>
-          <option value="0">0 – 15 días</option>
-          <option value="1">1 Mes (16-30)</option>
-          <option value="2">1½ Mes (31-45)</option>
-          <option value="3">2 Meses (46-60)</option>
-          <option value="4">4 Meses (61-120)</option>
-          <option value="5">1 Año (121-365)</option>
-          <option value="6">+1 Año (365+)</option>
+          <option value="0">0 – 7 días</option>
+          <option value="1">8 – 30 días</option>
+          <option value="2">31 – 60 días</option>
+          <option value="3">61 – 90 días</option>
+          <option value="4">91 – 120 días</option>
+          <option value="5">Más de 120 días</option>
         </select>
         <button class="ag-btn" onclick="AgingComp.clearFilters()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
@@ -1254,18 +1253,18 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
             <thead>
               <tr>
                 <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
-                <th>15 DÍAS</th><th>1 MES</th><th>1 MES Y ½</th><th>2 MESES</th>
-                <th>4 MESES</th><th>1 AÑO</th><th>+1 AÑO</th>
+                <th>7 DÍAS</th><th>1 MES</th><th>2 MESES</th><th>3 MESES</th>
+                <th>4 MESES</th><th>+120 DÍAS</th>
                 <th style="background:#17306d">TOTALES</th>
               </tr>
               <tr>
-                <th>0 – 15</th><th>16 – 30</th><th>31 – 45</th><th>46 – 60</th>
-                <th>61 – 120</th><th>121 – 365</th><th>365 +</th>
+                <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
+                <th>91 – 120</th><th>120 +</th>
                 <th style="background:#1d3d73"></th>
               </tr>
             </thead>
             <tbody id="agBody">
-              <tr><td colspan="9"><div class="ag-empty">
+              <tr><td colspan="8"><div class="ag-empty">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
                 <span class="ag-empty-msg">No hay datos. Carga un archivo en el apartado <strong>Data</strong>.</span>
               </div></td></tr>
@@ -1275,7 +1274,6 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
                 <td>TOTAL GENERAL</td>
                 <td id="agFt0">—</td><td id="agFt1">—</td><td id="agFt2">—</td>
                 <td id="agFt3">—</td><td id="agFt4">—</td><td id="agFt5">—</td>
-                <td id="agFt6">—</td>
                 <td class="tot-ft" id="agFtTotal">—</td>
               </tr>
             </tfoot>
@@ -1502,13 +1500,12 @@ const AgingComp = (() => {
   }
   function getBucket(dias){
     const d = Math.max(0, Number(dias)||0);
-    if(d<=15)  return 0;
+    if(d<=7)   return 0;
     if(d<=30)  return 1;
-    if(d<=45)  return 2;
-    if(d<=60)  return 3;
+    if(d<=60)  return 2;
+    if(d<=90)  return 3;
     if(d<=120) return 4;
-    if(d<=365) return 5;
-    return 6;
+    return 5;
   }
 
   function render(){
@@ -1521,7 +1518,7 @@ const AgingComp = (() => {
     for(const r of cxcRows){
       const client = r.consorcio;
       const dias = r.fecha ? Math.floor((today - new Date(r.fecha)) / 86400000) : 0;
-      if(!map[client]) map[client] = [0,0,0,0,0,0,0];
+      if(!map[client]) map[client] = [0,0,0,0,0,0];
       map[client][getBucket(dias)] += Number(r.pendiente)||0;
     }
 
@@ -1537,7 +1534,7 @@ const AgingComp = (() => {
 
   function _updateStats(){
     const total   = _allRows.reduce((s,r)=>s+r.total,0);
-    const vencido = _allRows.reduce((s,r)=>s+r.buckets[6],0);
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[5],0);
     document.getElementById('agStatClientes').textContent = _allRows.length;
     document.getElementById('agStatTotal').textContent    = fmtMFull(total);
     document.getElementById('agStatVencido').textContent  = fmtMFull(vencido);
@@ -1557,7 +1554,7 @@ const AgingComp = (() => {
     const footBar = document.getElementById('agFootBar');
 
     if(_allRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="9"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
         <span class="ag-empty-msg">No hay datos CXC. Carga un archivo en el apartado <strong>Data</strong>.</span>
       </div></td></tr>`;
@@ -1567,7 +1564,7 @@ const AgingComp = (() => {
     }
 
     if(_filtered.length === 0){
-      tbody.innerHTML = `<tr><td colspan="9"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <span class="ag-empty-msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -1576,7 +1573,7 @@ const AgingComp = (() => {
       return;
     }
 
-    const totals = [0,0,0,0,0,0,0];
+    const totals = [0,0,0,0,0,0];
     let grand = 0;
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
@@ -1622,8 +1619,8 @@ const AgingComp = (() => {
 
   function exportExcel(){
     if(!_allRows.length){ if(typeof UI!=='undefined') UI.toast('No hay datos para exportar','error'); return; }
-    const HDR = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','+1 AÑO','TOTALES'];
-    const SUB = ['','0-15','16-30','31-45','46-60','61-120','121-365','365+',''];
+    const HDR = ['Nombre Cliente','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
+    const SUB = ['','0-7','8-30','31-60','61-90','91-120','120+',''];
     const aoa = [
       ['Antigüedad de Cuentas por Cobrar — Compensación'],[],
       HDR,SUB,

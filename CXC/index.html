@@ -461,7 +461,7 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
           </div>
           <div class="stat-card">
             <div class="stat-ico red"><i class="bi bi-hourglass-bottom"></i></div>
-            <div><div class="stat-lbl">+1 Año Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
+            <div><div class="stat-lbl">+120 Días Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
           </div>
           <div class="stat-card">
             <div class="stat-ico amber"><i class="bi bi-calendar-check"></i></div>
@@ -480,13 +480,12 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
           </select>
           <select class="sel" id="filterBucket" onchange="CXC.filterTable()">
             <option value="">Todos los períodos</option>
-            <option value="0">0 – 15 días</option>
-            <option value="1">1 Mes (16-30)</option>
-            <option value="2">1½ Mes (31-45)</option>
-            <option value="3">2 Meses (46-60)</option>
-            <option value="4">4 Meses (61-120)</option>
-            <option value="5">1 Año (121-365)</option>
-            <option value="6">+1 Año (365+)</option>
+            <option value="0">0 – 7 días</option>
+            <option value="1">8 – 30 días</option>
+            <option value="2">31 – 60 días</option>
+            <option value="3">61 – 90 días</option>
+            <option value="4">91 – 120 días</option>
+            <option value="5">Más de 120 días</option>
           </select>
           <button class="btn btn-outline" onclick="CXC.clearFilters()" style="padding:8px 12px">
             <i class="bi bi-x-circle"></i> Limpiar
@@ -502,18 +501,18 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
               <thead>
                 <tr>
                   <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
-                  <th>15 DÍAS</th><th>1 MES</th><th>1 MES Y ½</th><th>2 MESES</th>
-                  <th>4 MESES</th><th>1 AÑO</th><th>+1 AÑO</th>
+                  <th>7 DÍAS</th><th>1 MES</th><th>2 MESES</th><th>3 MESES</th>
+                  <th>4 MESES</th><th>+120 DÍAS</th>
                   <th style="background:#17306d">TOTALES</th>
                 </tr>
                 <tr>
-                  <th>0 – 15</th><th>16 – 30</th><th>31 – 45</th><th>46 – 60</th>
-                  <th>61 – 120</th><th>121 – 365</th><th>365 +</th>
+                  <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
+                  <th>91 – 120</th><th>120 +</th>
                   <th style="background:#1d3d73"></th>
                 </tr>
               </thead>
               <tbody id="agingBody">
-                <tr><td colspan="9"><div class="st-empty">
+                <tr><td colspan="8"><div class="st-empty">
                   <i class="bi bi-inbox ico"></i>
                   <span class="msg">Carga un archivo para generar el reporte</span>
                 </div></td></tr>
@@ -523,7 +522,6 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
                   <td>TOTAL GENERAL</td>
                   <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
                   <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
-                  <td id="ft6">—</td>
                   <td class="tot-ft" id="ftTotal">—</td>
                 </tr>
               </tfoot>
@@ -877,13 +875,12 @@ const CXC = (() => {
   /* ---- Bucket ---- */
   function getBucket(dias) {
     const d = Number(dias) || 0;
-    if (d <= 15)  return 0;
+    if (d <= 7)   return 0;
     if (d <= 30)  return 1;
-    if (d <= 45)  return 2;
-    if (d <= 60)  return 3;
+    if (d <= 60)  return 2;
+    if (d <= 90)  return 3;
     if (d <= 120) return 4;
-    if (d <= 365) return 5;
-    return 6;
+    return 5;
   }
 
   /* ---- Format ---- */
@@ -948,7 +945,7 @@ const CXC = (() => {
       totalInvoices++;
       const wl = matchWhitelist(clientRaw);
       if (!wl) { skippedNotInList++; continue; }
-      if (!map[wl]) map[wl] = [0,0,0,0,0,0,0];
+      if (!map[wl]) map[wl] = [0,0,0,0,0,0];
       map[wl][getBucket(diasRaw)] += pendiente;
       if (!_rawByClient[wl]) _rawByClient[wl] = [];
       _rawByClient[wl].push(row);
@@ -987,7 +984,7 @@ const CXC = (() => {
     const footer = document.getElementById('tblFooter');
 
     if (_filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="st-empty">
+      tbody.innerHTML = `<tr><td colspan="8"><div class="st-empty">
         <i class="bi bi-search ico"></i>
         <span class="msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -996,7 +993,7 @@ const CXC = (() => {
       return;
     }
 
-    const totals = [0,0,0,0,0,0,0];
+    const totals = [0,0,0,0,0,0];
     let grandTotal = 0;
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
@@ -1019,7 +1016,7 @@ const CXC = (() => {
 
   function _updateStats() {
     const total   = _allRows.reduce((s,r)=>s+r.total, 0);
-    const vencido = _allRows.reduce((s,r)=>s+r.buckets[6], 0);
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[5], 0);
     document.getElementById('statClientes').textContent = _allRows.length;
     document.getElementById('statTotal').textContent    = fmtMFull(total);
     document.getElementById('statVencido').textContent  = fmtMFull(vencido);
@@ -1058,15 +1055,15 @@ const CXC = (() => {
   /* ---- Export Excel ---- */
   function exportExcel() {
     if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
-    const BUCKET_LABELS = ['0-15','16-30','31-45','46-60','61-120','121-365','365 +'];
-    const HEADER_LABELS = ['Nombre Cliente','15 DIAS','1 MES','1 MES Y 1/2','2 MESES','4 MESES','1 AÑO','.+ DE UN AÑO','TOTALES'];
+    const BUCKET_LABELS = ['0-7','8-30','31-60','61-90','91-120','120+'];
+    const HEADER_LABELS = ['Nombre Cliente','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
     const aoa = [
       ['Antigüedad de cuentas por cobrar'], [],
       HEADER_LABELS, ['', ...BUCKET_LABELS, ''],
       ..._filtered.map(r => [r.name, ...r.buckets.map(v=>v===0?'-':v), r.total===0?'-':r.total]),
       [],
       ['TOTAL GENERAL',
-        ...[0,1,2,3,4,5,6].map(i => { const v=_filtered.reduce((s,r)=>s+r.buckets[i],0); return v===0?'-':v; }),
+        ...[0,1,2,3,4,5].map(i => { const v=_filtered.reduce((s,r)=>s+r.buckets[i],0); return v===0?'-':v; }),
         _filtered.reduce((s,r)=>s+r.total,0)]
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1078,8 +1075,8 @@ const CXC = (() => {
   }
 
   /* ---- Estado de Cuenta ---- */
-  const BKT_NAMES  = ['0-15 días','16-30 días','31-45 días','46-60 días','61-120 días','121-365 días','+365 días'];
-  const BKT_LABELS = ['15 DÍAS','1 MES','1 MES Y ½','2 MESES','4 MESES','1 AÑO','+1 AÑO'];
+  const BKT_NAMES  = ['0-7 días','8-30 días','31-60 días','61-90 días','91-120 días','+120 días'];
+  const BKT_LABELS = ['7 DÍAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DÍAS'];
 
   function _populateEcCliente() {
     const sel = document.getElementById('ecClienteSel');
@@ -1118,15 +1115,15 @@ const CXC = (() => {
 
     const fecha     = new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
     const total     = rowData.total;
-    const corriente = rowData.buckets.slice(0,4).reduce((s,v)=>s+v,0);
-    const vencMed   = rowData.buckets[4] + rowData.buckets[5];
-    const vencPlus  = rowData.buckets[6];
+    const corriente = rowData.buckets.slice(0,2).reduce((s,v)=>s+v,0);
+    const vencMed   = rowData.buckets[2] + rowData.buckets[3] + rowData.buckets[4];
+    const vencPlus  = rowData.buckets[5];
 
     const cards = `<div class="doc-cards">
       <div class="doc-card blue"><div class="doc-card-lbl">Total Pendiente</div><div class="doc-card-val">${fmtMFull(total)}</div></div>
-      <div class="doc-card green"><div class="doc-card-lbl">Corriente (0-60 días)</div><div class="doc-card-val">${fmtMFull(corriente)}</div></div>
-      <div class="doc-card amber"><div class="doc-card-lbl">Vencido (61-365 días)</div><div class="doc-card-val">${fmtMFull(vencMed)}</div></div>
-      <div class="doc-card red"><div class="doc-card-lbl">+1 Año Vencido</div><div class="doc-card-val">${fmtMFull(vencPlus)}</div></div>
+      <div class="doc-card green"><div class="doc-card-lbl">Corriente (0-30 días)</div><div class="doc-card-val">${fmtMFull(corriente)}</div></div>
+      <div class="doc-card amber"><div class="doc-card-lbl">Vencido (31-120 días)</div><div class="doc-card-val">${fmtMFull(vencMed)}</div></div>
+      <div class="doc-card red"><div class="doc-card-lbl">+120 Días Vencido</div><div class="doc-card-val">${fmtMFull(vencPlus)}</div></div>
     </div>`;
 
     const bucketRows = rowData.buckets.map((v,i) => v===0 ? '' :
