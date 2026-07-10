@@ -651,7 +651,7 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
-                <div class="chart-card-title"><i class="bi bi-bar-chart-steps"></i> Antigüedad de Saldos — Top 15</div>
+                <div class="chart-card-title"><i class="bi bi-bar-chart-steps"></i> Antigüedad de Saldos — Top 10</div>
                 <div class="chart-card-sub">Clic en barra para ver detalle de facturas</div>
               </div>
             </div>
@@ -1371,11 +1371,11 @@ const CXC = (() => {
   }
 
   function _dashRenderAgingBars(clients) {
-    const top15    = clients.slice(0,15);
-    const labels   = top15.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
+    const top10    = clients.slice(0,10);
+    const labels   = top10.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
     const datasets = DASH_BKTS.map((lbl,bi) => ({
       label: lbl,
-      data:  top15.map(c => +c.buckets[bi].toFixed(2)),
+      data:  top10.map(c => +c.buckets[bi].toFixed(2)),
       backgroundColor: DASH_COLORS[bi],
       borderWidth: 0
     }));
@@ -1396,7 +1396,7 @@ const CXC = (() => {
         },
         onClick: (_e, elems) => {
           if (!elems.length) return;
-          _ddOpen(top15[elems[0].index].name, elems[0].datasetIndex);
+          _ddOpen(top10[elems[0].index].name, elems[0].datasetIndex);
         }
       }
     });
