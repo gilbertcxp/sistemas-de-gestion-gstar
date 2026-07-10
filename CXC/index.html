@@ -651,12 +651,13 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
-                <div class="chart-card-title"><i class="bi bi-bar-chart-steps"></i> Antigüedad de Saldos — Top 10</div>
-                <div class="chart-card-sub">Clic en barra para ver detalle de facturas</div>
+                <div class="chart-card-title"><i class="bi bi-bar-chart-steps"></i> Clientes con Mayor Tiempo de Facturas Vencidas — Top 10</div>
+                <div class="chart-card-sub">Ordenado por días de mora de la factura vencida más antigua · barras en monto por tramo · clic para ver detalle</div>
               </div>
             </div>
             <div class="chart-canvas-wrap" style="height:360px">
               <canvas id="chartAging"></canvas>
+              <div id="agingEmptyMsg" class="st-empty" style="display:none;padding:20px"><i class="bi bi-inbox ico"></i><span class="msg">No existen clientes con facturas vencidas.</span></div>
             </div>
           </div>
           <div class="chart-card">
@@ -1371,7 +1372,26 @@ const CXC = (() => {
   }
 
   function _dashRenderAgingBars(clients) {
-    const top10    = clients.slice(0,10);
+    // Top 10 clientes con MÁS TIEMPO de facturas vencidas: se ordena por días
+    // de mora de la factura vencida más antigua (maxDias), pero las barras
+    // siguen mostrando el monto por tramo de antigüedad (no los días).
+    const top10 = clients
+      .filter(c => c.maxDias > 0)
+      .sort((a,b) => b.maxDias - a.maxDias)
+      .slice(0,10);
+
+    const emptyMsg = document.getElementById('agingEmptyMsg');
+    const canvas   = document.getElementById('chartAging');
+
+    if (!top10.length) {
+      if (_chartAging) { _chartAging.destroy(); _chartAging = null; }
+      canvas.style.display = 'none';
+      emptyMsg.style.display = 'flex';
+      return;
+    }
+    canvas.style.display = '';
+    emptyMsg.style.display = 'none';
+
     const labels   = top10.map(c => c.name.length > 22 ? c.name.slice(0,20)+'…' : c.name);
     const datasets = DASH_BKTS.map((lbl,bi) => ({
       label: lbl,
@@ -1379,7 +1399,7 @@ const CXC = (() => {
       backgroundColor: DASH_COLORS[bi],
       borderWidth: 0
     }));
-    const ctx = document.getElementById('chartAging').getContext('2d');
+    const ctx = canvas.getContext('2d');
     if (_chartAging) _chartAging.destroy();
     _chartAging = new Chart(ctx, {
       type: 'bar',
@@ -1388,7 +1408,12 @@ const CXC = (() => {
         indexAxis: 'y', responsive:true, maintainAspectRatio:false,
         plugins: {
           legend:  { position:'bottom', labels:{ font:{size:10}, boxWidth:11, padding:7 } },
-          tooltip: { callbacks:{ label: c => ` ${c.dataset.label}: ${fmtMFull(c.parsed.x)}` } }
+          tooltip: {
+            callbacks: {
+              label: c => ` ${c.dataset.label}: ${fmtMFull(c.parsed.x)}`,
+              afterTitle: c => `${top10[c[0].dataIndex].maxDias} días de mora`
+            }
+          }
         },
         scales: {
           x: { stacked:true, ticks:{ font:{size:10}, callback: v => (v/1000000).toFixed(1)+'MM' } },
