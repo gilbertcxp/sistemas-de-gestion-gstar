@@ -507,8 +507,8 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
                 </tr>
                 <tr>
                   <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
-                  <th>91 – 120</th><th>120 +</th>
-                  <th style="background:#1d3d73">GENERAL</th>
+                  <th>91 – 120</th><th>+120</th>
+                  <th style="background:#1d3d73"></th>
                 </tr>
               </thead>
               <tbody id="agingBody">
@@ -1055,7 +1055,7 @@ const CXC = (() => {
   /* ---- Export Excel ---- */
   function exportExcel() {
     if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
-    const BUCKET_LABELS = ['0-7','8-30','31-60','61-90','91-120','120+'];
+    const BUCKET_LABELS = ['0-7','8-30','31-60','61-90','91-120','+120'];
     const HEADER_LABELS = ['Nombre Cliente','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
     const aoa = [
       ['Antigüedad de cuentas por cobrar'], [],

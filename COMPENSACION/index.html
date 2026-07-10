@@ -1259,8 +1259,8 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
               </tr>
               <tr>
                 <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
-                <th>91 – 120</th><th>120 +</th>
-                <th style="background:#1d3d73">GENERAL</th>
+                <th>91 – 120</th><th>+120</th>
+                <th style="background:#1d3d73"></th>
               </tr>
             </thead>
             <tbody id="agBody">
@@ -1620,7 +1620,7 @@ const AgingComp = (() => {
   function exportExcel(){
     if(!_allRows.length){ if(typeof UI!=='undefined') UI.toast('No hay datos para exportar','error'); return; }
     const HDR = ['Nombre Cliente','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
-    const SUB = ['','0-7','8-30','31-60','61-90','91-120','120+',''];
+    const SUB = ['','0-7','8-30','31-60','61-90','91-120','+120',''];
     const aoa = [
       ['Antigüedad de Cuentas por Cobrar — Compensación'],[],
       HDR,SUB,
