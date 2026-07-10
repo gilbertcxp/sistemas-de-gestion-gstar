@@ -221,6 +221,16 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .erog-empty i{font-size:52px;display:block;margin-bottom:16px;background:linear-gradient(135deg,var(--erog-1),var(--erog-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .erog-empty h3{font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:8px}
 .erog-empty p{font-size:13px;color:var(--text-secondary);max-width:320px;margin:0 auto}
+
+/* Tipo de Gasto detail — print */
+@media print{
+  body.printing-tipo-detail .sidebar,
+  body.printing-tipo-detail .topbar,
+  body.printing-tipo-detail .erog-hero,
+  body.printing-tipo-detail #erogDashContent,
+  body.printing-tipo-detail .no-print{ display:none !important; }
+  body.printing-tipo-detail .main-content{ margin-left:0 !important; }
+}
 </style>
 </head>
 <body>
@@ -395,6 +405,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="erog-chart-card">
             <div class="erog-chart-title"><i class="bi bi-pie-chart-fill" style="color:var(--erog-1)"></i>Distribución por Tipo de Gasto</div>
             <div class="erog-chart-sub">Monto total agrupado por tipo de gasto</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin:-8px 0 8px;display:flex;align-items:center;gap:4px"><i class="bi bi-mouse2"></i>Doble clic en un segmento o leyenda para ver el detalle</div>
             <div class="erog-ch-h240"><canvas id="erogDonut"></canvas></div>
           </div>
         </div>
@@ -531,6 +542,82 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           </tr></thead>
           <tbody id="benDetTxBody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPO DE GASTO DETAIL PANEL -->
+  <div id="erogTipoDetailPanel" style="display:none">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0B1437 0%,#1a1060 100%);border-radius:var(--radius);padding:18px 22px;margin-top:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden;flex-wrap:wrap">
+      <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(99,102,241,.2) 0%,transparent 70%);pointer-events:none"></div>
+      <button class="xbtn no-print" style="color:#fff;border-color:rgba(255,255,255,.35);flex-shrink:0" onclick="closeTipoDetail()">
+        <i class="bi bi-arrow-left"></i>Regresar al Dashboard
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45);margin-bottom:3px">Análisis de Tipo de Gasto</div>
+        <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="tipoDetName">—</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.5);margin-top:2px" id="tipoDetSub">—</div>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="xbtn" style="color:#fff;border-color:rgba(255,255,255,.3);font-size:12px" onclick="exportTipoDetailExcel()"><i class="bi bi-file-earmark-excel"></i>Excel</button>
+        <button class="xbtn" style="color:#fff;border-color:rgba(255,255,255,.3);font-size:12px" onclick="printTipoDetail()"><i class="bi bi-printer"></i>Imprimir</button>
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px" class="no-print">
+      <div class="ekpi">
+        <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-1),var(--erog-2))"></div>
+        <div class="ekpi-icon" style="background:var(--erog-1-lt);color:var(--erog-1)"><i class="bi bi-cash-stack"></i></div>
+        <div class="ekpi-val" id="tipoDetTotal">RD$ 0</div>
+        <div class="ekpi-label">Total del Tipo de Gasto</div>
+      </div>
+      <div class="ekpi">
+        <div class="ekpi-accent" style="background:linear-gradient(90deg,var(--erog-2),var(--erog-3))"></div>
+        <div class="ekpi-icon" style="background:var(--erog-2-lt);color:var(--erog-2)"><i class="bi bi-receipt"></i></div>
+        <div class="ekpi-val" id="tipoDetCount">0</div>
+        <div class="ekpi-label">Transacciones</div>
+      </div>
+    </div>
+    <!-- Filters -->
+    <div class="erog-filter-bar no-print">
+      <div class="filter-row">
+        <div style="position:relative">
+          <i class="bi bi-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px"></i>
+          <input class="fi" style="padding-left:28px;width:180px" placeholder="Buscar beneficiario/descripción..." id="tdQ" oninput="applyTipoDetailFilters()">
+        </div>
+        <select class="fi" id="tdSort" onchange="applyTipoDetailFilters()">
+          <option value="date_desc">Fecha (más reciente)</option>
+          <option value="date_asc">Fecha (más antigua)</option>
+          <option value="monto_desc">Monto (mayor a menor)</option>
+          <option value="monto_asc">Monto (menor a mayor)</option>
+          <option value="ben_asc">Beneficiario (A-Z)</option>
+          <option value="ben_desc">Beneficiario (Z-A)</option>
+        </select>
+        <input type="date" class="fi" id="tdD1" onchange="applyTipoDetailFilters()">
+        <input type="date" class="fi" id="tdD2" onchange="applyTipoDetailFilters()">
+        <select class="fi" id="tdBanco" onchange="applyTipoDetailFilters()"><option value="">Todas las cuentas</option></select>
+        <select class="fi" id="tdEstado" onchange="applyTipoDetailFilters()"><option value="">Todos los estados</option></select>
+        <button class="btn-s" style="padding:7px 12px;font-size:12.5px" onclick="clearTipoDetailFilters()"><i class="bi bi-x-circle"></i>Limpiar</button>
+      </div>
+    </div>
+    <!-- Table -->
+    <div class="erog-tbl-card mb-3">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border-color)">
+        <div style="font-size:13.5px;font-weight:700">Transacciones</div>
+        <div style="font-size:11.5px;color:var(--text-secondary)">Mostrando <strong id="tipoDetShowN">0</strong> de <strong id="tipoDetTotN">0</strong> registros</div>
+      </div>
+      <div class="tbl-wrap" style="max-height:400px;overflow-y:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Fecha</th><th>Beneficiario</th><th>Descripción</th><th>Tipo de Gasto</th><th>Banco</th><th>Cuenta Bancaria</th><th>N° Referencia</th><th>Monto</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="tipoDetTxBody"></tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center p-3 no-print" style="border-top:1px solid var(--border-color)">
+        <div style="font-size:12px;color:var(--text-secondary)">Pág. <span id="tipoDetCurPg">1</span> de <span id="tipoDetTotPg">1</span></div>
+        <div class="d-flex gap-1" id="tipoDetPgBtns"></div>
       </div>
     </div>
   </div>
@@ -829,6 +916,7 @@ function applyErogFilters(){
 
 function clearErogFilters(){
   closeBenDetail();
+  closeTipoDetail();
   ['efBen','efD1','efD2','efAmin','efAmax'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('efTipo').value='';
   document.getElementById('efVia').value='';
@@ -889,7 +977,8 @@ function renderErogCharts(data, byTipo, sortedTipos){
     type:'doughnut',
     data:{ labels:tipoLabels, datasets:[{ data:tipoData, backgroundColor:EROG_PALETTE, borderWidth:2, borderColor:dark?'#0F1E3A':'#fff', borderRadius:3 }] },
     options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:10.5}}},
+      plugins:{ legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:10.5}},
+          onClick: onDonutLegendClick },
         tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtZ(c.parsed)} (${total?Math.round(c.parsed/total*100):0}%)`}} } }
   });
 
@@ -1054,6 +1143,200 @@ function closeBenDetail(){
   document.getElementById('erogDashContent').style.display='block';
 }
 
+// ── Tipo de Gasto Detail (doble clic en el gráfico de dona) ───
+const TD = { name:'', all:[], filtered:[], page:1, perPage:15, sortKey:'date', sortDir:'desc' };
+let _lastLegendClick = null;
+
+// Doble clic en un ítem de la leyenda del donut
+function onDonutLegendClick(evt, legendItem, legend){
+  const idx = legendItem.index;
+  const now = Date.now();
+  if(_lastLegendClick && _lastLegendClick.idx===idx && (now-_lastLegendClick.t)<400){
+    _lastLegendClick = null;
+    openTipoDetail(legend.chart.data.labels[idx]);
+    return;
+  }
+  _lastLegendClick = {idx, t:now};
+  // comportamiento normal de un solo clic: alternar visibilidad del segmento
+  const ci = legend.chart;
+  ci.toggleDataVisibility(idx);
+  ci.update();
+}
+
+// Doble clic sobre un segmento del gráfico
+function setupErogChartInteractions(){
+  const canvas = document.getElementById('erogDonut');
+  if(!canvas || canvas._dblClickBound) return;
+  canvas._dblClickBound = true;
+  canvas.addEventListener('dblclick', function(evt){
+    const chart = E.charts.donut;
+    if(!chart) return;
+    const points = chart.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
+    if(!points.length) return;
+    const label = chart.data.labels[points[0].index];
+    openTipoDetail(label);
+  });
+}
+
+function sortTipoRecs(recs, key, dir){
+  const mul = dir==='asc'?1:-1;
+  return [...recs].sort((a,b)=>{
+    let av,bv;
+    if(key==='monto'){ av=a.monto; bv=b.monto; }
+    else if(key==='ben'){ av=(a.ben||'').toLowerCase(); bv=(b.ben||'').toLowerCase(); }
+    else { av=a.date||''; bv=b.date||''; }
+    if(av<bv) return -1*mul;
+    if(av>bv) return 1*mul;
+    return 0;
+  });
+}
+
+function openTipoDetail(tipoName){
+  if(!tipoName) return;
+  // Se conservan los filtros globales aplicados en el dashboard (E.filtered)
+  const recs = E.filtered.filter(r=>r.tipo===tipoName);
+  TD.name = tipoName;
+  TD.all = recs;
+  TD.page = 1;
+
+  ['tdQ','tdD1','tdD2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('tdSort').value = 'date_desc';
+
+  const total = recs.reduce((a,r)=>a+r.monto,0);
+  const count = recs.length;
+  document.getElementById('tipoDetName').textContent = tipoName;
+  document.getElementById('tipoDetSub').textContent   = count+' transacción'+(count!==1?'es':'')+' · '+fmtZ(total);
+  document.getElementById('tipoDetTotal').textContent = fmtZ(total);
+  document.getElementById('tipoDetCount').textContent = count.toLocaleString();
+
+  const popSel=(id,vals,lbl)=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML = `<option value="">${lbl}</option>`;
+    vals.forEach(v=>{ if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
+  };
+  popSel('tdBanco',  [...new Set(recs.map(r=>r.cuenta))].filter(Boolean).sort(), 'Todas las cuentas');
+  popSel('tdEstado', [...new Set(recs.map(r=>r.estado))].filter(Boolean).sort(), 'Todos los estados');
+
+  applyTipoDetailFilters();
+
+  document.getElementById('erogDashContent').style.display='none';
+  const benPanel = document.getElementById('erogBenDetailPanel');
+  if(benPanel) benPanel.style.display='none';
+  const panel = document.getElementById('erogTipoDetailPanel');
+  panel.style.display='block';
+  panel.classList.add('fi-in');
+  setTimeout(()=>panel.classList.remove('fi-in'),300);
+  (window.top||window).scrollTo({top:0,behavior:'smooth'});
+}
+
+function closeTipoDetail(){
+  const panel=document.getElementById('erogTipoDetailPanel');
+  if(!panel||panel.style.display==='none') return;
+  panel.style.display='none';
+  document.getElementById('erogDashContent').style.display='block';
+}
+
+function applyTipoDetailFilters(){
+  const q      = (document.getElementById('tdQ').value||'').toLowerCase();
+  const d1     = document.getElementById('tdD1').value;
+  const d2     = document.getElementById('tdD2').value;
+  const banco  = document.getElementById('tdBanco').value;
+  const estado = document.getElementById('tdEstado').value;
+
+  let recs = TD.all.filter(r=>{
+    if(q && !((r.ben||'').toLowerCase().includes(q) || (r.conc||'').toLowerCase().includes(q))) return false;
+    if(d1 && r.date && r.date<d1) return false;
+    if(d2 && r.date && r.date>d2) return false;
+    if(banco  && r.cuenta!==banco)   return false;
+    if(estado && r.estado!==estado)  return false;
+    return true;
+  });
+
+  const [key,dir] = document.getElementById('tdSort').value.split('_');
+  TD.sortKey = key; TD.sortDir = dir;
+  TD.filtered = sortTipoRecs(recs, key, dir);
+  TD.page = 1;
+  renderTipoDetailTable();
+}
+
+function clearTipoDetailFilters(){
+  ['tdQ','tdD1','tdD2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('tdBanco').value  = '';
+  document.getElementById('tdEstado').value = '';
+  document.getElementById('tdSort').value   = 'date_desc';
+  applyTipoDetailFilters();
+}
+
+function renderTipoDetailTable(){
+  const tot   = TD.filtered.length;
+  const pages = Math.max(1,Math.ceil(tot/TD.perPage));
+  if(TD.page>pages) TD.page = pages;
+  const sl = TD.filtered.slice((TD.page-1)*TD.perPage, TD.page*TD.perPage);
+
+  document.getElementById('tipoDetShowN').textContent = sl.length;
+  document.getElementById('tipoDetTotN').textContent  = tot;
+  document.getElementById('tipoDetCurPg').textContent = TD.page;
+  document.getElementById('tipoDetTotPg').textContent = pages;
+
+  const tb = document.getElementById('tipoDetTxBody');
+  if(!sl.length){
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-s" style="padding:30px"><i class="bi bi-inbox"></i><h4>No existen transacciones para este tipo de gasto.</h4></div></td></tr>`;
+  } else {
+    tb.innerHTML = sl.map(r=>`<tr>
+      <td style="white-space:nowrap">${r.date||'—'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${r.ben}">${r.ben||'—'}</td>
+      <td style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${r.conc}">${r.conc||'—'}</td>
+      <td><span style="background:#6366F120;color:#6366F1;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.tipo}</span></td>
+      <td style="font-size:12px;color:var(--text-secondary)">—</td>
+      <td style="font-size:12px">${r.cuenta||'—'}</td>
+      <td class="mono" style="font-size:11.5px">${r.ref||r.numDoc||'—'}</td>
+      <td class="mono" style="font-weight:700;color:var(--erog-1)">${fmtZ(r.monto)}</td>
+      <td>${r.estado ? `<span style="background:#10B98120;color:#10B981;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">${r.estado}</span>` : '—'}</td>
+    </tr>`).join('');
+  }
+  renderTipoDetailPag(pages);
+}
+
+function renderTipoDetailPag(pages){
+  const el = document.getElementById('tipoDetPgBtns');
+  if(!el) return;
+  if(pages<=1){ el.innerHTML=''; return; }
+  let h='';
+  if(TD.page>1) h+=`<button class="pag-btn" onclick="tdGoPage(${TD.page-1})"><i class="bi bi-chevron-left"></i></button>`;
+  const st=Math.max(1,TD.page-2), en=Math.min(pages,TD.page+2);
+  if(st>1){ h+=`<button class="pag-btn" onclick="tdGoPage(1)">1</button>`; if(st>2) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; }
+  for(let i=st;i<=en;i++) h+=`<button class="pag-btn ${i===TD.page?'on':''}" onclick="tdGoPage(${i})">${i}</button>`;
+  if(en<pages){ if(en<pages-1) h+=`<span style="padding:0 3px;color:var(--text-secondary)">…</span>`; h+=`<button class="pag-btn" onclick="tdGoPage(${pages})">${pages}</button>`; }
+  if(TD.page<pages) h+=`<button class="pag-btn" onclick="tdGoPage(${TD.page+1})"><i class="bi bi-chevron-right"></i></button>`;
+  el.innerHTML=h;
+}
+function tdGoPage(p){ TD.page=p; renderTipoDetailTable(); }
+
+function exportTipoDetailExcel(){
+  if(!TD.filtered.length){ alert('No hay transacciones para exportar.'); return; }
+  const total = TD.filtered.reduce((a,r)=>a+r.monto,0);
+  const wb = XLSX.utils.book_new();
+  const wsData = [
+    ['TIPO DE GASTO: '+TD.name],
+    ['Generado: '+new Date().toLocaleString('es-DO')],
+    ['Total: '+fmtZ(total)+' · Transacciones: '+TD.filtered.length],
+    [],
+    ['Fecha','Beneficiario','Descripción','Tipo de Gasto','Banco','Cuenta Bancaria','N° Referencia','Monto','Estado'],
+    ...TD.filtered.map(r=>[r.date,r.ben,r.conc,r.tipo,'—',r.cuenta||'',r.ref||r.numDoc||'',r.monto,r.estado||''])
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [12,22,26,18,14,18,16,14,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Detalle');
+  XLSX.writeFile(wb,'tipo_gasto_'+TD.name.replace(/[^a-z0-9]+/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function printTipoDetail(){
+  document.body.classList.add('printing-tipo-detail');
+  const cleanup = ()=>{ document.body.classList.remove('printing-tipo-detail'); window.removeEventListener('afterprint',cleanup); };
+  window.addEventListener('afterprint',cleanup);
+  window.print();
+}
+
 // ── Table filters ────────────────────────────────────────────
 function initTblFilters(){
   E.tblFilter = {q:'',via:'',tipo:'',tipoErog:''};
@@ -1164,6 +1447,7 @@ function setupErogDnD(){
   });
 }
 setupErogDnD();
+setupErogChartInteractions();
 
 // ── Exports ───────────────────────────────────────────────────
 function exportErogExcel(){
