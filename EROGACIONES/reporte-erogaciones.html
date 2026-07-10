@@ -411,7 +411,6 @@ async function cargarDatos(manual){
     }
     R.meta = data;
     R.rows = data.rows;
-    R.filtered = [...R.rows];
 
     const d = new Date(data.updated_at);
     const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
@@ -420,7 +419,7 @@ async function cargarDatos(manual){
     populateFilterSelects();
     document.getElementById('repEmpty').style.display = 'none';
     document.getElementById('repContent').style.display = 'block';
-    renderReport();
+    applyRepFilters();
   }catch(e){
     console.error('cargarDatos:', e);
     status.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:var(--coral)"></i> Error al cargar los datos.';
@@ -621,6 +620,25 @@ function exportRepPDF(){
     doc.save('reporte_erogaciones_banreservas_'+new Date().toISOString().slice(0,10)+'.pdf');
   }catch(e){ console.error(e); alert('Error generando PDF.'); }
 }
+
+// ── Filtro de fecha por defecto: día anterior a la fecha actual ──
+// Se recalcula en cada carga de la página (no se persiste), para que
+// el reporte siempre abra mostrando el día anterior sin importar el usuario.
+function yesterdayISO(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+(function setDefaultDateFilter(){
+  const y = yesterdayISO();
+  const d1 = document.getElementById('rfD1');
+  const d2 = document.getElementById('rfD2');
+  if(d1) d1.value = y;
+  if(d2) d2.value = y;
+})();
 
 cargarDatos(false);
 </script>
