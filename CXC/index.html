@@ -503,16 +503,14 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
                   <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
                   <th>7 DÍAS</th><th>1 MES</th><th>2 MESES</th><th>3 MESES</th>
                   <th>4 MESES</th><th>+120 DÍAS</th>
-                  <th style="background:#17306d">TOTALES</th>
                 </tr>
                 <tr>
                   <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
                   <th>91 – 120</th><th>+120</th>
-                  <th style="background:#1d3d73"></th>
                 </tr>
               </thead>
               <tbody id="agingBody">
-                <tr><td colspan="8"><div class="st-empty">
+                <tr><td colspan="7"><div class="st-empty">
                   <i class="bi bi-inbox ico"></i>
                   <span class="msg">Carga un archivo para generar el reporte</span>
                 </div></td></tr>
@@ -522,7 +520,6 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
                   <td>TOTAL GENERAL</td>
                   <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
                   <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
-                  <td class="tot-ft" id="ftTotal">—</td>
                 </tr>
               </tfoot>
             </table>
@@ -984,7 +981,7 @@ const CXC = (() => {
     const footer = document.getElementById('tblFooter');
 
     if (_filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="st-empty">
+      tbody.innerHTML = `<tr><td colspan="7"><div class="st-empty">
         <i class="bi bi-search ico"></i>
         <span class="msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -994,19 +991,16 @@ const CXC = (() => {
     }
 
     const totals = [0,0,0,0,0,0];
-    let grandTotal = 0;
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
         totals[i] += v;
         const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
         return `<td class="${cls}">${fmtM(v)}</td>`;
       }).join('');
-      grandTotal += row.total;
-      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="tot"></td></tr>`;
+      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}</tr>`;
     }).join('');
 
     totals.forEach((v,i) => { const el=document.getElementById('ft'+i); if(el) el.textContent=fmtM(v); });
-    document.getElementById('ftTotal').textContent = fmtM(grandTotal);
     tfoot.style.display = '';
     footer.style.display = '';
     document.getElementById('footInfo').textContent =

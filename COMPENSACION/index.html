@@ -1255,16 +1255,14 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
                 <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
                 <th>7 DÍAS</th><th>1 MES</th><th>2 MESES</th><th>3 MESES</th>
                 <th>4 MESES</th><th>+120 DÍAS</th>
-                <th style="background:#17306d">TOTALES</th>
               </tr>
               <tr>
                 <th>0 – 7</th><th>8 – 30</th><th>31 – 60</th><th>61 – 90</th>
                 <th>91 – 120</th><th>+120</th>
-                <th style="background:#1d3d73"></th>
               </tr>
             </thead>
             <tbody id="agBody">
-              <tr><td colspan="8"><div class="ag-empty">
+              <tr><td colspan="7"><div class="ag-empty">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
                 <span class="ag-empty-msg">No hay datos. Carga un archivo en el apartado <strong>Data</strong>.</span>
               </div></td></tr>
@@ -1274,7 +1272,6 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
                 <td>TOTAL GENERAL</td>
                 <td id="agFt0">—</td><td id="agFt1">—</td><td id="agFt2">—</td>
                 <td id="agFt3">—</td><td id="agFt4">—</td><td id="agFt5">—</td>
-                <td class="tot-ft" id="agFtTotal">—</td>
               </tr>
             </tfoot>
           </table>
@@ -1554,7 +1551,7 @@ const AgingComp = (() => {
     const footBar = document.getElementById('agFootBar');
 
     if(_allRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="7"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
         <span class="ag-empty-msg">No hay datos CXC. Carga un archivo en el apartado <strong>Data</strong>.</span>
       </div></td></tr>`;
@@ -1564,7 +1561,7 @@ const AgingComp = (() => {
     }
 
     if(_filtered.length === 0){
-      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="7"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <span class="ag-empty-msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -1574,19 +1571,16 @@ const AgingComp = (() => {
     }
 
     const totals = [0,0,0,0,0,0];
-    let grand = 0;
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
         totals[i] += v;
         const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
         return `<td class="${cls}">${fmtM(v)}</td>`;
       }).join('');
-      grand += row.total;
-      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="tot"></td></tr>`;
+      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}</tr>`;
     }).join('');
 
     totals.forEach((v,i) => { const el=document.getElementById('agFt'+i); if(el) el.textContent=fmtM(v); });
-    document.getElementById('agFtTotal').textContent = fmtM(grand);
     tfoot.style.display = '';
     footBar.style.display = '';
     document.getElementById('agFootInfo').textContent =
