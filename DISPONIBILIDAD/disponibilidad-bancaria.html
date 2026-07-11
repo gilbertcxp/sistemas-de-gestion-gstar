@@ -802,25 +802,31 @@ async function loadBancosFromSupabase(){
 /* ====================================================================
    CARGA DE CERTIFICADOS DESDE SUPABASE
    Alimentado por DISPONIBILIDAD/captura-disponibilidad.html (un
-   registro por mes/año: tasa, balance al día 26, intereses ganados y
-   retención). Se muestra un renglón por cada mes/año registrado.
+   registro por mes/año por certificado). Se muestra un renglón por cada
+   certificado del catálogo, con su registro de mes/año más reciente.
 ==================================================================== */
 const CERT_MES_NOMBRES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 async function loadCertificadosFromSupabase(){
   try{
-    const certs = (await kvGet('disponibilidad_certificados')) || [];
-    const sorted = [...certs].sort((a,b) => b.anio-a.anio || b.mes-a.mes);
+    const catalogo = (await kvGet('disponibilidad_certificados_catalogo')) || [];
+    const certs    = (await kvGet('disponibilidad_certificados')) || [];
     DATA.certificados.balanceLabel = 'Balance al día 26';
-    DATA.certificados.rows = sorted.map(c => ({
-      cuenta: `Certificado — ${CERT_MES_NOMBRES[c.mes]||''} ${c.anio}`,
-      ref: 'Captura de Disponibilidad',
-      tasa: (Number(c.tasa)||0) / 100,
-      balance: Number(c.balance) || 0,
-      intGan: Number(c.interesesGanados) || 0,
-      intTasa: 0,
-      ret: -(Number(c.retencion) || 0)
-    }));
+    DATA.certificados.rows = catalogo.map(cat => {
+      const registros = certs.filter(c => c.certificadoId === cat.id)
+                              .sort((a,b) => b.anio-a.anio || b.mes-a.mes);
+      const c = registros[0];
+      if(!c) return null; // certificado sin ningún mes/año registrado aún
+      return {
+        cuenta: cat.nombre,
+        ref: cat.referencia ? cat.referencia : `Act. ${CERT_MES_NOMBRES[c.mes]||''} ${c.anio}`,
+        tasa: (Number(c.tasa)||0) / 100,
+        balance: Number(c.balance) || 0,
+        intGan: Number(c.interesesGanados) || 0,
+        intTasa: 0,
+        ret: -(Number(c.retencion) || 0)
+      };
+    }).filter(Boolean);
   }catch(e){ console.error('loadCertificadosFromSupabase:', e); }
 }
 

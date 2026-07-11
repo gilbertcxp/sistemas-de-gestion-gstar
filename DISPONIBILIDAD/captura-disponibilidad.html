@@ -317,6 +317,12 @@ table.t tbody tr:hover{background:var(--blue-lt)}
       <div class="card-bd">
         <input type="hidden" id="certEditId" value="">
         <div class="frow">
+          <div class="ffield" style="min-width:220px"><label>Certificado</label>
+            <select class="fi" id="certCertificadoId" onchange="onCertificadoSelectChange()"></select>
+          </div>
+          <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-s" onclick="openNuevoCertModal()"><i class="bi bi-plus-circle"></i> Nuevo certificado</button></div>
+        </div>
+        <div class="frow">
           <div class="ffield"><label>Mes</label>
             <select class="fi" id="certMes" onchange="checkCertExisting()">
               <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -346,6 +352,7 @@ table.t tbody tr:hover{background:var(--blue-lt)}
       </div>
       <div class="card-bd" style="padding-bottom:0">
         <div class="frow">
+          <div class="ffield" style="min-width:200px"><label>Filtrar por Certificado</label><select class="fi" id="certFiltroCert" onchange="renderCertTable()"><option value="">Todos los certificados</option></select></div>
           <div class="ffield"><label>Filtrar por Mes</label>
             <select class="fi" id="certFiltroMes" onchange="renderCertTable()">
               <option value="">Todos los meses</option>
@@ -391,6 +398,21 @@ table.t tbody tr:hover{background:var(--blue-lt)}
   </div>
 </div>
 
+<!-- MODAL: NUEVO CERTIFICADO -->
+<div class="modal-ov" id="nuevoCertModal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-hd"><h3><i class="bi bi-patch-check-fill me-2"></i>Nuevo Certificado</h3><button class="modal-close" onclick="closeNuevoCertModal()"><i class="bi bi-x-lg"></i></button></div>
+    <div class="modal-bd">
+      <div class="ffield" style="margin-bottom:12px"><label>Nombre / Número del Certificado *</label><input type="text" class="fi" id="ncNombre" placeholder="Ej. Certificado No. 9606708226"></div>
+      <div class="ffield"><label>Referencia (opcional)</label><input type="text" class="fi" id="ncReferencia" placeholder="Ej. Act. 26 Julio 2026"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-s" onclick="closeNuevoCertModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="confirmNuevoCert()"><i class="bi bi-check2"></i> Crear</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
 
 <script>
@@ -408,7 +430,8 @@ const CAP = {
   fileName:       { operativa:'',  compensacion:'' },
   cheques:        [],
   transferencias: [],
-  certificados:   [],
+  certificados:         [],
+  certificadosCatalogo: [],
   pagosSemana:    0,
   isAdmin:        false
 };
@@ -521,7 +544,8 @@ async function reloadAll(){
 
     CAP.cheques        = (await kvGet('disponibilidad_cheques_transferencias')) || [];
     CAP.transferencias = (await kvGet('disponibilidad_transferencias_entre_cuentas')) || [];
-    CAP.certificados   = (await kvGet('disponibilidad_certificados')) || [];
+    CAP.certificados         = (await kvGet('disponibilidad_certificados')) || [];
+    CAP.certificadosCatalogo = (await kvGet('disponibilidad_certificados_catalogo')) || [];
 
     // Pagos de la Semana ← CXP, Solicitud de Pago Pendiente (Monto a Pagar)
     const solicitudes = (await kvGet('cxp_solicitudes')) || [];
@@ -928,17 +952,70 @@ function _populateCertAnioSelects(){
   if(filtro && !filtro.dataset.filled){ filtro.innerHTML = '<option value="">Todos los años</option>' + opts; filtro.dataset.filled = '1'; }
 }
 
-function _findCert(mes, anio){
-  return CAP.certificados.find(c => Number(c.mes)===Number(mes) && Number(c.anio)===Number(anio));
+function _certNombre(certificadoId){
+  const c = CAP.certificadosCatalogo.find(x=>x.id===certificadoId);
+  return c ? c.nombre : '—';
 }
 
-// Al elegir mes/año en el formulario: si ya existe un registro, lo carga en
-// modo edición (no se puede crear un duplicado para el mismo mes/año).
+function _populateCertificadoSelects(){
+  const mainSel   = document.getElementById('certCertificadoId');
+  const filtroSel = document.getElementById('certFiltroCert');
+  const opts = CAP.certificadosCatalogo.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  if(mainSel){
+    const cur = mainSel.value;
+    mainSel.innerHTML = CAP.certificadosCatalogo.length
+      ? opts
+      : '<option value="">— Crea un certificado primero —</option>';
+    if(cur && CAP.certificadosCatalogo.some(c=>c.id===cur)) mainSel.value = cur;
+  }
+  if(filtroSel){
+    const cur = filtroSel.value;
+    filtroSel.innerHTML = '<option value="">Todos los certificados</option>' + opts;
+    filtroSel.value = cur;
+  }
+}
+
+function openNuevoCertModal(){
+  document.getElementById('ncNombre').value = '';
+  document.getElementById('ncReferencia').value = '';
+  document.getElementById('nuevoCertModal').classList.add('open');
+  setTimeout(()=>document.getElementById('ncNombre')?.focus(), 100);
+}
+function closeNuevoCertModal(){ document.getElementById('nuevoCertModal').classList.remove('open'); }
+
+async function confirmNuevoCert(){
+  const nombre = document.getElementById('ncNombre').value.trim();
+  const referencia = document.getElementById('ncReferencia').value.trim();
+  if(!nombre){ toast('El nombre del certificado es requerido', true); return; }
+  showSp();
+  try{
+    const nuevo = { id: uid('certc'), nombre, referencia };
+    CAP.certificadosCatalogo.push(nuevo);
+    await kvSet('disponibilidad_certificados_catalogo', CAP.certificadosCatalogo);
+    _populateCertificadoSelects();
+    document.getElementById('certCertificadoId').value = nuevo.id;
+    closeNuevoCertModal();
+    toast('Certificado creado');
+    checkCertExisting();
+  }catch(e){ toast('Error al crear: '+e.message, true); }
+  hideSp();
+}
+
+function onCertificadoSelectChange(){ checkCertExisting(); }
+
+function _findCert(certificadoId, mes, anio){
+  return CAP.certificados.find(c => c.certificadoId===certificadoId && Number(c.mes)===Number(mes) && Number(c.anio)===Number(anio));
+}
+
+// Al elegir certificado/mes/año en el formulario: si ya existe un registro,
+// lo carga en modo edición (no se puede crear un duplicado para la misma
+// combinación de certificado + mes + año).
 function checkCertExisting(){
   if(_certEditId) return; // ya se está editando explícitamente vía botón Editar
+  const certificadoId = document.getElementById('certCertificadoId').value;
   const mes  = document.getElementById('certMes').value;
   const anio = document.getElementById('certAnio').value;
-  const existing = _findCert(mes, anio);
+  const existing = certificadoId ? _findCert(certificadoId, mes, anio) : null;
   if(existing){
     _fillCertForm(existing, true);
   } else {
@@ -956,13 +1033,14 @@ function checkCertExisting(){
 function _fillCertForm(rec, lockedByExisting){
   _certEditId = lockedByExisting ? null : rec.id;
   document.getElementById('certEditId').value  = rec.id;
+  document.getElementById('certCertificadoId').value = rec.certificadoId;
   document.getElementById('certMes').value     = rec.mes;
   document.getElementById('certAnio').value    = rec.anio;
   document.getElementById('certTasa').value    = rec.tasa;
   document.getElementById('certBalance').value = rec.balance;
   document.getElementById('certIntereses').value = rec.interesesGanados;
   document.getElementById('certRetencion').value = rec.retencion;
-  document.getElementById('certFormTitle').textContent = `Editando: ${MES_NOMBRES[rec.mes]} ${rec.anio}`;
+  document.getElementById('certFormTitle').textContent = `Editando: ${_certNombre(rec.certificadoId)} — ${MES_NOMBRES[rec.mes]} ${rec.anio}`;
   document.getElementById('certSaveBtn').innerHTML = '<i class="bi bi-check2"></i> Actualizar';
   document.getElementById('certCancelBtn').style.display = '';
 }
@@ -989,6 +1067,7 @@ function cancelCertEdit(){
 }
 
 async function saveCertificado(){
+  const certificadoId = document.getElementById('certCertificadoId').value;
   const mes    = parseInt(document.getElementById('certMes').value, 10);
   const anio   = parseInt(document.getElementById('certAnio').value, 10);
   const tasa   = parseFloat(document.getElementById('certTasa').value);
@@ -997,6 +1076,7 @@ async function saveCertificado(){
   const retencion  = parseFloat(document.getElementById('certRetencion').value);
   const editId = document.getElementById('certEditId').value || _certEditId;
 
+  if(!certificadoId){ toast('Selecciona o crea un certificado', true); return; }
   if(!mes || !anio){ toast('Selecciona mes y año', true); return; }
   if(isNaN(tasa) || isNaN(balance) || isNaN(intereses) || isNaN(retencion)){
     toast('Todos los campos son obligatorios', true); return;
@@ -1005,9 +1085,9 @@ async function saveCertificado(){
     toast('Ningún valor puede ser negativo', true); return;
   }
 
-  const existing = _findCert(mes, anio);
+  const existing = _findCert(certificadoId, mes, anio);
   if(existing && existing.id !== editId){
-    toast(`Ya existe un registro para ${MES_NOMBRES[mes]} ${anio}. Edítalo desde la tabla.`, true);
+    toast(`Ya existe un registro de "${_certNombre(certificadoId)}" para ${MES_NOMBRES[mes]} ${anio}. Edítalo desde la tabla.`, true);
     return;
   }
 
@@ -1020,7 +1100,7 @@ async function saveCertificado(){
       existing.updatedAt = now; existing.updatedBy = currentUserLabel();
     } else {
       CAP.certificados.push({
-        id: uid('cert'), mes, anio, tasa, balance,
+        id: uid('cert'), certificadoId, mes, anio, tasa, balance,
         interesesGanados: intereses, retencion,
         createdAt: now, createdBy: currentUserLabel(),
         updatedAt: now, updatedBy: currentUserLabel()
@@ -1035,15 +1115,18 @@ async function saveCertificado(){
 }
 
 function clearCertFiltros(){
+  document.getElementById('certFiltroCert').value = '';
   document.getElementById('certFiltroMes').value = '';
   document.getElementById('certFiltroAnio').value = '';
   renderCertTable();
 }
 
 function renderCertTable(){
+  const fCert = document.getElementById('certFiltroCert')?.value || '';
   const fMes  = document.getElementById('certFiltroMes')?.value || '';
   const fAnio = document.getElementById('certFiltroAnio')?.value || '';
   let rows = [...CAP.certificados];
+  if(fCert) rows = rows.filter(r => r.certificadoId===fCert);
   if(fMes)  rows = rows.filter(r => Number(r.mes)===Number(fMes));
   if(fAnio) rows = rows.filter(r => Number(r.anio)===Number(fAnio));
   rows.sort((a,b) => b.anio-a.anio || b.mes-a.mes);
@@ -1056,11 +1139,12 @@ function renderCertTable(){
   }
   const fmtDate = iso => { try{ return new Date(iso).toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return '—'; } };
   tbl.innerHTML = `<thead><tr>
-      <th class="l">Mes</th><th class="l">Año</th><th>Tasa</th><th>Balance al 26</th><th>Intereses Ganados</th><th>Retención</th>
+      <th class="l">Certificado</th><th class="l">Mes</th><th class="l">Año</th><th>Tasa</th><th>Balance al 26</th><th>Intereses Ganados</th><th>Retención</th>
       <th class="l">Creado</th><th class="l">Última Modificación</th><th></th>
     </tr></thead>
     <tbody>${rows.map(r=>`
       <tr>
+        <td class="l">${esc(_certNombre(r.certificadoId))}</td>
         <td class="l">${MES_NOMBRES[r.mes]}</td>
         <td class="l">${r.anio}</td>
         <td class="mono">${(r.tasa||0).toFixed(2)}%</td>
@@ -1075,6 +1159,7 @@ function renderCertTable(){
 
 function renderCertTab(){
   _populateCertAnioSelects();
+  _populateCertificadoSelects();
   const anioSel = document.getElementById('certFiltroAnio');
   if(anioSel){
     const existingYears = [...new Set(CAP.certificados.map(c=>c.anio))].sort((a,b)=>b-a);
