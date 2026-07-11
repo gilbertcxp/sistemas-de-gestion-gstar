@@ -551,8 +551,7 @@ function renderCert(){
     {key:'cuenta', label:'Certificados Financieros e Inversiones', txt:true},
     {key:'tasa',   label:'Tasa'},
     {key:'balance',label:cfg.balanceLabel},
-    {key:'intGan', label:'Intereses', note:'ganados'},
-    {key:'intTasa',label:'Intereses ganados', note:'/ tasa anual'},
+    {key:'intGan', label:'Intereses Ganados'},
     {key:'ret',    label:'Ret. intereses', note:'1% (−)'},
     {key:'upd',    label:'Balance Actualizado'}
   ];
@@ -575,7 +574,6 @@ function renderCert(){
         <td>${tasaCell(r.tasa)}</td>
         <td>${moneyCell(r.balance,{neutral:true})}</td>
         <td>${moneyCell(r.intGan)}</td>
-        <td>${moneyCell(r.intTasa)}</td>
         <td>${moneyCell(r.ret)}</td>
         <td>${moneyCell(r.upd,{result:true})}</td>
       </tr>`).join('') + '</tbody>' +
@@ -584,7 +582,6 @@ function renderCert(){
         <td></td>
         <td>${moneyCell(t.balance,{neutral:true})}</td>
         <td>${moneyCell(t.intGan)}</td>
-        <td>${moneyCell(t.intTasa)}</td>
         <td>${moneyCell(t.ret)}</td>
         <td>${moneyCell(t.upd,{result:true})}</td>
      </tr></tfoot>`;
@@ -897,19 +894,18 @@ function exportExcel(){
       DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0),
       DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0), tb],
     [],
-    ['CERTIFICADOS FINANCIEROS E INVERSIONES','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Intereses Ganados / Tasa Anual','Ret. Intereses 1% (-)','Balance Actualizado'],
-    ...DATA.certificados.rows.map(r=>[r.cuenta+' '+r.ref,(r.tasa*100).toFixed(2)+'%', r.balance, r.intGan, r.intTasa, r.ret, certUpd(r)]),
+    ['CERTIFICADOS FINANCIEROS E INVERSIONES','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Ret. Intereses 1% (-)','Balance Actualizado'],
+    ...DATA.certificados.rows.map(r=>[r.cuenta+' '+r.ref,(r.tasa*100).toFixed(2)+'%', r.balance, r.intGan, r.ret, certUpd(r)]),
     ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',
       DATA.certificados.rows.reduce((s,r)=>s+r.balance,0),
       DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0),
-      DATA.certificados.rows.reduce((s,r)=>s+r.intTasa,0),
       DATA.certificados.rows.reduce((s,r)=>s+r.ret,0), tc],
     [],
-    ['TOTAL DISPONIBLE','','','','','', tb+tc]
+    ['TOTAL DISPONIBLE','','','','', tb+tc]
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:42},{wch:9},{wch:20},{wch:20},{wch:22},{wch:20},{wch:20}];
-  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}},{s:{r:2,c:0},e:{r:2,c:6}}];
+  ws['!cols']=[{wch:42},{wch:9},{wch:20},{wch:20},{wch:20},{wch:20}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}},{s:{r:1,c:0},e:{r:1,c:5}},{s:{r:2,c:0},e:{r:2,c:5}}];
   XLSX.utils.book_append_sheet(wb,ws,'Disponibilidad');
   XLSX.writeFile(wb,'disponibilidad_bancaria_'+DATA.reportDateISO+'.xlsx');
   toast('Excel exportado');
@@ -936,7 +932,7 @@ function exportPDF(){
     const tb = DATA.bancos.rows.reduce((s,r)=>s+bancoUpd(r),0);
     const tc = DATA.certificados.rows.reduce((s,r)=>s+certUpd(r),0);
 
-    const moneyCol={2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'},1:{halign:'center'}};
+    const moneyCol={1:{halign:'center'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'}};
     const bancoCol={1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'}};
 
     doc.autoTable({
@@ -954,10 +950,10 @@ function exportPDF(){
 
     doc.autoTable({
       startY:doc.lastAutoTable.finalY+6,
-      head:[['Certificados Financieros e Inversiones','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Int. Ganados / Tasa Anual','Ret. Intereses 1% (-)','Balance Actualizado']],
+      head:[['Certificados Financieros e Inversiones','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Ret. Intereses 1% (-)','Balance Actualizado']],
       body:[
-        ...DATA.certificados.rows.map(r=>[r.cuenta+'  '+r.ref,(r.tasa*100).toFixed(2)+'%', money(r.balance), money(r.intGan), money(r.intTasa), money(r.ret), money(certUpd(r))]),
-        ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',money(DATA.certificados.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.intTasa,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.ret,0)),money(tc)]
+        ...DATA.certificados.rows.map(r=>[r.cuenta+'  '+r.ref,(r.tasa*100).toFixed(2)+'%', money(r.balance), money(r.intGan), money(r.ret), money(certUpd(r))]),
+        ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',money(DATA.certificados.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0)),money(DATA.certificados.rows.reduce((s,r)=>s+r.ret,0)),money(tc)]
       ],
       theme:'grid', styles:{fontSize:7.5,cellPadding:2.4,lineColor:[229,234,241],textColor:[40,50,70]},
       headStyles:{fillColor:[200,144,43],textColor:255,fontSize:7,fontStyle:'bold',halign:'right'},
