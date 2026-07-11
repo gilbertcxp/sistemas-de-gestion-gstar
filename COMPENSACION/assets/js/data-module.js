@@ -109,9 +109,11 @@ const DataModule = (() => {
       const tipo = String(row[colMap.tipo]||'').trim().toUpperCase();
       if(tipo !== 'CXC' && tipo !== 'CXP') continue;
 
-      const monto    = _parseNum(row[colMap.monto]);
-      const pago     = _parseNum(row[colMap.pago]);
-      const pendiente = _parseNum(row[colMap.pendiente]);
+      let monto    = _parseNum(row[colMap.monto]);
+      let pago     = _parseNum(row[colMap.pago]);
+      let pendiente = _parseNum(row[colMap.pendiente]);
+      // CXC amounts are stored as negatives in this Excel (debit to consortium)
+      if(tipo === 'CXC'){ monto = Math.abs(monto); pago = Math.abs(pago); pendiente = Math.abs(pendiente); }
 
       rows.push({
         id:        Utils.uid('dr'),
