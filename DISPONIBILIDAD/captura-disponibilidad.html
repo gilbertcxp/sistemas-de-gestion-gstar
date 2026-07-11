@@ -250,6 +250,7 @@ table.t tbody tr:hover{background:var(--blue-lt)}
         <div><div class="ttl">Historial de Movimientos</div><div class="sub" id="movHistSub">0 movimientos</div></div>
         <div style="margin-left:auto;display:flex;gap:8px">
           <button class="btn btn-s btn-sm" onclick="exportMovExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+          <button class="btn btn-s btn-sm" onclick="vaciarMovimientos()" style="color:var(--red)"><i class="bi bi-trash"></i> Vaciar cuenta</button>
         </div>
       </div>
       <div class="tbl-wrap"><table class="t" id="movTable"></table></div>
@@ -320,6 +321,8 @@ table.t tbody tr:hover{background:var(--blue-lt)}
       <div class="map-row"><div class="map-lbl">Fecha *</div><select class="fi map-sel" id="mmFecha"></select></div>
       <div class="map-row"><div class="map-lbl">Descripción</div><select class="fi map-sel" id="mmDesc"></select></div>
       <div class="map-row"><div class="map-lbl">Referencia</div><select class="fi map-sel" id="mmRef"></select></div>
+      <div class="map-row"><div class="map-lbl">N° de Transacción</div><select class="fi map-sel" id="mmNumTrans"></select></div>
+      <div style="font-size:11px;color:var(--ink-2);margin:-4px 0 10px 162px"><i class="bi bi-info-circle me-1"></i>Se usa para identificar cada movimiento de forma única (evita descartar pagos repetidos con la misma Referencia)</div>
       <div class="map-row"><div class="map-lbl">Débito *</div><select class="fi map-sel" id="mmDebito"></select></div>
       <div class="map-row"><div class="map-lbl">Crédito *</div><select class="fi map-sel" id="mmCredito"></select></div>
     </div>
@@ -602,11 +605,12 @@ function _autoDetectMov(headers){
   const h = headers.map(x=>x.toLowerCase().trim());
   const find = kws => { for(const kw of kws){ const i=h.findIndex(x=>x.includes(kw)); if(i!==-1) return headers[i]; } return ''; };
   return {
-    fecha:   find(['fecha','date']),
-    desc:    find(['descripcion','descripción','concepto','detalle','concept']),
-    ref:     find(['referencia','reference','ref','documento']),
-    debito:  find(['debito','débito','debe','cargo','egreso']),
-    credito: find(['credito','crédito','haber','abono','ingreso'])
+    fecha:    find(['fecha','date']),
+    desc:     find(['descripcion','descripción','concepto','detalle','concept']),
+    ref:      find(['referencia','reference','ref','documento']),
+    debito:   find(['debito','débito','debe','cargo','egreso']),
+    credito:  find(['credito','crédito','haber','abono','ingreso']),
+    numTrans: find(['no. de transacc','no de transacc','numero de transacc','número de transacc','transacci'])
   };
 }
 
@@ -619,6 +623,7 @@ function openMapModal(){
   };
   fillSel('mmFecha', detected.fecha); fillSel('mmDesc', detected.desc); fillSel('mmRef', detected.ref);
   fillSel('mmDebito', detected.debito); fillSel('mmCredito', detected.credito);
+  fillSel('mmNumTrans', detected.numTrans);
   document.getElementById('mapModal').classList.add('open');
 }
 function closeMapModal(){ document.getElementById('mapModal').classList.remove('open'); _uploadStaging = null; }
@@ -626,7 +631,7 @@ function closeMapModal(){ document.getElementById('mapModal').classList.remove('
 async function confirmMapModal(){
   if(!_uploadStaging) return;
   const g = id => document.getElementById(id).value;
-  const map = { fecha:g('mmFecha'), desc:g('mmDesc'), ref:g('mmRef'), debito:g('mmDebito'), credito:g('mmCredito') };
+  const map = { fecha:g('mmFecha'), desc:g('mmDesc'), ref:g('mmRef'), debito:g('mmDebito'), credito:g('mmCredito'), numTrans:g('mmNumTrans') };
   if(!map.fecha || (!map.debito && !map.credito)){ toast('Asigna al menos Fecha y una columna de Débito o Crédito', true); return; }
 
   const acc = _uploadStaging.account;
@@ -639,11 +644,17 @@ async function confirmMapModal(){
     const credito  = map.credito ? clean(row[map.credito]) : 0;
     const referencia = map.ref ? String(row[map.ref]||'').trim() : '';
     const descripcion = map.desc ? String(row[map.desc]||'').trim() : '';
+    const numTrans = map.numTrans ? String(row[map.numTrans]||'').trim() : '';
     if(!fecha || (debito===0 && credito===0)) return;
-    const dedupeKey = [fecha, referencia, debito.toFixed(2), credito.toFixed(2), descripcion].join('|');
+    // El N° de Transacción es único por movimiento — se usa como identificador
+    // principal cuando está disponible, ya que la Referencia puede repetirse
+    // entre varios movimientos distintos del mismo día (ej. lotes de pagos DGII).
+    const dedupeKey = numTrans
+      ? 'nt:'+numTrans
+      : [fecha, referencia, debito.toFixed(2), credito.toFixed(2), descripcion].join('|');
     if(existingKeys.has(dedupeKey)){ skipped++; return; }
     existingKeys.add(dedupeKey);
-    CAP.movimientos[acc].push({ id: uid('mv'), fecha, descripcion, referencia, debito, credito, _dedupeKey: dedupeKey, _seq: seqBase + i });
+    CAP.movimientos[acc].push({ id: uid('mv'), fecha, descripcion, referencia, numTrans, debito, credito, _dedupeKey: dedupeKey, _seq: seqBase + i });
     added++;
   });
 
@@ -670,6 +681,24 @@ async function deleteMovRow(acc, id){
     await kvSet('disponibilidad_movimientos_'+acc, { rows: CAP.movimientos[acc], columnMap: CAP.columnMap[acc], fileName: CAP.fileName[acc], updatedAt: new Date().toISOString(), updatedBy: currentUserLabel() });
     renderAll();
     toast('Movimiento eliminado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+async function vaciarMovimientos(){
+  const acc = _movAccount;
+  const n = (CAP.movimientos[acc]||[]).length;
+  if(!n){ toast('Esta cuenta no tiene movimientos', true); return; }
+  if(!confirm(`¿Vaciar los ${n} movimiento(s) de ${ACCOUNT_LABEL[acc]}? Esto no se puede deshacer. Vuelve a cargar el archivo después para recuperarlos.`)) return;
+  showSp();
+  try{
+    CAP.movimientos[acc] = [];
+    CAP.columnMap[acc]   = null;
+    CAP.fileName[acc]    = '';
+    recalcBalances(acc);
+    await kvSet('disponibilidad_movimientos_'+acc, { rows:[], columnMap:null, fileName:'', updatedAt:new Date().toISOString(), updatedBy:currentUserLabel() });
+    renderAll();
+    toast('Historial vaciado — carga el archivo de nuevo');
   }catch(e){ toast('Error: '+e.message, true); }
   hideSp();
 }
