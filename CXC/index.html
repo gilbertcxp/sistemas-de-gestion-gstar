@@ -933,7 +933,7 @@ const CXC = (() => {
   function _parse(data) {
     const map = {};
     _rawByClient = {};
-    let skippedNotInList = 0, totalInvoices = 0;
+    let totalInvoices = 0;
 
     for (let i = 2; i < data.length; i++) {
       const row = data[i];
@@ -944,8 +944,11 @@ const CXC = (() => {
       if (!clientRaw) continue;
       if (pendiente === 0) continue;
       totalInvoices++;
-      const wl = matchWhitelist(clientRaw);
-      if (!wl) { skippedNotInList++; continue; }
+      // Se unifica al nombre de la whitelist cuando coincide (evita duplicar
+      // el mismo cliente por variantes de escritura); si no coincide con
+      // ningún nombre conocido, se usa el nombre tal cual viene del archivo
+      // — ya no se excluye ningún cliente del reporte.
+      const wl = matchWhitelist(clientRaw) || clientRaw;
       if (!map[wl]) map[wl] = [0,0,0,0,0,0];
       map[wl][getBucket(diasRaw)] += pendiente;
       if (!_rawByClient[wl]) _rawByClient[wl] = [];
@@ -967,8 +970,6 @@ const CXC = (() => {
 
     const n = _allRows.length;
     toast(`Reporte generado — ${n} cliente${n!==1?'s':''} · ${totalInvoices} facturas`);
-    if (skippedNotInList > 0)
-      console.info(`[CXC] ${skippedNotInList} facturas sin coincidencia en lista`);
 
     navigate('report');
 
