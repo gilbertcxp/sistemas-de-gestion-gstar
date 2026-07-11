@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios — Gstar</title>
+<!-- Guard de autenticación: sin sesión activa redirige al login -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<!-- =====================================================================
+     ADMINISTRACIÓN DE USUARIOS
+     Asigna el "rol" (columna usuarios.rol en Supabase) de cada cuenta.
+     Ese mismo texto es el que ya leen isAdminUser()/_isAdminUser() en
+     EROGACIONES, CXC, DISPONIBILIDAD y CONCILIAR para mostrar u ocultar
+     los botones de "Publicar" — por eso alcanza con cambiar el rol aquí,
+     sin tocar nada más en esos módulos.
+
+     IMPORTANTE — esta página NO puede crear el login (correo/clave) de
+     un usuario nuevo: eso requiere una clave de servicio de Supabase que
+     nunca debe exponerse en el navegador. El flujo es:
+       1) Un Administrador crea la cuenta en Supabase → Authentication →
+          Add User (correo + clave).
+       2) Copia el "User UID" que Supabase le asigna.
+       3) Lo pega aquí junto al nombre y el rol para vincularlo.
+====================================================================== */
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<style>
+:root{
+  --bg-app:#F1F5F9;--bg-card:#FFFFFF;--bg-soft:#F8FAFC;
+  --ink:#0F1E3A;--ink-2:#475569;--ink-3:#94A3B8;
+  --line:#E5EAF1;--line-2:#EEF2F7;
+  --navy:#0B1437;--navy-2:#152452;
+  --blue:#2563EB;--blue-lt:#EAF1FE;
+  --green:#0E9F6E;--green-lt:#E6F6EF;
+  --red:#DC2626;--red-lt:#FCEBEB;
+  --gold:#C8902B;--gold-lt:#FBF3E3;
+  --shadow-sm:0 1px 2px rgba(15,30,58,.06),0 1px 3px rgba(15,30,58,.04);
+  --shadow:0 2px 8px rgba(15,30,58,.06),0 8px 24px rgba(15,30,58,.05);
+  --shadow-lg:0 10px 30px rgba(11,20,55,.12),0 4px 8px rgba(11,20,55,.06);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0E1A33;--bg-soft:#101E3C;
+  --ink:#E8F0FE;--ink-2:#9FB3D1;--ink-3:#5E7299;
+  --line:#1C2E52;--line-2:#172545;
+  --navy:#050B1A;--navy-2:#0E1A33;
+  --blue-lt:#16264F;--green-lt:#0A2E22;--red-lt:#3A1414;--gold-lt:#33260C;
+  --shadow:0 2px 10px rgba(0,0,0,.4);--shadow-lg:0 12px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--ink);line-height:1.4}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 26px 60px}
+
+.exec-head{background:linear-gradient(125deg,var(--navy) 0%,var(--navy-2) 60%,#1b2f6b 100%);border-radius:18px;padding:24px 28px;color:#fff;box-shadow:var(--shadow-lg)}
+.eh-kicker{font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:#7E96CF}
+.eh-title{font-size:26px;font-weight:800;letter-spacing:-.6px;margin-top:4px}
+.eh-sub{font-size:13px;color:#AEC0E6;margin-top:6px}
+
+.hint{font-size:12.5px;color:var(--ink-2);background:var(--blue-lt);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:18px 0;display:flex;gap:10px;align-items:flex-start}
+.hint i{color:var(--blue);font-size:16px;margin-top:1px}
+.hint ol{margin:6px 0 0 18px}
+.hint b{color:var(--ink)}
+
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:16px;overflow:hidden}
+.card-hd{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-hd .ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--blue-lt);color:var(--blue);flex-shrink:0}
+.card-hd .ttl{font-size:14.5px;font-weight:800}
+.card-hd .sub{font-size:11.5px;color:var(--ink-2);margin-top:1px}
+.card-bd{padding:18px 20px}
+
+.frow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.ffield{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px}
+.ffield label{font-size:10.5px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.4px}
+.fi{background:var(--bg-card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 11px;font-size:13px;outline:none;font-family:inherit}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 15px;display:inline-flex;align-items:center;gap:7px}
+.btn i{font-size:14px}
+.btn-light{background:rgba(255,255,255,.95);color:var(--navy)}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{filter:brightness(1.08)}
+.btn-s{background:var(--bg-card);color:var(--ink);border:1px solid var(--line)}
+.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+.btn-sm{padding:5px 10px;font-size:11.5px;border-radius:7px}
+
+.tbl-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+table.t thead th{background:var(--bg-soft);color:var(--ink-2);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:10px 13px;border-bottom:2px solid var(--line);text-align:left;white-space:nowrap}
+table.t tbody td{padding:10px 13px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.t tbody tr:nth-child(even){background:var(--bg-soft)}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700}
+.pill-admin{background:var(--gold-lt);color:var(--gold)}
+.pill-cargador{background:var(--blue-lt);color:var(--blue)}
+.pill-otro{background:var(--bg-soft);color:var(--ink-2)}
+.uid-cell{font-size:11px;color:var(--ink-3);max-width:180px;overflow:hidden;text-overflow:ellipsis}
+
+.empty-s{text-align:center;padding:40px 20px;color:var(--ink-2)}
+.empty-s i{font-size:36px;display:block;margin-bottom:10px;opacity:.35}
+
+.denied{max-width:520px;margin:80px auto;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:40px 30px;box-shadow:var(--shadow)}
+.denied i{font-size:48px;color:var(--red);margin-bottom:14px;display:block}
+.denied h2{font-size:19px;margin-bottom:8px}
+.denied p{font-size:13.5px;color:var(--ink-2)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--navy);color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);z-index:9999;display:flex;align-items:center;gap:9px;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<div id="appContent" style="display:none">
+<div class="wrap">
+  <header class="exec-head">
+    <div class="eh-kicker">Administración</div>
+    <h1 class="eh-title"><i class="bi bi-people-fill"></i> Usuarios</h1>
+    <div class="eh-sub">Asigna el rol de cada cuenta — controla quién puede publicar/cargar archivos en Erogaciones, CXC y Disponibilidad Bancaria.</div>
+  </header>
+
+  <div class="hint">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+      <b>Esta pantalla no crea cuentas nuevas (correo/clave) — solo asigna el rol.</b> Crear el login requiere una clave de administrador de Supabase que nunca debe estar en el navegador. Para dar acceso a alguien nuevo:
+      <ol>
+        <li>Ve a tu proyecto de Supabase → <b>Authentication → Users → Add user</b> y crea su correo/clave.</li>
+        <li>Copia el <b>User UID</b> que Supabase le asigna.</li>
+        <li>Pégalo abajo junto a su nombre y el rol que le corresponde — listo, ya puede entrar y el sistema aplicará su rol automáticamente.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="ico"><i class="bi bi-person-plus-fill"></i></div><div><div class="ttl">Vincular Usuario</div><div class="sub">Asocia un User UID de Supabase con nombre y rol</div></div></div>
+    <div class="card-bd">
+      <div class="frow">
+        <div class="ffield" style="flex:1.6;min-width:240px"><label>User UID (Supabase Auth)</label><input type="text" class="fi mono" id="nuUid" placeholder="ej. 3fa85f64-5717-4562-b3fc-2c963f66afa6"></div>
+        <div class="ffield"><label>Nombre</label><input type="text" class="fi" id="nuNombre" placeholder="Nombre completo"></div>
+        <div class="ffield"><label>Rol</label>
+          <select class="fi" id="nuRol">
+            <option value="Administrador General">Administrador General</option>
+            <option value="Cargador de Archivos">Cargador de Archivos</option>
+            <option value="Otro">Otro (especificar)</option>
+          </select>
+        </div>
+        <div class="ffield" id="nuRolOtroWrap" style="display:none"><label>Especificar rol</label><input type="text" class="fi" id="nuRolOtro" placeholder="Ej. Contabilidad"></div>
+        <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-p" onclick="vincularUsuario()"><i class="bi bi-check2"></i> Vincular</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <div class="ico"><i class="bi bi-list-ul"></i></div>
+      <div><div class="ttl">Usuarios del Sistema</div><div class="sub" id="listSub">Cargando…</div></div>
+      <div style="margin-left:auto"><button class="btn btn-s btn-sm" onclick="loadUsuarios()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button></div>
+    </div>
+    <div class="tbl-wrap"><table class="t" id="usuariosTable"></table></div>
+  </div>
+</div>
+</div>
+
+<div id="deniedContent" style="display:none">
+  <div class="denied">
+    <i class="bi bi-shield-lock-fill"></i>
+    <h2>Acceso restringido</h2>
+    <p>Solo un usuario Administrador puede ver y gestionar los roles de otros usuarios.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
+
+<script>
+const ROLE_OPTIONS = { admin:'Administrador General', cargador:'Cargador de Archivos' };
+let USUARIOS = [];
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function isAdminUser(){
+  try{ const s = Auth.getSession(); const label=(s&&s.user&&s.user.role&&s.user.role.label)||''; return label.toLowerCase().includes('administrador'); }
+  catch(e){ return false; }
+}
+function currentUserLabel(){ try{ const s=Auth.getSession(); return (s&&s.user&&(s.user.email||s.user.name))||'—'; }catch(e){ return '—'; } }
+let toastT;
+function toast(msg,isErr){
+  const el=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.toggle('err', !!isErr);
+  el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2400);
+}
+function rolPillClass(rol){
+  const r = (rol||'').toLowerCase();
+  if(r.includes('administrador')) return 'pill-admin';
+  if(r.includes('cargador')) return 'pill-cargador';
+  return 'pill-otro';
+}
+
+document.getElementById('nuRol').addEventListener('change', function(){
+  document.getElementById('nuRolOtroWrap').style.display = this.value==='Otro' ? '' : 'none';
+});
+
+async function loadUsuarios(){
+  if(!window.db){ toast('Sin conexión a la base de datos', true); return; }
+  const tbl = document.getElementById('usuariosTable');
+  try{
+    const { data, error } = await window.db.from('usuarios').select('*');
+    if(error) throw error;
+    USUARIOS = data || [];
+    document.getElementById('listSub').textContent = USUARIOS.length + ' usuario(s) registrado(s)';
+    if(!USUARIOS.length){
+      tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i>Sin usuarios vinculados todavía. Usa el formulario de arriba.</div></td></tr></tbody>`;
+      return;
+    }
+    tbl.innerHTML = `<thead><tr><th>Nombre</th><th>User UID</th><th>Rol Actual</th><th>Cambiar Rol</th><th></th></tr></thead>
+      <tbody>${USUARIOS.map(u=>`
+        <tr data-id="${esc(u.id)}">
+          <td style="font-weight:600">${esc(u.nombre)||'—'}</td>
+          <td class="uid-cell mono" title="${esc(u.id)}">${esc(u.id)}</td>
+          <td><span class="pill ${rolPillClass(u.rol)}">${esc(u.rol)||'—'}</span></td>
+          <td>
+            <select class="fi" style="min-width:190px" id="rolSel_${esc(u.id)}">
+              <option value="${ROLE_OPTIONS.admin}" ${u.rol===ROLE_OPTIONS.admin?'selected':''}>${ROLE_OPTIONS.admin}</option>
+              <option value="${ROLE_OPTIONS.cargador}" ${u.rol===ROLE_OPTIONS.cargador?'selected':''}>${ROLE_OPTIONS.cargador}</option>
+              <option value="__custom" ${(u.rol && u.rol!==ROLE_OPTIONS.admin && u.rol!==ROLE_OPTIONS.cargador)?'selected':''}>Otro: ${esc(u.rol)||'—'}</option>
+            </select>
+          </td>
+          <td><button class="btn btn-p btn-sm" onclick="guardarRol('${esc(u.id)}')"><i class="bi bi-check2"></i> Guardar</button></td>
+        </tr>`).join('')}</tbody>`;
+  }catch(e){
+    console.error(e);
+    tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-exclamation-triangle"></i>No se pudo leer la tabla "usuarios" (${esc(e.message)}). Si el error es de permisos, revisa las políticas RLS de esa tabla en Supabase para permitir lectura al rol autenticado.</div></td></tr></tbody>`;
+    document.getElementById('listSub').textContent = 'Error al cargar';
+  }
+}
+
+async function guardarRol(id){
+  const sel = document.getElementById('rolSel_'+id);
+  let rol = sel.value;
+  if(rol === '__custom'){ toast('Selecciona un rol válido de la lista', true); return; }
+  try{
+    const { error } = await window.db.from('usuarios').update({ rol }).eq('id', id);
+    if(error) throw error;
+    toast('Rol actualizado');
+    loadUsuarios();
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
+}
+
+async function vincularUsuario(){
+  const uid = document.getElementById('nuUid').value.trim();
+  const nombre = document.getElementById('nuNombre').value.trim();
+  let rol = document.getElementById('nuRol').value;
+  if(rol === 'Otro') rol = document.getElementById('nuRolOtro').value.trim();
+  if(!uid || !/^[0-9a-f-]{20,}$/i.test(uid)){ toast('Ingresa un User UID válido (cópialo desde Supabase → Authentication → Users)', true); return; }
+  if(!nombre){ toast('El nombre es requerido', true); return; }
+  if(!rol){ toast('El rol es requerido', true); return; }
+  try{
+    const { error } = await window.db.from('usuarios').upsert({ id: uid, nombre, rol }, { onConflict: 'id' });
+    if(error) throw error;
+    document.getElementById('nuUid').value = '';
+    document.getElementById('nuNombre').value = '';
+    document.getElementById('nuRolOtro').value = '';
+    toast('Usuario vinculado con rol "'+rol+'"');
+    loadUsuarios();
+  }catch(e){ toast('Error al vincular: '+e.message, true); }
+}
+
+/* ===== Guard de administrador (adicional al login) ===== */
+(function guard(){
+  if(isAdminUser()){
+    document.getElementById('appContent').style.display = 'block';
+    loadUsuarios();
+  } else {
+    document.getElementById('deniedContent').style.display = 'block';
+  }
+})();
+</script>
+</body>
+</html>

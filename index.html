@@ -258,6 +258,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <div class="submenu" id="sub-reportes">
       <button class="sub-btn" data-page="er"><span class="dot"></span> Estado de Resultados</button>
     </div>
+
+    <!-- Solo visible para Administrador (ver renderSession) -->
+    <div class="nav-group-label" id="navGroupAdmin" style="display:none">Administración</div>
+    <button class="nav-btn" id="navUsuarios" data-page="usuarios" style="display:none">
+      <i class="bi bi-people-fill nav-ico"></i> Usuarios
+    </button>
   </nav>
 
   <div class="sidebar-footer">
@@ -488,6 +494,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
               title="Estado de Resultados — Gstar Services"></iframe>
     </div>
   </section>
+
+  <!-- ======= ADMINISTRACIÓN · USUARIOS (solo Administrador) ======= -->
+  <section class="page" id="page-usuarios">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-usuarios"
+              data-src="USUARIOS/index.html"
+              title="Administración de Usuarios"></iframe>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -521,7 +536,8 @@ const PAGES = {
   'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
   'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'},
-  'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'}
+  'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'},
+  'usuarios':        {title:'Usuarios',                    crumb:'Administración › Usuarios',                  sub:false}
 };
 
 /* ===================== NAVEGACIÓN ===================== */
@@ -600,6 +616,11 @@ function lazyLoadFrame(page){
     const f=document.getElementById('frame-er');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
+  // Administración · Usuarios
+  if(page==='usuarios'){
+    const f=document.getElementById('frame-usuarios');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
   // Erogaciones (pendiente de adjuntar)
   if(page==='erogaciones'){
     const wrap=document.getElementById('embed-erogaciones');
@@ -669,6 +690,12 @@ function initials(name){
   document.getElementById('udRole').textContent   = role;
   document.getElementById('userAv').textContent   = ini;
   document.getElementById('userAvLg').textContent = ini;
+
+  // Módulo Usuarios: solo visible para Administrador (rol leído de usuarios.rol)
+  if(role.toLowerCase().indexOf('administrador') !== -1){
+    document.getElementById('navGroupAdmin').style.display = '';
+    document.getElementById('navUsuarios').style.display   = '';
+  }
 })();
 
 /* Menú de usuario (abrir/cerrar) */
