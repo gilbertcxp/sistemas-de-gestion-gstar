@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Captura de Disponibilidad Bancaria — Gstar</title>
+<!-- Guard de autenticación: sin sesión activa redirige al login -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+<!-- =====================================================================
+     CAPTURA DE DISPONIBILIDAD BANCARIA
+     Alimenta el módulo de solo-lectura DISPONIBILIDAD/disponibilidad-bancaria.html
+     Persistencia: Supabase, tabla genérica app_state (mismo patrón que usan
+     CXP/CXC/COMPENSACION — sin tablas nuevas). Claves usadas:
+       disponibilidad_balance_inicial
+       disponibilidad_movimientos_operativa
+       disponibilidad_movimientos_compensacion
+       disponibilidad_cheques_transferencias
+       disponibilidad_transferencias_entre_cuentas
+     Lee además (solo lectura) la clave compartida cxp_solicitudes para
+     calcular "Pagos de la Semana" (Monto a Pagar de la solicitud Pendiente).
+====================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<style>
+:root{
+  --bg-app:#F1F5F9;--bg-card:#FFFFFF;--bg-soft:#F8FAFC;
+  --ink:#0F1E3A;--ink-2:#475569;--ink-3:#94A3B8;
+  --line:#E5EAF1;--line-2:#EEF2F7;
+  --navy:#0B1437;--navy-2:#152452;
+  --blue:#2563EB;--blue-lt:#EAF1FE;
+  --green:#0E9F6E;--green-lt:#E6F6EF;
+  --red:#DC2626;--red-lt:#FCEBEB;
+  --gold:#C8902B;--gold-lt:#FBF3E3;
+  --slate-lt:#F1F5F9;
+  --shadow-sm:0 1px 2px rgba(15,30,58,.06),0 1px 3px rgba(15,30,58,.04);
+  --shadow:0 2px 8px rgba(15,30,58,.06),0 8px 24px rgba(15,30,58,.05);
+  --shadow-lg:0 10px 30px rgba(11,20,55,.12),0 4px 8px rgba(11,20,55,.06);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg-app:#060D1F;--bg-card:#0E1A33;--bg-soft:#101E3C;
+  --ink:#E8F0FE;--ink-2:#9FB3D1;--ink-3:#5E7299;
+  --line:#1C2E52;--line-2:#172545;
+  --navy:#050B1A;--navy-2:#0E1A33;
+  --blue-lt:#16264F;--green-lt:#0A2E22;--red-lt:#3A1414;--gold-lt:#33260C;
+  --slate-lt:#13213F;
+  --shadow:0 2px 10px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.4}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.wrap{max-width:1320px;margin:0 auto;padding:22px 26px 60px}
+
+/* HEADER */
+.exec-head{background:linear-gradient(125deg,var(--navy) 0%,var(--navy-2) 60%,#1b2f6b 100%);border-radius:18px;padding:24px 28px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+.exec-head::before{content:'';position:absolute;top:-60px;right:-30px;width:280px;height:280px;background:radial-gradient(circle,rgba(89,124,224,.28),transparent 68%);pointer-events:none}
+.eh-top{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;position:relative;z-index:1}
+.eh-kicker{font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:#7E96CF}
+.eh-title{font-size:26px;font-weight:800;letter-spacing:-.6px;margin-top:4px}
+.eh-sub{font-size:13px;color:#AEC0E6;margin-top:6px}
+.eh-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* BUTTONS */
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 15px;display:inline-flex;align-items:center;gap:7px;transition:transform .12s,box-shadow .2s,background .2s,filter .2s;white-space:nowrap}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn i{font-size:14px}
+.btn-light{background:rgba(255,255,255,.95);color:var(--navy)}
+.btn-light:hover{background:#fff}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.btn-ghost:hover{background:rgba(255,255,255,.16)}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{filter:brightness(1.08)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{filter:brightness(1.08)}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{filter:brightness(1.08)}
+.btn-s{background:var(--bg-card);color:var(--ink);border:1px solid var(--line)}
+.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+.btn-sm{padding:5px 10px;font-size:11.5px;border-radius:7px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--bg-card);border:1px solid var(--line);border-radius:13px;padding:5px;margin:20px 0;box-shadow:var(--shadow-sm);flex-wrap:wrap}
+.tab-btn{border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-2);padding:9px 16px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{background:var(--navy);color:#fff;box-shadow:0 4px 12px rgba(11,20,55,.25)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* CARD */
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:16px;overflow:hidden}
+.card-hd{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-hd .ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--blue-lt);color:var(--blue);flex-shrink:0}
+.card-hd .ttl{font-size:14.5px;font-weight:800}
+.card-hd .sub{font-size:11.5px;color:var(--ink-2);margin-top:1px}
+.card-bd{padding:18px 20px}
+
+/* FORM */
+.frow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.ffield{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+.ffield label{font-size:10.5px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.4px}
+.fi{background:var(--bg-card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 11px;font-size:13px;outline:none;transition:border-color .15s;font-family:inherit}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fi:disabled{background:var(--bg-soft);color:var(--ink-3)}
+.fi option{background:var(--bg-card);color:var(--ink)}
+
+/* ACCOUNT SUB-TABS */
+.acct-tabs{display:flex;gap:8px;margin-bottom:14px}
+.acct-tab{flex:1;border:1.5px solid var(--line);background:var(--bg-card);border-radius:11px;padding:12px 16px;cursor:pointer;transition:all .15s;text-align:left}
+.acct-tab:hover{border-color:var(--blue)}
+.acct-tab.active{border-color:var(--blue);background:var(--blue-lt)}
+.acct-tab .at-name{font-size:13.5px;font-weight:700;color:var(--ink)}
+.acct-tab .at-ref{font-size:11px;color:var(--ink-3);margin-top:2px}
+.acct-tab .at-bal{font-size:15px;font-weight:800;color:var(--blue);margin-top:6px}
+
+/* UPLOAD ZONE */
+.upz{border:2px dashed var(--line);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-soft);position:relative}
+.upz:hover,.upz.drag{border-color:var(--blue);background:var(--blue-lt)}
+.upz input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upz.done{border-color:var(--green);background:var(--green-lt)}
+.upz i{font-size:34px;color:var(--blue);display:block;margin-bottom:8px}
+.upz .t1{font-size:14px;font-weight:700}
+.upz .t2{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;border-radius:0 0 var(--radius) var(--radius)}
+table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+table.t thead th{position:sticky;top:0;background:var(--bg-soft);color:var(--ink-2);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:10px 13px;border-bottom:2px solid var(--line);white-space:nowrap;text-align:right;z-index:5}
+table.t thead th:first-child,table.t thead th.l{text-align:left}
+table.t tbody td{padding:9px 13px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}
+table.t tbody td:first-child,table.t tbody td.l{text-align:left}
+table.t tbody tr:nth-child(even){background:var(--bg-soft)}
+table.t tbody tr:hover{background:var(--blue-lt)}
+.pos{color:var(--green);font-weight:600}
+.neg{color:var(--red);font-weight:600}
+.zero{color:var(--ink-3)}
+.pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700}
+.pill-pend{background:var(--gold-lt);color:var(--gold)}
+.pill-ok{background:var(--green-lt);color:var(--green)}
+.pill-op{background:var(--blue-lt);color:var(--blue)}
+.pill-cp{background:#EDE9FE;color:#8B5CF6}
+[data-theme="dark"] .pill-cp{background:#251050;color:#c4b5fd}
+
+/* EMPTY */
+.empty-s{text-align:center;padding:44px 20px;color:var(--ink-2)}
+.empty-s i{font-size:38px;display:block;margin-bottom:10px;opacity:.35}
+.empty-s .m{font-size:13px;font-weight:600}
+
+/* SUMMARY */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.res-grid{grid-template-columns:1fr}}
+.res-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+.res-hd{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;padding:14px 18px}
+.res-hd .rn{font-size:14px;font-weight:800}
+.res-hd .rr{font-size:11px;color:#AEC0E6;margin-top:2px}
+.res-bd{padding:6px 18px 14px}
+.res-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line-2);font-size:12.5px}
+.res-row:last-child{border-bottom:none}
+.res-row .l{color:var(--ink-2)}
+.res-row .v{font-weight:700}
+.res-total{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:linear-gradient(135deg,var(--green),#0B8A5E);color:#fff}
+.res-total .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.res-total .v{font-size:17px;font-weight:900}
+.res-total .v.neg{color:#FECACA}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9000;padding:16px}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal-hd{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-hd h3{font-size:15px;font-weight:800}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink-2);font-size:18px;padding:4px 8px;border-radius:7px}
+.modal-close:hover{background:var(--bg-soft)}
+.modal-bd{padding:18px 20px}
+.modal-ft{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.map-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.map-lbl{font-size:12.5px;font-weight:600;width:150px;flex-shrink:0}
+.map-sel{flex:1}
+
+/* SPINNER / TOAST */
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
+.sp-box{background:var(--bg-card);border-radius:var(--radius);padding:26px 34px;text-align:center;box-shadow:var(--shadow-lg)}
+.spin{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--navy);color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);z-index:9999;display:flex;align-items:center;gap:9px;transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+.toast i{color:#4ADE80}
+.toast.err i{color:#fff}
+.hint{font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.locked-note{font-size:11.5px;color:var(--gold);background:var(--gold-lt);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:7px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div class="sp-overlay" id="spOv"><div class="sp-box"><div class="spin"></div><div style="font-size:13.5px;font-weight:600">Procesando…</div></div></div>
+
+<div class="wrap">
+  <header class="exec-head">
+    <div class="eh-top">
+      <div>
+        <div class="eh-kicker">Banco · Disponibilidad Bancaria</div>
+        <h1 class="eh-title"><i class="bi bi-database-fill-gear"></i> Captura de Disponibilidad Bancaria</h1>
+        <div class="eh-sub">Alimenta balances, movimientos y transferencias que consume el Dashboard de Disponibilidad</div>
+      </div>
+      <div class="eh-actions">
+        <button class="btn btn-light" onclick="reloadAll()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+        <a class="btn btn-ghost" href="disponibilidad-bancaria.html" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Ver Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="balance" onclick="switchTab('balance')"><i class="bi bi-flag-fill"></i> Balance Inicial</button>
+    <button class="tab-btn" data-tab="movimientos" onclick="switchTab('movimientos')"><i class="bi bi-cloud-upload-fill"></i> Carga de Movimiento Bancario</button>
+    <button class="tab-btn" data-tab="cheques" onclick="switchTab('cheques')"><i class="bi bi-pencil-square"></i> Cheques y Transferencias</button>
+    <button class="tab-btn" data-tab="transferencias" onclick="switchTab('transferencias')"><i class="bi bi-arrow-left-right"></i> Transferencias entre Cuentas</button>
+    <button class="tab-btn" data-tab="resumen" onclick="switchTab('resumen')"><i class="bi bi-grid-1x2-fill"></i> Resumen</button>
+  </div>
+
+  <!-- ============ TAB: BALANCE INICIAL ============ -->
+  <div class="tab-panel active" id="tab-balance">
+    <div class="hint"><i class="bi bi-info-circle"></i> El Balance Inicial se registra una sola vez por cuenta (cierre de mes anterior). Una vez guardado, solo un usuario Administrador puede modificarlo.</div>
+    <div class="res-grid" id="balanceCards"></div>
+  </div>
+
+  <!-- ============ TAB: CARGA DE MOVIMIENTO BANCARIO ============ -->
+  <div class="tab-panel" id="tab-movimientos">
+    <div class="acct-tabs" id="movAcctTabs"></div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-file-earmark-excel-fill"></i></div>
+        <div><div class="ttl">Cargar Estado Bancario</div><div class="sub" id="movUploadSub">Cuenta Operativa — .xlsx, .xls o .csv</div></div>
+      </div>
+      <div class="card-bd">
+        <div class="upz" id="movUpz">
+          <input type="file" accept=".xlsx,.xls,.csv" id="movFile" onchange="handleMovFile(this)">
+          <i class="bi bi-cloud-arrow-up" id="movUpzIco"></i>
+          <div class="t1" id="movUpzT1">Arrastra tu archivo aquí</div>
+          <div class="t2" id="movUpzT2">o clic para seleccionar</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-clock-history"></i></div>
+        <div><div class="ttl">Historial de Movimientos</div><div class="sub" id="movHistSub">0 movimientos</div></div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-s btn-sm" onclick="exportMovExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="t" id="movTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: CHEQUES Y TRANSFERENCIAS ============ -->
+  <div class="tab-panel" id="tab-cheques">
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-plus-circle-fill"></i></div><div><div class="ttl">Registrar Cheque / Transferencia Bancaria</div><div class="sub">Montos pendientes de aplicar — alimentan "Cheques y Transf. en Tránsito"</div></div></div>
+      <div class="card-bd">
+        <div class="frow">
+          <div class="ffield"><label>Fecha</label><input type="date" class="fi" id="chFecha"></div>
+          <div class="ffield"><label>Tipo</label><select class="fi" id="chTipo"><option value="Cheque">Cheque</option><option value="Transferencia Bancaria">Transferencia Bancaria</option></select></div>
+          <div class="ffield"><label>Cuenta</label><select class="fi" id="chCuenta"><option value="operativa">Cuenta Operativa</option><option value="compensacion">Cuenta de Compensación</option></select></div>
+          <div class="ffield" style="min-width:200px"><label>Beneficiario</label><input type="text" class="fi" id="chBen" placeholder="Nombre del beneficiario"></div>
+        </div>
+        <div class="frow">
+          <div class="ffield"><label>Monto</label><input type="number" step="0.01" class="fi" id="chMonto" placeholder="0.00"></div>
+          <div class="ffield"><label>Referencia</label><input type="text" class="fi" id="chRef" placeholder="N° cheque / referencia"></div>
+          <div class="ffield" style="min-width:220px"><label>Observación</label><input type="text" class="fi" id="chObs" placeholder="Opcional"></div>
+          <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-p" onclick="addChequeTransferencia()"><i class="bi bi-check2"></i> Registrar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-list-ul"></i></div><div><div class="ttl">Historial</div><div class="sub" id="chHistSub">0 registros</div></div></div>
+      <div class="tbl-wrap"><table class="t" id="chTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: TRANSFERENCIAS ENTRE CUENTAS ============ -->
+  <div class="tab-panel" id="tab-transferencias">
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-arrow-left-right"></i></div><div><div class="ttl">Registrar Transferencia entre Cuentas</div><div class="sub">Origen y destino deben ser cuentas distintas</div></div></div>
+      <div class="card-bd">
+        <div class="frow">
+          <div class="ffield"><label>Fecha</label><input type="date" class="fi" id="teFecha"></div>
+          <div class="ffield"><label>Cuenta Origen</label><select class="fi" id="teOrigen"><option value="operativa">Cuenta Operativa</option><option value="compensacion">Cuenta de Compensación</option></select></div>
+          <div class="ffield"><label>Cuenta Destino</label><select class="fi" id="teDestino"><option value="compensacion">Cuenta de Compensación</option><option value="operativa">Cuenta Operativa</option></select></div>
+          <div class="ffield"><label>Monto</label><input type="number" step="0.01" class="fi" id="teMonto" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="ffield" style="min-width:260px"><label>Observación</label><input type="text" class="fi" id="teObs" placeholder="Opcional"></div>
+          <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-p" onclick="addTransferenciaEntreCuentas()"><i class="bi bi-check2"></i> Registrar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-list-ul"></i></div><div><div class="ttl">Historial</div><div class="sub" id="teHistSub">0 registros</div></div></div>
+      <div class="tbl-wrap"><table class="t" id="teTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: RESUMEN ============ -->
+  <div class="tab-panel" id="tab-resumen">
+    <div class="hint"><i class="bi bi-info-circle"></i> Estos son los valores que verá el Dashboard de Disponibilidad Bancaria para cada cuenta.</div>
+    <div class="res-grid" id="resumenCards"></div>
+  </div>
+</div>
+
+<!-- MODAL: MAPEO DE COLUMNAS -->
+<div class="modal-ov" id="mapModal">
+  <div class="modal-box">
+    <div class="modal-hd"><h3><i class="bi bi-diagram-3 me-2"></i>Mapear Columnas del Estado Bancario</h3><button class="modal-close" onclick="closeMapModal()"><i class="bi bi-x-lg"></i></button></div>
+    <div class="modal-bd">
+      <p style="font-size:12.5px;color:var(--ink-2);margin-bottom:14px">Confirma qué columna corresponde a cada campo. El sistema intentó detectarlas automáticamente.</p>
+      <div class="map-row"><div class="map-lbl">Fecha *</div><select class="fi map-sel" id="mmFecha"></select></div>
+      <div class="map-row"><div class="map-lbl">Descripción</div><select class="fi map-sel" id="mmDesc"></select></div>
+      <div class="map-row"><div class="map-lbl">Referencia</div><select class="fi map-sel" id="mmRef"></select></div>
+      <div class="map-row"><div class="map-lbl">Débito *</div><select class="fi map-sel" id="mmDebito"></select></div>
+      <div class="map-row"><div class="map-lbl">Crédito *</div><select class="fi map-sel" id="mmCredito"></select></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-s" onclick="closeMapModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="confirmMapModal()"><i class="bi bi-check2"></i> Confirmar y Procesar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONSTANTES Y ESTADO
+══════════════════════════════════════════════════════════════ */
+const ACCOUNTS = ['operativa','compensacion'];
+const ACCOUNT_LABEL = { operativa:'Cuenta Operativa', compensacion:'Cuenta de Compensación' };
+const ACCOUNT_REF   = { operativa:'BR No. 9600882715', compensacion:'BR No. 9605078497' };
+
+const CAP = {
+  balanceInicial: { operativa:null, compensacion:null },
+  movimientos:    { operativa:[],  compensacion:[] },
+  columnMap:      { operativa:null, compensacion:null },
+  fileName:       { operativa:'',  compensacion:'' },
+  cheques:        [],
+  transferencias: [],
+  pagosSemana:    0,
+  isAdmin:        false
+};
+
+let _movAccount = 'operativa';
+let _uploadStaging = null; // { account, raw, headers }
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+function fnum(v){ v = Number(v)||0; const a = Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); return v<0 ? '('+a+')' : a; }
+function moneyCell(v){
+  v = Number(v)||0;
+  if(v===0) return '<span class="zero">—</span>';
+  return '<span class="'+(v<0?'neg':'pos')+' mono">'+fnum(v)+'</span>';
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(p){ return (p||'id')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function showSp(){ document.getElementById('spOv').style.display='flex'; }
+function hideSp(){ document.getElementById('spOv').style.display='none'; }
+let toastT;
+function toast(msg, isErr){
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.toggle('err', !!isErr);
+  el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove('show'), 2400);
+}
+function clean(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s = String(v).replace(/[RD$\s€£¥ ]/g,'');
+  const lastDot = s.lastIndexOf('.'), lastComma = s.lastIndexOf(',');
+  if(lastDot>-1 && lastComma>-1){ s = lastDot>lastComma ? s.replace(/,/g,'') : s.replace(/\./g,'').replace(',','.'); }
+  else if(lastComma>-1){ const dec = s.substring(lastComma+1); s = dec.length<=2 ? s.replace(',','.') : s.replace(/,/g,''); }
+  else if((s.match(/\./g)||[]).length>1){ s = s.replace(/\./g,''); }
+  s = s.replace(/[^0-9.\-]/g,'');
+  const n = parseFloat(s); return isNaN(n)?0:n;
+}
+function parseDate(raw){
+  if(!raw) return '';
+  const s = String(raw).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  let m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if(m){ const [,p1,p2,y]=m; const n1=parseInt(p1),n2=parseInt(p2);
+    if(n1>12) return `${y}-${p2.padStart(2,'0')}-${p1.padStart(2,'0')}`;
+    if(n2>12) return `${y}-${p1.padStart(2,'0')}-${p2.padStart(2,'0')}`;
+    return `${y}-${p2.padStart(2,'0')}-${p1.padStart(2,'0')}`; }
+  const dt = new Date(s); if(!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
+  return s;
+}
+function isAdminUser(){
+  try{ const s = Auth.getSession(); const label=(s&&s.user&&s.user.role&&s.user.role.label)||''; return label.toLowerCase().includes('administrador'); }
+  catch(e){ return false; }
+}
+function currentUserLabel(){
+  try{ const s = Auth.getSession(); return (s&&s.user&&(s.user.email||s.user.name))||'—'; }catch(e){ return '—'; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SUPABASE — lectura/escritura sobre app_state (mismo patrón que
+   ya usan CXP / CXC / COMPENSACION en este sistema)
+══════════════════════════════════════════════════════════════ */
+async function kvGet(key){
+  if(!window.db) return null;
+  const { data, error } = await window.db.from('app_state').select('value').eq('key', key).single();
+  if(error || !data) return null;
+  return data.value;
+}
+async function kvSet(key, value){
+  if(!window.db) throw new Error('Sin conexión a la base de datos.');
+  const { error } = await window.db.from('app_state').upsert(
+    { key, value, updated_at: new Date().toISOString(), updated_by: currentUserLabel() },
+    { onConflict: 'key' }
+  );
+  if(error) throw new Error(error.message);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CARGA INICIAL
+══════════════════════════════════════════════════════════════ */
+async function reloadAll(){
+  showSp();
+  try{
+    CAP.isAdmin = isAdminUser();
+
+    const bi = await kvGet('disponibilidad_balance_inicial');
+    CAP.balanceInicial = bi || { operativa:null, compensacion:null };
+
+    for(const acc of ACCOUNTS){
+      const mv = await kvGet('disponibilidad_movimientos_'+acc);
+      CAP.movimientos[acc] = (mv && mv.rows) || [];
+      CAP.columnMap[acc]   = (mv && mv.columnMap) || null;
+      CAP.fileName[acc]    = (mv && mv.fileName) || '';
+      recalcBalances(acc);
+    }
+
+    CAP.cheques        = (await kvGet('disponibilidad_cheques_transferencias')) || [];
+    CAP.transferencias = (await kvGet('disponibilidad_transferencias_entre_cuentas')) || [];
+
+    // Pagos de la Semana ← CXP, Solicitud de Pago Pendiente (Monto a Pagar)
+    const solicitudes = (await kvGet('cxp_solicitudes')) || [];
+    const activa = (Array.isArray(solicitudes) ? solicitudes : []).find(s => s.estado === 'Pendiente');
+    CAP.pagosSemana = activa ? (activa.items||[]).reduce((s,i)=>s+(i.valor||0),0) : 0;
+
+    renderAll();
+    toast('Datos actualizados');
+  }catch(e){
+    console.error(e);
+    toast('Error al cargar datos: '+e.message, true);
+  }
+  hideSp();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BALANCE INICIAL
+══════════════════════════════════════════════════════════════ */
+function renderBalanceCards(){
+  const el = document.getElementById('balanceCards');
+  el.innerHTML = ACCOUNTS.map(acc => {
+    const bi = CAP.balanceInicial[acc];
+    const locked = !!bi;
+    const suggestedVal = acc==='operativa' ? '5032737.90' : '';
+    return `<div class="res-card">
+      <div class="res-hd"><div class="rn">${ACCOUNT_LABEL[acc]}</div><div class="rr">${ACCOUNT_REF[acc]}</div></div>
+      <div class="card-bd">
+        ${locked ? `<div class="locked-note"><i class="bi bi-lock-fill"></i> Balance inicial registrado el ${esc(bi.fecha||'—')}${CAP.isAdmin?' — puedes actualizarlo como Administrador':' — solo un Administrador puede modificarlo'}</div>` : ''}
+        <div class="frow">
+          <div class="ffield">
+            <label>Balance Inicial (RD$)</label>
+            <input type="number" step="0.01" class="fi" id="bi_${acc}" placeholder="0.00"
+              value="${locked?bi.balance:suggestedVal}" ${locked && !CAP.isAdmin ? 'disabled':''}>
+          </div>
+          <div class="ffield">
+            <label>Fecha del Balance</label>
+            <input type="date" class="fi" id="bifecha_${acc}" value="${locked?bi.fecha:todayISO()}" ${locked && !CAP.isAdmin ? 'disabled':''}>
+          </div>
+          <div class="ffield" style="flex:0">
+            <label>&nbsp;</label>
+            <button class="btn btn-p" ${locked && !CAP.isAdmin ? 'disabled':''} onclick="saveBalanceInicial('${acc}')">
+              <i class="bi bi-${locked?'arrow-repeat':'check2'}"></i> ${locked?'Actualizar':'Registrar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveBalanceInicial(acc){
+  const val   = parseFloat(document.getElementById('bi_'+acc).value);
+  const fecha = document.getElementById('bifecha_'+acc).value || todayISO();
+  if(isNaN(val)){ toast('Ingresa un balance válido', true); return; }
+  const already = !!CAP.balanceInicial[acc];
+  if(already && !CAP.isAdmin){ toast('Solo un Administrador puede modificar el Balance Inicial', true); return; }
+  showSp();
+  try{
+    CAP.balanceInicial[acc] = { balance: val, fecha, setBy: currentUserLabel(), setAt: new Date().toISOString() };
+    await kvSet('disponibilidad_balance_inicial', CAP.balanceInicial);
+    recalcBalances(acc);
+    renderAll();
+    toast('Balance Inicial de '+ACCOUNT_LABEL[acc]+' guardado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CARGA DE MOVIMIENTO BANCARIO
+   Balance Actual = Balance Anterior + Créditos − Débitos
+══════════════════════════════════════════════════════════════ */
+function recalcBalances(acc){
+  const rows = CAP.movimientos[acc] || [];
+  rows.sort((a,b) => (a.fecha||'').localeCompare(b.fecha||'') || (a._seq||0)-(b._seq||0));
+  let running = (CAP.balanceInicial[acc] && CAP.balanceInicial[acc].balance) || 0;
+  rows.forEach(r => { running = running + (r.credito||0) - (r.debito||0); r.balanceRunning = running; });
+}
+function getBalanceActual(acc){
+  const rows = CAP.movimientos[acc] || [];
+  if(rows.length) return rows[rows.length-1].balanceRunning;
+  return (CAP.balanceInicial[acc] && CAP.balanceInicial[acc].balance) || 0;
+}
+
+function renderMovAcctTabs(){
+  document.getElementById('movAcctTabs').innerHTML = ACCOUNTS.map(acc => `
+    <div class="acct-tab ${acc===_movAccount?'active':''}" onclick="setMovAccount('${acc}')">
+      <div class="at-name">${ACCOUNT_LABEL[acc]}</div>
+      <div class="at-ref">${ACCOUNT_REF[acc]} · ${(CAP.movimientos[acc]||[]).length} movimiento(s)</div>
+      <div class="at-bal mono">RD$ ${fnum(getBalanceActual(acc))}</div>
+    </div>`).join('');
+}
+function setMovAccount(acc){ _movAccount = acc; renderMovTab(); }
+
+function renderMovTab(){
+  renderMovAcctTabs();
+  document.getElementById('movUploadSub').textContent = ACCOUNT_LABEL[_movAccount]+' — .xlsx, .xls o .csv';
+  const upz = document.getElementById('movUpz');
+  const hasFile = !!CAP.fileName[_movAccount];
+  upz.classList.toggle('done', hasFile);
+  document.getElementById('movUpzIco').className = 'bi ' + (hasFile?'bi-check-circle-fill':'bi-cloud-arrow-up');
+  document.getElementById('movUpzT1').textContent = hasFile ? CAP.fileName[_movAccount] : 'Arrastra tu archivo aquí';
+  document.getElementById('movUpzT2').textContent = hasFile ? 'Archivo cargado — sube otro para agregar más movimientos' : 'o clic para seleccionar';
+
+  const rows = [...(CAP.movimientos[_movAccount]||[])].sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||'') || (b._seq||0)-(a._seq||0));
+  document.getElementById('movHistSub').textContent = rows.length+' movimiento(s) — '+ACCOUNT_LABEL[_movAccount];
+  const tbl = document.getElementById('movTable');
+  if(!rows.length){
+    tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin movimientos cargados para esta cuenta</div></div></td></tr></tbody>`;
+    return;
+  }
+  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Descripción</th><th class="l">Referencia</th><th>Débito</th><th>Crédito</th><th>Balance</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="l">${esc(r.fecha)||'—'}</td>
+      <td class="l" style="max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.descripcion)}">${esc(r.descripcion)||'—'}</td>
+      <td class="l">${esc(r.referencia)||'—'}</td>
+      <td>${r.debito?moneyCell(-r.debito):'<span class="zero">—</span>'}</td>
+      <td>${r.credito?moneyCell(r.credito):'<span class="zero">—</span>'}</td>
+      <td class="mono" style="font-weight:700">${fnum(r.balanceRunning)}</td>
+      <td><button class="btn btn-s btn-sm" onclick="deleteMovRow('${_movAccount}','${r.id}')" title="Eliminar"><i class="bi bi-trash"></i></button></td>
+    </tr>`).join('')}</tbody>`;
+}
+
+function handleMovFile(input){
+  const file = input.files[0]; if(!file) return;
+  showSp();
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      let data;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if(ext==='csv'){ const wb = XLSX.read(e.target.result,{type:'string'}); data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false}); }
+      else { const wb = XLSX.read(e.target.result,{type:'array',cellDates:true}); data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false}); }
+      if(!data.length){ hideSp(); toast('El archivo está vacío', true); return; }
+      _uploadStaging = { account:_movAccount, raw:data, headers:Object.keys(data[0]), fileName:file.name };
+      hideSp();
+      openMapModal();
+    }catch(err){ hideSp(); console.error(err); toast('Error al leer el archivo: '+err.message, true); }
+  };
+  if(file.name.endsWith('.csv')) reader.readAsText(file,'UTF-8'); else reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+
+function _autoDetectMov(headers){
+  const h = headers.map(x=>x.toLowerCase().trim());
+  const find = kws => { for(const kw of kws){ const i=h.findIndex(x=>x.includes(kw)); if(i!==-1) return headers[i]; } return ''; };
+  return {
+    fecha:   find(['fecha','date']),
+    desc:    find(['descripcion','descripción','concepto','detalle','concept']),
+    ref:     find(['referencia','reference','ref','documento']),
+    debito:  find(['debito','débito','debe','cargo','egreso']),
+    credito: find(['credito','crédito','haber','abono','ingreso'])
+  };
+}
+
+function openMapModal(){
+  if(!_uploadStaging) return;
+  const detected = _autoDetectMov(_uploadStaging.headers);
+  const fillSel = (id, sel) => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">— Sin asignar —</option>' + _uploadStaging.headers.map(h=>`<option value="${esc(h)}" ${h===sel?'selected':''}>${esc(h)}</option>`).join('');
+  };
+  fillSel('mmFecha', detected.fecha); fillSel('mmDesc', detected.desc); fillSel('mmRef', detected.ref);
+  fillSel('mmDebito', detected.debito); fillSel('mmCredito', detected.credito);
+  document.getElementById('mapModal').classList.add('open');
+}
+function closeMapModal(){ document.getElementById('mapModal').classList.remove('open'); _uploadStaging = null; }
+
+async function confirmMapModal(){
+  if(!_uploadStaging) return;
+  const g = id => document.getElementById(id).value;
+  const map = { fecha:g('mmFecha'), desc:g('mmDesc'), ref:g('mmRef'), debito:g('mmDebito'), credito:g('mmCredito') };
+  if(!map.fecha || (!map.debito && !map.credito)){ toast('Asigna al menos Fecha y una columna de Débito o Crédito', true); return; }
+
+  const acc = _uploadStaging.account;
+  const existingKeys = new Set((CAP.movimientos[acc]||[]).map(r => r._dedupeKey));
+  let added = 0, skipped = 0, seqBase = (CAP.movimientos[acc]||[]).length;
+
+  _uploadStaging.raw.forEach((row,i) => {
+    const fecha    = parseDate(row[map.fecha] || '');
+    const debito   = map.debito  ? clean(row[map.debito])  : 0;
+    const credito  = map.credito ? clean(row[map.credito]) : 0;
+    const referencia = map.ref ? String(row[map.ref]||'').trim() : '';
+    const descripcion = map.desc ? String(row[map.desc]||'').trim() : '';
+    if(!fecha || (debito===0 && credito===0)) return;
+    const dedupeKey = [fecha, referencia, debito.toFixed(2), credito.toFixed(2), descripcion].join('|');
+    if(existingKeys.has(dedupeKey)){ skipped++; return; }
+    existingKeys.add(dedupeKey);
+    CAP.movimientos[acc].push({ id: uid('mv'), fecha, descripcion, referencia, debito, credito, _dedupeKey: dedupeKey, _seq: seqBase + i });
+    added++;
+  });
+
+  recalcBalances(acc);
+  CAP.columnMap[acc] = map;
+  CAP.fileName[acc]  = _uploadStaging.fileName;
+  closeMapModal();
+
+  showSp();
+  try{
+    await kvSet('disponibilidad_movimientos_'+acc, { rows: CAP.movimientos[acc], columnMap: map, fileName: CAP.fileName[acc], updatedAt: new Date().toISOString(), updatedBy: currentUserLabel() });
+    renderAll();
+    toast(`${added} movimiento(s) agregado(s)${skipped?`, ${skipped} duplicado(s) omitido(s)`:''}`);
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
+  hideSp();
+}
+
+async function deleteMovRow(acc, id){
+  if(!confirm('¿Eliminar este movimiento? El balance se recalculará.')) return;
+  showSp();
+  try{
+    CAP.movimientos[acc] = (CAP.movimientos[acc]||[]).filter(r => r.id !== id);
+    recalcBalances(acc);
+    await kvSet('disponibilidad_movimientos_'+acc, { rows: CAP.movimientos[acc], columnMap: CAP.columnMap[acc], fileName: CAP.fileName[acc], updatedAt: new Date().toISOString(), updatedBy: currentUserLabel() });
+    renderAll();
+    toast('Movimiento eliminado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+function exportMovExcel(){
+  const rows = CAP.movimientos[_movAccount]||[];
+  if(!rows.length){ toast('No hay movimientos para exportar', true); return; }
+  const wb = XLSX.utils.book_new();
+  const aoa = [
+    ['MOVIMIENTOS BANCARIOS — '+ACCOUNT_LABEL[_movAccount]],
+    ['Generado: '+new Date().toLocaleString('es-DO')],[],
+    ['Fecha','Descripción','Referencia','Débito','Crédito','Balance'],
+    ...[...rows].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).map(r=>[r.fecha,r.descripcion,r.referencia,r.debito,r.credito,r.balanceRunning])
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:12},{wch:34},{wch:16},{wch:14},{wch:14},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+  XLSX.writeFile(wb, 'movimientos_'+_movAccount+'_'+todayISO()+'.xlsx');
+}
+
+/* Drag & drop */
+(function setupDnD(){
+  document.addEventListener('DOMContentLoaded', () => {
+    const z = document.getElementById('movUpz');
+    if(!z) return;
+    z.addEventListener('dragover', e=>{ e.preventDefault(); z.classList.add('drag'); });
+    z.addEventListener('dragleave', ()=>z.classList.remove('drag'));
+    z.addEventListener('drop', e=>{
+      e.preventDefault(); z.classList.remove('drag');
+      const f = e.dataTransfer.files[0]; if(!f) return;
+      handleMovFile({ files:[f] });
+    });
+  });
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   CHEQUES Y TRANSFERENCIAS (manual)
+══════════════════════════════════════════════════════════════ */
+function renderChTab(){
+  const rows = [...CAP.cheques].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('chHistSub').textContent = rows.length+' registro(s)';
+  const tbl = document.getElementById('chTable');
+  if(!rows.length){ tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin cheques ni transferencias registrados</div></div></td></tr></tbody>`; return; }
+  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Tipo</th><th class="l">Cuenta</th><th class="l">Beneficiario</th><th>Monto</th><th class="l">Referencia</th><th class="l">Estado</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="l">${esc(r.fecha)}</td>
+      <td class="l">${esc(r.tipo)}</td>
+      <td class="l"><span class="pill ${r.cuenta==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.cuenta]}</span></td>
+      <td class="l">${esc(r.beneficiario)||'—'}</td>
+      <td class="mono" style="font-weight:700">${fnum(r.monto)}</td>
+      <td class="l">${esc(r.referencia)||'—'}</td>
+      <td class="l"><span class="pill ${r.estado==='Aplicado'?'pill-ok':'pill-pend'}">${r.estado}</span></td>
+      <td>
+        ${r.estado==='Pendiente' ? `<button class="btn btn-s btn-sm" onclick="toggleChequeEstado('${r.id}')" title="Marcar aplicado"><i class="bi bi-check2"></i></button>` : `<button class="btn btn-s btn-sm" onclick="toggleChequeEstado('${r.id}')" title="Marcar pendiente"><i class="bi bi-arrow-counterclockwise"></i></button>`}
+        <button class="btn btn-s btn-sm" onclick="deleteCheque('${r.id}')" title="Eliminar"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`).join('')}</tbody>`;
+}
+
+async function addChequeTransferencia(){
+  const fecha = document.getElementById('chFecha').value || todayISO();
+  const tipo  = document.getElementById('chTipo').value;
+  const cuenta = document.getElementById('chCuenta').value;
+  const beneficiario = document.getElementById('chBen').value.trim();
+  const monto = parseFloat(document.getElementById('chMonto').value);
+  const referencia = document.getElementById('chRef').value.trim();
+  const obs = document.getElementById('chObs').value.trim();
+  if(!beneficiario){ toast('El beneficiario es requerido', true); return; }
+  if(!monto || monto<=0){ toast('El monto debe ser mayor a 0', true); return; }
+  showSp();
+  try{
+    CAP.cheques.push({ id:uid('ch'), fecha, tipo, cuenta, beneficiario, monto, referencia, observacion:obs, estado:'Pendiente', registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
+    await kvSet('disponibilidad_cheques_transferencias', CAP.cheques);
+    ['chBen','chMonto','chRef','chObs'].forEach(id=>document.getElementById(id).value='');
+    renderAll();
+    toast('Registro agregado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+async function toggleChequeEstado(id){
+  showSp();
+  try{
+    const r = CAP.cheques.find(x=>x.id===id); if(!r) return;
+    r.estado = r.estado==='Pendiente' ? 'Aplicado' : 'Pendiente';
+    await kvSet('disponibilidad_cheques_transferencias', CAP.cheques);
+    renderAll();
+    toast('Estado actualizado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+async function deleteCheque(id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  showSp();
+  try{
+    CAP.cheques = CAP.cheques.filter(x=>x.id!==id);
+    await kvSet('disponibilidad_cheques_transferencias', CAP.cheques);
+    renderAll();
+    toast('Registro eliminado');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TRANSFERENCIAS ENTRE CUENTAS (manual)
+══════════════════════════════════════════════════════════════ */
+function renderTeTab(){
+  const rows = [...CAP.transferencias].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('teHistSub').textContent = rows.length+' registro(s)';
+  const tbl = document.getElementById('teTable');
+  if(!rows.length){ tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin transferencias entre cuentas registradas</div></div></td></tr></tbody>`; return; }
+  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Origen</th><th class="l">Destino</th><th>Monto</th><th class="l">Observación</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="l">${esc(r.fecha)}</td>
+      <td class="l"><span class="pill ${r.origen==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.origen]}</span></td>
+      <td class="l"><span class="pill ${r.destino==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.destino]}</span></td>
+      <td class="mono" style="font-weight:700">${fnum(r.monto)}</td>
+      <td class="l">${esc(r.observacion)||'—'}</td>
+      <td><button class="btn btn-s btn-sm" onclick="deleteTransferencia('${r.id}')" title="Eliminar"><i class="bi bi-trash"></i></button></td>
+    </tr>`).join('')}</tbody>`;
+}
+
+async function addTransferenciaEntreCuentas(){
+  const fecha = document.getElementById('teFecha').value || todayISO();
+  const origen = document.getElementById('teOrigen').value;
+  const destino = document.getElementById('teDestino').value;
+  const monto = parseFloat(document.getElementById('teMonto').value);
+  const obs = document.getElementById('teObs').value.trim();
+  if(origen===destino){ toast('El origen y el destino deben ser cuentas distintas', true); return; }
+  if(!monto || monto<=0){ toast('El monto debe ser mayor a 0', true); return; }
+  showSp();
+  try{
+    CAP.transferencias.push({ id:uid('te'), fecha, origen, destino, monto, observacion:obs, registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
+    await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
+    ['teMonto','teObs'].forEach(id=>document.getElementById(id).value='');
+    renderAll();
+    toast('Transferencia registrada');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+async function deleteTransferencia(id){
+  if(!confirm('¿Eliminar esta transferencia?')) return;
+  showSp();
+  try{
+    CAP.transferencias = CAP.transferencias.filter(x=>x.id!==id);
+    await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
+    renderAll();
+    toast('Transferencia eliminada');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESUMEN — valores que consumirá el Dashboard
+══════════════════════════════════════════════════════════════ */
+function getResumenCuenta(acc){
+  const balance = getBalanceActual(acc);
+  const transito = -CAP.cheques.filter(c=>c.cuenta===acc && c.estado==='Pendiente').reduce((s,c)=>s+c.monto,0);
+  const transfer = CAP.transferencias.reduce((s,t)=>{
+    if(t.destino===acc) return s + t.monto;
+    if(t.origen===acc)  return s - t.monto;
+    return s;
+  }, 0);
+  const pagos = acc==='operativa' ? -CAP.pagosSemana : 0;
+  const actualizado = balance + transito + transfer + pagos;
+  return { balance, transito, transfer, pagos, actualizado };
+}
+
+function renderResumen(){
+  const el = document.getElementById('resumenCards');
+  el.innerHTML = ACCOUNTS.map(acc => {
+    const r = getResumenCuenta(acc);
+    return `<div class="res-card">
+      <div class="res-hd"><div class="rn">${ACCOUNT_LABEL[acc]}</div><div class="rr">${ACCOUNT_REF[acc]}</div></div>
+      <div class="res-bd">
+        <div class="res-row"><span class="l">Balance en Cuenta</span><span class="v mono">RD$ ${fnum(r.balance)}</span></div>
+        <div class="res-row"><span class="l">Cheques / Transf. en Tránsito</span><span class="v mono">${moneyCell(r.transito)}</span></div>
+        <div class="res-row"><span class="l">Transferencias entre Cuentas</span><span class="v mono">${moneyCell(r.transfer)}</span></div>
+        <div class="res-row"><span class="l">Pagos de la Semana</span><span class="v mono">${moneyCell(r.pagos)}</span></div>
+      </div>
+      <div class="res-total"><span class="l">Balance Actualizado</span><span class="v mono ${r.actualizado<0?'neg':''}">RD$ ${fnum(r.actualizado)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABS + ORQUESTACIÓN
+══════════════════════════════════════════════════════════════ */
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+tab));
+}
+function renderAll(){
+  renderBalanceCards();
+  renderMovTab();
+  renderChTab();
+  renderTeTab();
+  renderResumen();
+}
+
+reloadAll();
+</script>
+</body>
+</html>

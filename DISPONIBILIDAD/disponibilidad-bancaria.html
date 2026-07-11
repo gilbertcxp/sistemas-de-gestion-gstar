@@ -7,6 +7,9 @@
 <!-- Guard de autenticación: sin sesión activa redirige al login -->
 <script src="../auth/auth.js"></script>
 <script>if (window.Auth) Auth.requireAuth();</script>
+<!-- Cliente de Supabase: lee los datos publicados desde Captura de Disponibilidad -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 <!-- =====================================================================
      DISPONIBILIDAD BANCARIA (app independiente)
      Reporte ejecutivo del módulo Banco › Disponibilidad Bancaria de la
@@ -443,14 +446,13 @@ table.rep tfoot td:first-child{text-align:left}
    Signo = efecto sobre el balance:  (-) salidas negativas, (+) entradas.
 ==================================================================== */
 const DATA = {
-  reportDateISO  : '2026-06-25',
-  reportDateLabel: 'jueves, 25 de junio de 2026',
+  reportDateISO  : new Date().toISOString().slice(0,10),
+  reportDateLabel: new Date().toLocaleDateString('es-DO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}),
   bancos:{
-    balanceLabel:'Balance al 10 Junio 2026',
-    rows:[
-      {cuenta:'Cuenta Operativa',     ref:'BR No. 9600882715', tasa:null,  balance:8617233.89, transito:-109196.59, transfer: 25000.00, pagos:-7187958.88},
-      {cuenta:'Cuenta de Compensación',ref:'BR No. 9605078497', tasa:null,  balance:1836947.23, transito:0,         transfer:-25000.00, pagos:0}
-    ]
+    balanceLabel:'Balance en Cuenta',
+    // Se completa en tiempo real desde Supabase (ver loadBancosFromSupabase) —
+    // alimentado por DISPONIBILIDAD/captura-disponibilidad.html
+    rows:[]
   },
   certificados:{
     balanceLabel:'Balance al 26 Mayo 2026',
@@ -463,8 +465,9 @@ const DATA = {
   }
 };
 
-/* ===== SHARED STORAGE — publica datos para CXP Solicitud de Pago ===== */
-(function(){
+/* ===== SHARED STORAGE — publica datos para CXP Solicitud de Pago =====
+   (se invoca desde loadBancosFromSupabase, una vez cargados los datos reales) */
+function publishBancoOperativo(){
   try{
     const op = DATA.bancos.rows.find(r => r.ref && r.ref.includes('9600882715'));
     if(op) localStorage.setItem('gstar_disp_banco', JSON.stringify({
@@ -473,7 +476,7 @@ const DATA = {
       transfer: op.transfer
     }));
   }catch(e){}
-})();
+}
 
 /* ===== LÓGICA (no se altera) ===== */
 const bancoUpd = r => r.balance + r.transito + r.transfer + r.pagos;
@@ -748,6 +751,56 @@ function switchView(v){
 }
 
 /* ====================================================================
+   CARGA DE CUENTAS BANCARIAS DESDE SUPABASE
+   Alimentado por DISPONIBILIDAD/captura-disponibilidad.html (Balance
+   Inicial + Movimientos + Cheques/Transferencias + Transferencias entre
+   Cuentas + Pagos de la Semana leído de CXP). Certificados no cambia.
+==================================================================== */
+const ACCOUNTS_META = {
+  operativa:    { cuenta:'Cuenta Operativa',       ref:'BR No. 9600882715' },
+  compensacion: { cuenta:'Cuenta de Compensación', ref:'BR No. 9605078497' }
+};
+
+async function kvGet(key){
+  if(!window.db) return null;
+  const { data, error } = await window.db.from('app_state').select('value').eq('key', key).single();
+  if(error || !data) return null;
+  return data.value;
+}
+
+async function loadBancosFromSupabase(){
+  try{
+    const balanceInicial = (await kvGet('disponibilidad_balance_inicial')) || {};
+    const cheques        = (await kvGet('disponibilidad_cheques_transferencias')) || [];
+    const transferencias = (await kvGet('disponibilidad_transferencias_entre_cuentas')) || [];
+    const solicitudes    = (await kvGet('cxp_solicitudes')) || [];
+    const activa = (Array.isArray(solicitudes) ? solicitudes : []).find(s => s.estado === 'Pendiente');
+    const pagosSemana = activa ? (activa.items||[]).reduce((s,i)=>s+(i.valor||0),0) : 0;
+
+    const rows = [];
+    for(const acc of ['operativa','compensacion']){
+      const mv = await kvGet('disponibilidad_movimientos_'+acc);
+      const movRows = (mv && mv.rows) || [];
+      movRows.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'') || (a._seq||0)-(b._seq||0));
+      let balance = (balanceInicial[acc] && balanceInicial[acc].balance) || 0;
+      movRows.forEach(r=>{ balance = balance + (r.credito||0) - (r.debito||0); });
+
+      const transito = -cheques.filter(c => c.cuenta===acc && c.estado==='Pendiente').reduce((s,c)=>s+c.monto,0);
+      const transfer = transferencias.reduce((s,t)=>{
+        if(t.destino===acc) return s+t.monto;
+        if(t.origen===acc)  return s-t.monto;
+        return s;
+      },0);
+      const pagos = acc==='operativa' ? -pagosSemana : 0;
+
+      rows.push({ cuenta:ACCOUNTS_META[acc].cuenta, ref:ACCOUNTS_META[acc].ref, tasa:null, balance, transito, transfer, pagos });
+    }
+    DATA.bancos.rows = rows;
+    publishBancoOperativo();
+  }catch(e){ console.error('loadBancosFromSupabase:', e); }
+}
+
+/* ====================================================================
    ORQUESTACIÓN
 ==================================================================== */
 function buildReport(){
@@ -765,9 +818,10 @@ function stampTime(){
     now.toLocaleDateString('es-DO',{day:'2-digit',month:'short'});
 }
 
-function refreshReport(){
+async function refreshReport(){
   const ico = document.getElementById('refreshIco');
   ico.classList.add('spin');
+  await loadBancosFromSupabase();
   buildReport(); stampTime();
   setTimeout(()=>{ ico.classList.remove('spin'); toast('Reporte actualizado'); }, 650);
 }
@@ -902,8 +956,11 @@ function exportPDF(){
 ==================================================================== */
 syncTheme();
 detectUser();
-buildReport();
-stampTime();
+(async function init(){
+  await loadBancosFromSupabase();
+  buildReport();
+  stampTime();
+})();
 </script>
 </body>
 </html>

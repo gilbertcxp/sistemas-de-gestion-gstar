@@ -231,6 +231,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <button class="sub-btn" data-page="reportes-erog"><span class="dot"></span> Reportes de Erogaciones</button>
       <button class="sub-btn" data-page="preconciliacion"><span class="dot"></span> Preconciliación</button>
       <button class="sub-btn" data-page="disponibilidad"><span class="dot"></span> Disponibilidad Bancaria</button>
+      <button class="sub-btn" data-page="captura-disponibilidad"><span class="dot"></span> Captura de Disponibilidad</button>
     </div>
 
     <button class="nav-btn" data-page="compensacion">
@@ -424,6 +425,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
+  <!-- ======= BANCO · CAPTURA DE DISPONIBILIDAD (alimenta el reporte anterior) ======= -->
+  <section class="page" id="page-captura-disponibilidad">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-captura-disponibilidad"
+              data-src="DISPONIBILIDAD/captura-disponibilidad.html"
+              title="Captura de Disponibilidad Bancaria"></iframe>
+    </div>
+  </section>
+
   <!-- ======= COMPENSACIÓN (app integrada) ======= -->
   <section class="page" id="page-compensacion">
     <iframe class="embed-frame" id="frame-compensacion"
@@ -505,6 +515,7 @@ const PAGES = {
   'reportes-erog':   {title:'Reportes de Erogaciones',   crumb:'Banco › Reportes de Erogaciones', sub:'banco'},
   'preconciliacion': {title:'Preconciliación',           crumb:'Banco › Preconciliación',         sub:'banco'},
   'disponibilidad':  {title:'Disponibilidad Bancaria',   crumb:'Banco › Disponibilidad Bancaria', sub:'banco'},
+  'captura-disponibilidad': {title:'Captura de Disponibilidad', crumb:'Banco › Captura de Disponibilidad', sub:'banco'},
   'compensacion':    {title:'Compensación',              crumb:'Compensación',                    sub:false},
   'cxc':             {title:'Cuentas por Cobrar',        crumb:'Cuentas por Cobrar',              sub:false},
   'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
@@ -552,6 +563,11 @@ function lazyLoadFrame(page){
   // Disponibilidad Bancaria
   if(page==='disponibilidad'){
     const f=document.getElementById('frame-disponibilidad');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Captura de Disponibilidad Bancaria
+  if(page==='captura-disponibilidad'){
+    const f=document.getElementById('frame-captura-disponibilidad');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // CXP · Carta de Retención
