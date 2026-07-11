@@ -732,7 +732,7 @@ function renderResumen(totBancos,totCert){
         ${excRow('Cantidad de certificados', certCount, 'count')}
         <div class="exc-row"><span class="exc-row-l">Fecha de actualización</span><span class="exc-row-v">${certFecha||'—'}</span></div>
       </div>
-      <div class="exc-total gold">
+      <div class="exc-total gold exc-total-clickable" ondblclick="switchView('detalle')" title="Doble clic para ver el detalle por cuenta">
         <span class="exc-total-l">Total Certificados</span>
         <span class="exc-total-v mono"><span class="cur">RD$</span>${fnum(totCert)}</span>
       </div>
