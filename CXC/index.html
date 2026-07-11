@@ -1668,12 +1668,15 @@ const CXC = (() => {
     }
   }
 
-  /* ---- Supabase persistence ---- */
+  /* ---- Supabase persistence ----
+     Controla quién ve la carga de archivo y el botón Publicar. Se permite
+     tanto a Administrador como a Cargador de Archivos (rol dedicado a subir
+     los estados bancarios/archivos del sistema). */
   function _isAdminUser() {
     try {
       const s = Auth.getSession();
-      const label = (s && s.user && s.user.role && s.user.role.label) || '';
-      return label.toLowerCase().includes('administrador');
+      const label = (s && s.user && s.user.role && s.user.role.label || '').toLowerCase();
+      return label.includes('administrador') || label.includes('cargador');
     } catch(e) { return false; }
   }
 
