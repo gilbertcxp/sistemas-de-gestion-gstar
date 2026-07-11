@@ -699,9 +699,9 @@ function renderResumen(totBancos,totCert){
       </div>
       <div class="exc-body">
         ${excRow('Balance de la cuenta', r.balance, 'neutral')}
-        ${excRow('Cheque en Tránsito', r.pagos)}
+        ${excRow('Cheque en Tránsito', r.transito)}
         ${excRow('Transferencias entre cuentas', r.transfer)}
-        ${excRow('Pagos pendientes de aprobación', r.transito)}
+        ${excRow('Pagos pendientes de aprobación', r.pagos)}
       </div>
       <div class="exc-total">
         <span class="exc-total-l">Total Disponible</span>
