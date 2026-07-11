@@ -231,7 +231,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <button class="sub-btn" data-page="reportes-erog"><span class="dot"></span> Reportes de Erogaciones</button>
       <button class="sub-btn" data-page="preconciliacion"><span class="dot"></span> Preconciliación</button>
       <button class="sub-btn" data-page="disponibilidad"><span class="dot"></span> Disponibilidad Bancaria</button>
-      <button class="sub-btn" data-page="captura-disponibilidad"><span class="dot"></span> Captura de Disponibilidad</button>
+      <!-- Solo visible para Administrador o Cargador de Archivos (ver renderSession) -->
+      <button class="sub-btn" id="navCapturaDisp" data-page="captura-disponibilidad" style="display:none"><span class="dot"></span> Captura de Disponibilidad</button>
     </div>
 
     <button class="nav-btn" data-page="compensacion">
@@ -691,10 +692,17 @@ function initials(name){
   document.getElementById('userAv').textContent   = ini;
   document.getElementById('userAvLg').textContent = ini;
 
+  var roleLc = role.toLowerCase();
+
   // Módulo Usuarios: solo visible para Administrador (rol leído de usuarios.rol)
-  if(role.toLowerCase().indexOf('administrador') !== -1){
+  if(roleLc.indexOf('administrador') !== -1){
     document.getElementById('navGroupAdmin').style.display = '';
     document.getElementById('navUsuarios').style.display   = '';
+  }
+
+  // Captura de Disponibilidad: solo visible para Administrador o Cargador de Archivos
+  if(roleLc.indexOf('administrador') !== -1 || roleLc.indexOf('cargador') !== -1){
+    document.getElementById('navCapturaDisp').style.display = '';
   }
 })();
 

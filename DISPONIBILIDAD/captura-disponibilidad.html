@@ -402,6 +402,16 @@ function isAdminUser(){
   try{ const s = Auth.getSession(); const label=(s&&s.user&&s.user.role&&s.user.role.label)||''; return label.toLowerCase().includes('administrador'); }
   catch(e){ return false; }
 }
+/* Acceso a TODO el módulo de captura: Administrador o Cargador de Archivos.
+   (isAdminUser() de arriba sigue siendo estricto — solo Administrador — y se
+   usa aparte para permitir editar el Balance Inicial ya bloqueado.) */
+function canAccessCaptura(){
+  try{
+    const s = Auth.getSession();
+    const label = (s && s.user && s.user.role && s.user.role.label || '').toLowerCase();
+    return label.includes('administrador') || label.includes('cargador');
+  }catch(e){ return false; }
+}
 function currentUserLabel(){
   try{ const s = Auth.getSession(); return (s&&s.user&&(s.user.email||s.user.name))||'—'; }catch(e){ return '—'; }
 }
@@ -859,7 +869,21 @@ function renderAll(){
   renderResumen();
 }
 
-reloadAll();
+/* ===== Guard: solo Administrador o Cargador de Archivos ===== */
+(function guardCaptura(){
+  if(canAccessCaptura()){
+    reloadAll();
+  } else {
+    const wrap = document.querySelector('.wrap');
+    if(wrap) wrap.style.display = 'none';
+    document.body.insertAdjacentHTML('beforeend', `
+      <div style="max-width:520px;margin:80px auto;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:40px 30px;box-shadow:var(--shadow)">
+        <i class="bi bi-shield-lock-fill" style="font-size:48px;color:var(--red);margin-bottom:14px;display:block"></i>
+        <h2 style="font-size:19px;margin-bottom:8px">Acceso restringido</h2>
+        <p style="font-size:13.5px;color:var(--ink-2)">Solo un Administrador o un Cargador de Archivos puede acceder a este módulo.</p>
+      </div>`);
+  }
+})();
 </script>
 </body>
 </html>
