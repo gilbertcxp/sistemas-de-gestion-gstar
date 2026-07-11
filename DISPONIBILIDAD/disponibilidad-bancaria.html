@@ -255,6 +255,8 @@ table.rep tfoot td:first-child{text-align:left}
 .exc-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;
   background:linear-gradient(135deg,var(--green),#0B8A5E);color:#fff}
 .exc-total.gold{background:linear-gradient(135deg,var(--gold),#A9741F)}
+.exc-total-clickable{cursor:pointer;transition:filter .15s}
+.exc-total-clickable:hover{filter:brightness(1.08)}
 .exc-total-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
 .exc-total-v{font-size:19px;font-weight:900}
 .exc-total-v .cur{font-size:11px;font-weight:600;opacity:.85;margin-right:3px;vertical-align:1px}
@@ -703,7 +705,7 @@ function renderResumen(totBancos,totCert){
         ${excRow('Transferencias entre cuentas', r.transfer)}
         ${excRow('Pagos pendientes de aprobación', r.pagos)}
       </div>
-      <div class="exc-total">
+      <div class="exc-total exc-total-clickable" ondblclick="switchView('detalle')" title="Doble clic para ver el detalle por cuenta">
         <span class="exc-total-l">Total Disponible</span>
         <span class="exc-total-v mono ${total<0?'neg':''}"><span class="cur">RD$</span>${fnum(total)}</span>
       </div>
