@@ -457,13 +457,10 @@ const DATA = {
     rows:[]
   },
   certificados:{
-    balanceLabel:'Balance al 26 Mayo 2026',
-    rows:[
-      {cuenta:'Certificado No. 9606708226', ref:'Act. 26 Julio 2026', tasa:0.0810, balance:3751951.71, intGan:0,        intTasa:25325.67, ret:-253.26},
-      {cuenta:'Certificado No. 9605150293', ref:'Act. 14 Junio 2026', tasa:0.0810, balance:8497085.72, intGan:0,        intTasa:56647.24, ret:-566.47},
-      {cuenta:'Certificado No. 9609347339', ref:'Act. 08 Julio 2026', tasa:0.0810, balance:8000000.00, intGan:0,        intTasa:54000.00, ret:-540.00},
-      {cuenta:'Fondos Inv. Quisqueya',      ref:'No. 113973',         tasa:0.0677, balance:2100000.00, intGan:69624.01, intTasa:0,        ret:0}
-    ]
+    balanceLabel:'Balance al día 26',
+    // Se completa en tiempo real desde Supabase (ver loadCertificadosFromSupabase) —
+    // alimentado por DISPONIBILIDAD/captura-disponibilidad.html
+    rows:[]
   }
 };
 
@@ -803,6 +800,31 @@ async function loadBancosFromSupabase(){
 }
 
 /* ====================================================================
+   CARGA DE CERTIFICADOS DESDE SUPABASE
+   Alimentado por DISPONIBILIDAD/captura-disponibilidad.html (un
+   registro por mes/año: tasa, balance al día 26, intereses ganados y
+   retención). Se muestra un renglón por cada mes/año registrado.
+==================================================================== */
+const CERT_MES_NOMBRES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function loadCertificadosFromSupabase(){
+  try{
+    const certs = (await kvGet('disponibilidad_certificados')) || [];
+    const sorted = [...certs].sort((a,b) => b.anio-a.anio || b.mes-a.mes);
+    DATA.certificados.balanceLabel = 'Balance al día 26';
+    DATA.certificados.rows = sorted.map(c => ({
+      cuenta: `Certificado — ${CERT_MES_NOMBRES[c.mes]||''} ${c.anio}`,
+      ref: 'Captura de Disponibilidad',
+      tasa: (Number(c.tasa)||0) / 100,
+      balance: Number(c.balance) || 0,
+      intGan: Number(c.interesesGanados) || 0,
+      intTasa: 0,
+      ret: -(Number(c.retencion) || 0)
+    }));
+  }catch(e){ console.error('loadCertificadosFromSupabase:', e); }
+}
+
+/* ====================================================================
    ORQUESTACIÓN
 ==================================================================== */
 function buildReport(){
@@ -823,7 +845,7 @@ function stampTime(){
 async function refreshReport(){
   const ico = document.getElementById('refreshIco');
   ico.classList.add('spin');
-  await loadBancosFromSupabase();
+  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase()]);
   buildReport(); stampTime();
   setTimeout(()=>{ ico.classList.remove('spin'); toast('Reporte actualizado'); }, 650);
 }
@@ -959,7 +981,7 @@ function exportPDF(){
 syncTheme();
 detectUser();
 (async function init(){
-  await loadBancosFromSupabase();
+  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase()]);
   buildReport();
   stampTime();
 })();

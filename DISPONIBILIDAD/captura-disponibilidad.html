@@ -218,6 +218,7 @@ table.t tbody tr:hover{background:var(--blue-lt)}
     <button class="tab-btn" data-tab="movimientos" onclick="switchTab('movimientos')"><i class="bi bi-cloud-upload-fill"></i> Carga de Movimiento Bancario</button>
     <button class="tab-btn" data-tab="cheques" onclick="switchTab('cheques')"><i class="bi bi-pencil-square"></i> Cheques y Transferencias</button>
     <button class="tab-btn" data-tab="transferencias" onclick="switchTab('transferencias')"><i class="bi bi-arrow-left-right"></i> Transferencias entre Cuentas</button>
+    <button class="tab-btn" data-tab="certificados" onclick="switchTab('certificados')"><i class="bi bi-patch-check-fill"></i> Certificados</button>
     <button class="tab-btn" data-tab="resumen" onclick="switchTab('resumen')"><i class="bi bi-grid-1x2-fill"></i> Resumen</button>
   </div>
 
@@ -305,6 +306,63 @@ table.t tbody tr:hover{background:var(--blue-lt)}
     </div>
   </div>
 
+  <!-- ============ TAB: CERTIFICADOS ============ -->
+  <div class="tab-panel" id="tab-certificados">
+    <div class="hint"><i class="bi bi-info-circle"></i> Un solo registro por mes y año. Si ya existe uno para el mes/año elegido, el formulario cambia a modo edición automáticamente.</div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-patch-check-fill"></i></div>
+        <div><div class="ttl" id="certFormTitle">Registrar Certificado</div><div class="sub" id="certFormSub">Balance al día 26 del mes correspondiente</div></div>
+      </div>
+      <div class="card-bd">
+        <input type="hidden" id="certEditId" value="">
+        <div class="frow">
+          <div class="ffield"><label>Mes</label>
+            <select class="fi" id="certMes" onchange="checkCertExisting()">
+              <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+              <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+              <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+              <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="ffield"><label>Año</label><select class="fi" id="certAnio" onchange="checkCertExisting()"></select></div>
+          <div class="ffield"><label>Tasa del Certificado (%)</label><input type="number" step="0.01" min="0" class="fi" id="certTasa" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="ffield"><label>Balance al día 26</label><input type="number" step="0.01" min="0" class="fi" id="certBalance" placeholder="0.00"></div>
+          <div class="ffield"><label>Intereses Ganados</label><input type="number" step="0.01" min="0" class="fi" id="certIntereses" placeholder="0.00"></div>
+          <div class="ffield"><label>Retención de Intereses</label><input type="number" step="0.01" min="0" class="fi" id="certRetencion" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="ffield" style="flex:0"><button class="btn btn-s" id="certCancelBtn" style="display:none" onclick="cancelCertEdit()"><i class="bi bi-x-circle"></i> Cancelar edición</button></div>
+          <div class="ffield" style="flex:0"><button class="btn btn-p" id="certSaveBtn" onclick="saveCertificado()"><i class="bi bi-check2"></i> Registrar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-list-ul"></i></div>
+        <div><div class="ttl">Historial de Certificados</div><div class="sub" id="certHistSub">0 registros</div></div>
+      </div>
+      <div class="card-bd" style="padding-bottom:0">
+        <div class="frow">
+          <div class="ffield"><label>Filtrar por Mes</label>
+            <select class="fi" id="certFiltroMes" onchange="renderCertTable()">
+              <option value="">Todos los meses</option>
+              <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+              <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+              <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+              <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="ffield"><label>Filtrar por Año</label><select class="fi" id="certFiltroAnio" onchange="renderCertTable()"><option value="">Todos los años</option></select></div>
+          <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-s" onclick="clearCertFiltros()"><i class="bi bi-x-circle"></i> Limpiar</button></div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="t" id="certTable"></table></div>
+    </div>
+  </div>
+
   <!-- ============ TAB: RESUMEN ============ -->
   <div class="tab-panel" id="tab-resumen">
     <div class="hint"><i class="bi bi-info-circle"></i> Estos son los valores que verá el Dashboard de Disponibilidad Bancaria para cada cuenta.</div>
@@ -350,12 +408,16 @@ const CAP = {
   fileName:       { operativa:'',  compensacion:'' },
   cheques:        [],
   transferencias: [],
+  certificados:   [],
   pagosSemana:    0,
   isAdmin:        false
 };
 
+const MES_NOMBRES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 let _movAccount = 'operativa';
 let _uploadStaging = null; // { account, raw, headers }
+let _certEditId = null;
 
 /* ══════════════════════════════════════════════════════════════
    HELPERS
@@ -459,6 +521,7 @@ async function reloadAll(){
 
     CAP.cheques        = (await kvGet('disponibilidad_cheques_transferencias')) || [];
     CAP.transferencias = (await kvGet('disponibilidad_transferencias_entre_cuentas')) || [];
+    CAP.certificados   = (await kvGet('disponibilidad_certificados')) || [];
 
     // Pagos de la Semana ← CXP, Solicitud de Pago Pendiente (Monto a Pagar)
     const solicitudes = (await kvGet('cxp_solicitudes')) || [];
@@ -851,6 +914,180 @@ async function deleteTransferencia(id){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   CERTIFICADOS — un registro por mes/año, alimenta la sección
+   "Certificados" del Dashboard de Disponibilidad Bancaria.
+══════════════════════════════════════════════════════════════ */
+function _populateCertAnioSelects(){
+  const y = new Date().getFullYear();
+  const years = [];
+  for(let i=y+1; i>=y-4; i--) years.push(i);
+  const opts = years.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const anio = document.getElementById('certAnio');
+  if(anio && !anio.dataset.filled){ anio.innerHTML = opts; anio.value = String(y); anio.dataset.filled = '1'; }
+  const filtro = document.getElementById('certFiltroAnio');
+  if(filtro && !filtro.dataset.filled){ filtro.innerHTML = '<option value="">Todos los años</option>' + opts; filtro.dataset.filled = '1'; }
+}
+
+function _findCert(mes, anio){
+  return CAP.certificados.find(c => Number(c.mes)===Number(mes) && Number(c.anio)===Number(anio));
+}
+
+// Al elegir mes/año en el formulario: si ya existe un registro, lo carga en
+// modo edición (no se puede crear un duplicado para el mismo mes/año).
+function checkCertExisting(){
+  if(_certEditId) return; // ya se está editando explícitamente vía botón Editar
+  const mes  = document.getElementById('certMes').value;
+  const anio = document.getElementById('certAnio').value;
+  const existing = _findCert(mes, anio);
+  if(existing){
+    _fillCertForm(existing, true);
+  } else {
+    document.getElementById('certTasa').value = '';
+    document.getElementById('certBalance').value = '';
+    document.getElementById('certIntereses').value = '';
+    document.getElementById('certRetencion').value = '';
+    document.getElementById('certFormTitle').textContent = 'Registrar Certificado';
+    document.getElementById('certSaveBtn').innerHTML = '<i class="bi bi-check2"></i> Registrar';
+    document.getElementById('certCancelBtn').style.display = 'none';
+    document.getElementById('certEditId').value = '';
+  }
+}
+
+function _fillCertForm(rec, lockedByExisting){
+  _certEditId = lockedByExisting ? null : rec.id;
+  document.getElementById('certEditId').value  = rec.id;
+  document.getElementById('certMes').value     = rec.mes;
+  document.getElementById('certAnio').value    = rec.anio;
+  document.getElementById('certTasa').value    = rec.tasa;
+  document.getElementById('certBalance').value = rec.balance;
+  document.getElementById('certIntereses').value = rec.interesesGanados;
+  document.getElementById('certRetencion').value = rec.retencion;
+  document.getElementById('certFormTitle').textContent = `Editando: ${MES_NOMBRES[rec.mes]} ${rec.anio}`;
+  document.getElementById('certSaveBtn').innerHTML = '<i class="bi bi-check2"></i> Actualizar';
+  document.getElementById('certCancelBtn').style.display = '';
+}
+
+function editCertificado(id){
+  const rec = CAP.certificados.find(c=>c.id===id);
+  if(!rec) return;
+  _fillCertForm(rec, false);
+  document.querySelector('[data-tab="certificados"]').scrollIntoView({behavior:'smooth', block:'nearest'});
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function cancelCertEdit(){
+  _certEditId = null;
+  document.getElementById('certEditId').value = '';
+  document.getElementById('certTasa').value = '';
+  document.getElementById('certBalance').value = '';
+  document.getElementById('certIntereses').value = '';
+  document.getElementById('certRetencion').value = '';
+  document.getElementById('certFormTitle').textContent = 'Registrar Certificado';
+  document.getElementById('certSaveBtn').innerHTML = '<i class="bi bi-check2"></i> Registrar';
+  document.getElementById('certCancelBtn').style.display = 'none';
+  checkCertExisting();
+}
+
+async function saveCertificado(){
+  const mes    = parseInt(document.getElementById('certMes').value, 10);
+  const anio   = parseInt(document.getElementById('certAnio').value, 10);
+  const tasa   = parseFloat(document.getElementById('certTasa').value);
+  const balance = parseFloat(document.getElementById('certBalance').value);
+  const intereses = parseFloat(document.getElementById('certIntereses').value);
+  const retencion  = parseFloat(document.getElementById('certRetencion').value);
+  const editId = document.getElementById('certEditId').value || _certEditId;
+
+  if(!mes || !anio){ toast('Selecciona mes y año', true); return; }
+  if(isNaN(tasa) || isNaN(balance) || isNaN(intereses) || isNaN(retencion)){
+    toast('Todos los campos son obligatorios', true); return;
+  }
+  if(tasa<0 || balance<0 || intereses<0 || retencion<0){
+    toast('Ningún valor puede ser negativo', true); return;
+  }
+
+  const existing = _findCert(mes, anio);
+  if(existing && existing.id !== editId){
+    toast(`Ya existe un registro para ${MES_NOMBRES[mes]} ${anio}. Edítalo desde la tabla.`, true);
+    return;
+  }
+
+  showSp();
+  try{
+    const now = new Date().toISOString();
+    if(existing){
+      existing.tasa = tasa; existing.balance = balance;
+      existing.interesesGanados = intereses; existing.retencion = retencion;
+      existing.updatedAt = now; existing.updatedBy = currentUserLabel();
+    } else {
+      CAP.certificados.push({
+        id: uid('cert'), mes, anio, tasa, balance,
+        interesesGanados: intereses, retencion,
+        createdAt: now, createdBy: currentUserLabel(),
+        updatedAt: now, updatedBy: currentUserLabel()
+      });
+    }
+    await kvSet('disponibilidad_certificados', CAP.certificados);
+    cancelCertEdit();
+    renderAll();
+    toast(existing ? 'Certificado actualizado' : 'Certificado registrado');
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
+  hideSp();
+}
+
+function clearCertFiltros(){
+  document.getElementById('certFiltroMes').value = '';
+  document.getElementById('certFiltroAnio').value = '';
+  renderCertTable();
+}
+
+function renderCertTable(){
+  const fMes  = document.getElementById('certFiltroMes')?.value || '';
+  const fAnio = document.getElementById('certFiltroAnio')?.value || '';
+  let rows = [...CAP.certificados];
+  if(fMes)  rows = rows.filter(r => Number(r.mes)===Number(fMes));
+  if(fAnio) rows = rows.filter(r => Number(r.anio)===Number(fAnio));
+  rows.sort((a,b) => b.anio-a.anio || b.mes-a.mes);
+
+  document.getElementById('certHistSub').textContent = rows.length + ' registro(s)';
+  const tbl = document.getElementById('certTable');
+  if(!rows.length){
+    tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin certificados registrados</div></div></td></tr></tbody>`;
+    return;
+  }
+  const fmtDate = iso => { try{ return new Date(iso).toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return '—'; } };
+  tbl.innerHTML = `<thead><tr>
+      <th class="l">Mes</th><th class="l">Año</th><th>Tasa</th><th>Balance al 26</th><th>Intereses Ganados</th><th>Retención</th>
+      <th class="l">Creado</th><th class="l">Última Modificación</th><th></th>
+    </tr></thead>
+    <tbody>${rows.map(r=>`
+      <tr>
+        <td class="l">${MES_NOMBRES[r.mes]}</td>
+        <td class="l">${r.anio}</td>
+        <td class="mono">${(r.tasa||0).toFixed(2)}%</td>
+        <td class="mono" style="font-weight:700">RD$ ${fnum(r.balance)}</td>
+        <td class="mono">RD$ ${fnum(r.interesesGanados)}</td>
+        <td class="mono">RD$ ${fnum(r.retencion)}</td>
+        <td class="l">${fmtDate(r.createdAt)}</td>
+        <td class="l">${fmtDate(r.updatedAt)}</td>
+        <td><button class="btn btn-s btn-sm" onclick="editCertificado('${r.id}')"><i class="bi bi-pencil"></i> Editar</button></td>
+      </tr>`).join('')}</tbody>`;
+}
+
+function renderCertTab(){
+  _populateCertAnioSelects();
+  const anioSel = document.getElementById('certFiltroAnio');
+  if(anioSel){
+    const existingYears = [...new Set(CAP.certificados.map(c=>c.anio))].sort((a,b)=>b-a);
+    existingYears.forEach(y=>{
+      if(![...anioSel.options].some(o=>o.value===String(y))){
+        anioSel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+      }
+    });
+  }
+  renderCertTable();
+}
+
+/* ══════════════════════════════════════════════════════════════
    RESUMEN — valores que consumirá el Dashboard
 ══════════════════════════════════════════════════════════════ */
 function getResumenCuenta(acc){
@@ -895,6 +1132,7 @@ function renderAll(){
   renderMovTab();
   renderChTab();
   renderTeTab();
+  renderCertTab();
   renderResumen();
 }
 
