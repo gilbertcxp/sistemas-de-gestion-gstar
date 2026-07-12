@@ -782,7 +782,7 @@ async function loadBancosFromSupabase(){
       movRows.forEach(r=>{ balance = balance + (r.credito||0) - (r.debito||0); });
 
       const transito = -cheques.filter(c => c.cuenta===acc && c.estado==='Pendiente').reduce((s,c)=>s+c.monto,0);
-      const transfer = transferencias.reduce((s,t)=>{
+      const transfer = transferencias.filter(t=>(t.estado||'Pendiente')==='Pendiente').reduce((s,t)=>{
         if(t.destino===acc) return s+t.monto;
         if(t.origen===acc)  return s-t.monto;
         return s;

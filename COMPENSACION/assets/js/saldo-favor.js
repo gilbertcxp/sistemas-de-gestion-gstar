@@ -2,8 +2,10 @@
    SaldoFavor — Saldo a Favor de Compensación
    Estado de cuenta automático (sin registro manual): un movimiento
    por cada corte pagado en Solicitud de Pago (fc_solicitudes con
-   estado 'Aplicada') y uno por cada Transferencia Propia registrada
-   en Disponibilidad Bancaria (Compensación → Operativa).
+   estado 'Aplicada') y uno por cada Transferencia Propia Aplicada
+   (no solo registrada) en Disponibilidad Bancaria → Transferencias
+   entre Cuentas (Compensación → Operativa). Mientras una transferencia
+   esté "Pendiente" no afecta este saldo.
    El saldo se recalcula siempre desde cero, en orden cronológico,
    por lo que cualquier cambio en las fuentes se refleja solo con
    volver a renderizar — no hay estado intermedio que mantener.
@@ -37,14 +39,16 @@ const SaldoFavor = (() => {
       });
 
     transferencias
-      .filter(t => t.origen === 'compensacion' && t.destino === 'operativa')
+      // Solo cuenta como Transferencia Propia una vez Aplicada en Disponibilidad Bancaria
+      // (Transferencias entre Cuentas → Aplicar Transferencia). Mientras esté Pendiente no afecta el saldo.
+      .filter(t => t.origen === 'compensacion' && t.destino === 'operativa' && t.estado === 'Aplicada')
       .forEach(t => {
         const monto = Number(t.monto) || 0;
         if(monto <= 0) return;
         movs.push({
           id: 'tr_' + t.id,
           fecha: t.fecha,
-          orden: Date.parse(t.registradoEn) || 0,
+          orden: Date.parse(t.aplicadaEn || t.registradoEn) || 0,
           transferencia: monto,
           pago: 0,
           ref: t.observacion ? t.observacion : 'Transferencia a Cuenta Operativa'

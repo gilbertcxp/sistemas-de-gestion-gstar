@@ -896,15 +896,24 @@ function renderTeTab(){
   document.getElementById('teHistSub').textContent = rows.length+' registro(s)';
   const tbl = document.getElementById('teTable');
   if(!rows.length){ tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin transferencias entre cuentas registradas</div></div></td></tr></tbody>`; return; }
-  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Origen</th><th class="l">Destino</th><th>Monto</th><th class="l">Observación</th><th></th></tr></thead>
-    <tbody>${rows.map(r=>`<tr>
+  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Origen</th><th class="l">Destino</th><th>Monto</th><th class="l">Observación</th><th class="l">Estado</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const estado = r.estado || 'Pendiente';
+      const aplicadaInfo = estado==='Aplicada' ? `<div class="m" style="font-size:10.5px;margin-top:2px">${esc(r.aplicadaPor||'')} · ${r.aplicadaEn ? new Date(r.aplicadaEn).toLocaleString('es-DO') : ''}</div>` : '';
+      return `<tr>
       <td class="l">${esc(r.fecha)}</td>
       <td class="l"><span class="pill ${r.origen==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.origen]}</span></td>
       <td class="l"><span class="pill ${r.destino==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.destino]}</span></td>
       <td class="mono" style="font-weight:700">${fnum(r.monto)}</td>
       <td class="l">${esc(r.observacion)||'—'}</td>
-      <td><button class="btn btn-s btn-sm" onclick="deleteTransferencia('${r.id}')" title="Eliminar"><i class="bi bi-trash"></i></button></td>
-    </tr>`).join('')}</tbody>`;
+      <td class="l"><span class="pill ${estado==='Aplicada'?'pill-ok':'pill-pend'}">${estado}</span>${aplicadaInfo}</td>
+      <td>
+        ${estado==='Pendiente'
+          ? `<button class="btn btn-s btn-sm" onclick="toggleTransferenciaEstado('${r.id}')" title="Aplicar transferencia"><i class="bi bi-check2"></i></button>`
+          : `<button class="btn btn-s btn-sm" onclick="toggleTransferenciaEstado('${r.id}')" title="Revertir a pendiente"><i class="bi bi-arrow-counterclockwise"></i></button>`}
+        <button class="btn btn-s btn-sm" onclick="deleteTransferencia('${r.id}')" title="Eliminar"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`;}).join('')}</tbody>`;
 }
 
 async function addTransferenciaEntreCuentas(){
@@ -917,11 +926,31 @@ async function addTransferenciaEntreCuentas(){
   if(!monto || monto<=0){ toast('El monto debe ser mayor a 0', true); return; }
   showSp();
   try{
-    CAP.transferencias.push({ id:uid('te'), fecha, origen, destino, monto, observacion:obs, registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
+    CAP.transferencias.push({ id:uid('te'), fecha, origen, destino, monto, observacion:obs, estado:'Pendiente', registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
     await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
     ['teMonto','teObs'].forEach(id=>document.getElementById(id).value='');
     renderAll();
     toast('Transferencia registrada');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+async function toggleTransferenciaEstado(id){
+  showSp();
+  try{
+    const r = CAP.transferencias.find(x=>x.id===id); if(!r) return;
+    const estadoActual = r.estado || 'Pendiente';
+    if(estadoActual === 'Pendiente'){
+      r.estado = 'Aplicada';
+      r.aplicadaEn = new Date().toISOString();
+      r.aplicadaPor = currentUserLabel();
+    } else {
+      r.estado = 'Pendiente';
+      r.aplicadaEn = null;
+      r.aplicadaPor = null;
+    }
+    await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
+    renderAll();
+    toast(r.estado==='Aplicada' ? 'Transferencia aplicada' : 'Transferencia revertida a pendiente');
   }catch(e){ toast('Error: '+e.message, true); }
   hideSp();
 }
@@ -1178,7 +1207,7 @@ function renderCertTab(){
 function getResumenCuenta(acc){
   const balance = getBalanceActual(acc);
   const transito = -CAP.cheques.filter(c=>c.cuenta===acc && c.estado==='Pendiente').reduce((s,c)=>s+c.monto,0);
-  const transfer = CAP.transferencias.reduce((s,t)=>{
+  const transfer = CAP.transferencias.filter(t=>(t.estado||'Pendiente')==='Pendiente').reduce((s,t)=>{
     if(t.destino===acc) return s + t.monto;
     if(t.origen===acc)  return s - t.monto;
     return s;
