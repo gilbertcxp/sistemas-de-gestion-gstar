@@ -79,7 +79,8 @@ const App = (() => {
     window.scrollTo({top:0});
   }
 
-  function syncRerender(){
+  async function syncRerender(key){
+    if(key === 'cxp_aging_data'){ await DataModule.syncFijosFromAging(); }
     const active = document.querySelector('.view.active');
     if(!active || !active.id.startsWith('view-')) return;
     DataModule.load();
@@ -157,14 +158,20 @@ const App = (() => {
 
     document.getElementById('btnConfirmOk').addEventListener('click', UI.runConfirm);
 
-    // ---- Importar Excel ----
+    // ---- Importar Excel de Pagos Provisionales ----
     const fileInput = document.getElementById('cxpFileInput');
     if(fileInput){
       fileInput.addEventListener('change', () => {
         const f = fileInput.files[0];
         if(!f) return;
-        DataModule.importFile(f)
-          .then(r => { UI.toast(`${r.added} nueva(s), ${r.updated} actualizada(s) — total ${r.total}`, 'ok'); DataModule.render(); })
+        DataModule.importProvisionalFile(f)
+          .then(r => {
+            UI.toast(`${r.added} nueva(s), ${r.updated} actualizada(s) — total ${r.total}`, 'ok');
+            if(r.errors && r.errors.length){
+              UI.confirm('Filas con errores', `${r.errors.length} fila(s) no se importaron: ` + r.errors.slice(0,15).join(' · ') + (r.errors.length>15?` … y ${r.errors.length-15} más.`:''), () => {});
+            }
+            DataModule.render();
+          })
           .catch(e => UI.toast(e.message, 'err'))
           .finally(() => { fileInput.value=''; });
       });
@@ -229,10 +236,11 @@ const App = (() => {
     Storage.init();
     if(window.Sync){
       try{ await Sync.pull(); }catch(e){ console.warn('Sync.pull falló, se usa data local', e); }
+      try{ await DataModule.syncFijosFromAging(); }catch(e){ console.warn('Sync de Pagos Fijos falló, se usa data local', e); }
     }
     wire();
     DataModule.render();
-    if(window.Sync){ Sync.subscribeRealtime(() => syncRerender()); }
+    if(window.Sync){ Sync.subscribeRealtime(key => syncRerender(key)); }
   }
 
   return { init, switchView, generarSolicitud, publishAll };

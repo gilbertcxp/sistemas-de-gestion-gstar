@@ -132,13 +132,13 @@
         </div>
         <div class="topbar-actions">
           <input type="file" id="cxpFileInput" accept=".xlsx,.xls" style="display:none">
-          <button class="btn btn-soft" onclick="DataModule.abrirModalAgregarCXP()" title="Agregar factura manualmente">
+          <button class="btn btn-soft" onclick="DataModule.abrirModalAgregarProvision()" title="Agregar pago provisional manualmente">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Agregar factura
+            Agregar Provisión
           </button>
-          <button class="btn btn-accent" onclick="document.getElementById('cxpFileInput').click()">
+          <button class="btn btn-accent" onclick="document.getElementById('cxpFileInput').click()" title="Importar Excel de Pagos Provisionales">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-            Importar Excel
+            Importar Provisionales
           </button>
         </div>
       </div>
@@ -211,13 +211,14 @@
                   <th class="r" data-sort="saldoPendiente">Pendiente<span class="sort-ic"></span></th>
                   <th class="c" data-sort="diasVencimiento">Días<span class="sort-ic"></span></th>
                   <th class="c">Estado</th>
+                  <th class="c">Tipo Pago</th>
                   <th class="c">Acción</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="11"><div class="t-empty">
+                <tr><td colspan="12"><div class="t-empty">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
-                  <div>Importa el Excel de Cuentas por Pagar para ver los datos aquí.</div>
+                  <div>Aún no hay datos. Los Pagos Fijos se sincronizan automáticamente desde Antigüedad de Saldo, o importa/agrega Pagos Provisionales.</div>
                 </div></td></tr>
               </tbody>
             </table>
@@ -391,14 +392,15 @@
   </div>
 </div>
 
-<!-- ===================== MODAL: AGREGAR FACTURA AL REPORTE ===================== -->
+<!-- ===================== MODAL: AGREGAR PROVISIÓN AL REPORTE ===================== -->
 <div class="modal-overlay" id="modalAgregarCXP">
   <div class="modal" style="max-width:520px;width:95vw">
     <div class="modal-head">
-      <h3>Agregar factura</h3>
+      <h3>Agregar Provisión</h3>
       <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAgregarCXP')">✕</button>
     </div>
     <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <p class="hint" style="margin:0;">Para pagos que no provienen de la Antigüedad de Saldo: nómina, viáticos, incentivos, personas físicas, extraordinarios, etc.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="field" style="grid-column:1/-1">
           <label class="f-label">Suplidor <span style="color:var(--brand-red)">*</span></label>
@@ -406,7 +408,7 @@
             onkeydown="if(event.key==='Enter')document.getElementById('cxpMiFactura').focus()">
         </div>
         <div class="field">
-          <label class="f-label">N° Factura</label>
+          <label class="f-label">N° Factura o Referencia</label>
           <input type="text" class="input" id="cxpMiFactura" placeholder="Ej: F-001"
             onkeydown="if(event.key==='Enter')document.getElementById('cxpMiDetalle').focus()">
         </div>
@@ -418,8 +420,8 @@
           </select>
         </div>
         <div class="field" style="grid-column:1/-1">
-          <label class="f-label">Concepto / Detalle <span style="color:var(--brand-red)">*</span></label>
-          <input type="text" class="input" id="cxpMiDetalle" placeholder="Descripción de la factura"
+          <label class="f-label">Concepto <span style="color:var(--brand-red)">*</span></label>
+          <input type="text" class="input" id="cxpMiDetalle" placeholder="Descripción del pago"
             onkeydown="if(event.key==='Enter')document.getElementById('cxpMiMonto').focus()">
         </div>
         <div class="field">
@@ -428,26 +430,23 @@
             onkeydown="if(event.key==='Enter')document.getElementById('cxpMiFecha').focus()">
         </div>
         <div class="field">
-          <label class="f-label">Estado</label>
-          <select class="input" id="cxpMiEstado">
-            <option value="Pendiente">Pendiente</option>
-            <option value="Pagar">Pagar</option>
-          </select>
-        </div>
-        <div class="field">
           <label class="f-label">Fecha de Factura</label>
           <input type="date" class="input" id="cxpMiFecha">
         </div>
         <div class="field">
           <label class="f-label">Fecha de Vencimiento</label>
-          <input type="date" class="input" id="cxpMiVencimiento"
-            onkeydown="if(event.key==='Enter')DataModule.submitAgregarCXP()">
+          <input type="date" class="input" id="cxpMiVencimiento">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label class="f-label">Observaciones</label>
+          <input type="text" class="input" id="cxpMiObservaciones" placeholder="Opcional"
+            onkeydown="if(event.key==='Enter')DataModule.submitAgregarProvision()">
         </div>
       </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalAgregarCXP')">Cancelar</button>
-      <button class="btn btn-primary" onclick="DataModule.submitAgregarCXP()">
+      <button class="btn btn-primary" onclick="DataModule.submitAgregarProvision()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Agregar
       </button>

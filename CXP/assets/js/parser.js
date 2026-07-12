@@ -1,7 +1,6 @@
 /* ============================================================
-   Parser — importa el Excel de Cuentas por Pagar
-   Busca una hoja con cabecera: Proveedor, Número de Factura,
-   Monto Total / Saldo Pendiente, Estado (formato "Detalle CXP")
+   Parser — construye los Pagos Fijos desde la Antigüedad de Saldo
+   e importa el Excel de Pagos Provisionales del Reporte de CXP.
    ============================================================ */
 const Parser = (() => {
 
@@ -29,13 +28,6 @@ const Parser = (() => {
     return isNaN(n) ? 0 : n;
   }
 
-  function _normEstado(val){
-    const v = Utils.normalize(val);
-    if(v === 'PAGADA') return 'Pagada';
-    if(v === 'PAGAR') return 'Pagar';
-    return 'Pendiente';
-  }
-
   function _normMoneda(val){
     const v = String(val||'').trim().toUpperCase();
     return v.includes('US') ? 'US$' : 'RD$';
@@ -46,106 +38,157 @@ const Parser = (() => {
     return [Utils.normalize(r.proveedor), Utils.normalize(r.numeroFactura), r.fecha, r.montoTotal].join('|');
   }
 
-  // Exige Proveedor/Suplidor + Estado + (Saldo Pendiente o Monto Total): evita
-  // confundir la hoja de detalle con otras hojas de proyección que también
-  // mencionan "suplidor" y "monto" pero no son el reporte de CXP por factura.
-  function _findHeaderRow(aoa){
+  // Hash corto y determinístico (para IDs estables de Pagos Fijos entre sincronizaciones)
+  function _hash32(str){
+    let h = 0;
+    for(let i = 0; i < str.length; i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+    return h.toString(36);
+  }
+
+  /* ============================================================
+     Pagos Fijos — construidos a partir de la Antigüedad de Saldo
+     (Supabase app_state, key 'cxp_aging_data', publicada desde
+     CXP/antiguedad-cxp.html). Un registro por factura, no por
+     proveedor. IDs determinísticos para que la sincronización
+     no duplique registros ni pierda el Estado editado localmente.
+     ============================================================ */
+  function buildFijosFromAging(agingValue){
+    const rows = [];
+    if(!agingValue || !Array.isArray(agingValue.allRows)) return rows;
+    agingValue.allRows.forEach(prov => {
+      (prov.invoices || []).forEach(inv => {
+        const monto = Math.abs(Number(inv.deuda) || 0);
+        if(monto < 0.005) return; // sin saldo pendiente, no aplica al reporte
+        const fecha = _excelDateToISO(inv.fecha) || '';
+        const fechaVencimiento = _excelDateToISO(inv.vence) || fecha;
+        const numeroFactura = String(inv.idDoc || inv.noFactura || '').trim();
+        const key = ['FIJO', Utils.normalize(prov.name), Utils.normalize(numeroFactura), fecha].join('|');
+        rows.push({
+          id: 'fijo_' + _hash32(key),
+          tipoPago: 'Fijo',
+          empresa: 'Gstar Services',
+          fecha,
+          mes: 0, año: 0,
+          proveedor: prov.name,
+          rnc: '',
+          comprobanteFiscal: inv.noFactura ? String(inv.noFactura).trim() : '',
+          numeroFactura,
+          fechaVencimiento,
+          moneda: 'RD$',
+          montoTotal: monto,
+          montoPagado: 0,
+          saldoPendiente: monto,
+          estado: 'Pendiente',
+          detalle: inv.descripcion ? String(inv.descripcion).trim() : '',
+          tipoGasto: '',
+          observaciones: ''
+        });
+      });
+    });
+    return rows;
+  }
+
+  /* ============================================================
+     Pagos Provisionales — importación de Excel
+     Columnas mínimas: Suplidor, No. Factura/Referencia, Fecha de
+     Factura, Fecha de Vencimiento, Concepto, Moneda, Monto.
+     No exige columna Estado (siempre entra como 'Pendiente').
+     ============================================================ */
+  function _findProvisionalHeaderRow(aoa){
     for(let r = 0; r < Math.min(aoa.length, 20); r++){
       const row = aoa[r].map(c => Utils.normalize(String(c||'')));
       const hasProveedor = row.some(c => c === 'PROVEEDOR' || c === 'SUPLIDOR');
-      const hasEstado    = row.some(c => c === 'ESTADO');
-      const hasMontoKey  = row.some(c => c === 'MONTO TOTAL' || c === 'SALDO PENDIENTE' || c === 'PENDIENTE' || c === 'MONTO');
-      if(hasProveedor && hasEstado && hasMontoKey) return r;
+      const hasMonto = row.some(c => c === 'MONTO' || c === 'MONTO TOTAL' || c === 'VALOR');
+      if(hasProveedor && hasMonto) return r;
     }
     return -1;
   }
 
-  function _mapColumns(headerRow){
+  function _mapProvisionalColumns(headerRow){
     const colMap = {};
     headerRow.forEach((raw, i) => {
       const h = Utils.normalize(String(raw||''));
-      if(h === 'FECHA DE FACTURA' || h === 'FECHA FACTURA')        colMap.fecha = i;
-      else if(h === 'PROVEEDOR' || h === 'SUPLIDOR')               colMap.proveedor = i;
-      else if(h === 'RNC')                                         colMap.rnc = i;
-      else if(h.startsWith('COMPROBANTE'))                         colMap.comprobanteFiscal = i;
-      else if(h.startsWith('NUMERO DE FACTURA') || h === 'FACTURA' || h === 'NO FACTURA') colMap.numeroFactura = i;
+      if(h === 'PROVEEDOR' || h === 'SUPLIDOR')                     colMap.proveedor = i;
+      else if(h.startsWith('NUMERO DE FACTURA') || h.startsWith('REFERENCIA') ||
+              h === 'FACTURA' || h === 'NO FACTURA' || h === 'NO FACTURA O REFERENCIA') colMap.numeroFactura = i;
+      else if(h === 'FECHA DE FACTURA' || h === 'FECHA FACTURA' || h === 'FECHA') colMap.fecha = i;
       else if(h.startsWith('FECHA DE VENCIMIENTO') || h === 'VENCIMIENTO') colMap.fechaVencimiento = i;
-      else if(h === 'MONEDA')                                      colMap.moneda = i;
-      else if(h === 'MONTO TOTAL' || h === 'MONTO')                colMap.montoTotal = i;
-      else if(h === 'MONTO PAGADO')                                colMap.montoPagado = i;
-      else if(h === 'SALDO PENDIENTE' || h === 'PENDIENTE')        colMap.saldoPendiente = i;
-      else if(h === 'ESTADO')                                      colMap.estado = i;
-      else if(h === 'DETALLE' || h === 'CONCEPTO')                 colMap.detalle = i;
-      else if(h.startsWith('TIPO DE GASTO'))                       colMap.tipoGasto = i;
+      else if(h === 'CONCEPTO' || h === 'DETALLE')                  colMap.detalle = i;
+      else if(h === 'MONEDA')                                       colMap.moneda = i;
+      else if(h === 'MONTO' || h === 'MONTO TOTAL' || h === 'VALOR') colMap.montoTotal = i;
     });
     return colMap;
   }
 
-  function parseWorkbook(wb){
-    let best = null;
-    // Prioriza hojas tipo "Detalle CXP" si existen, antes que otras hojas de proyección
-    const ordered = [...wb.SheetNames].sort((a,b) => {
-      const score = n => /CXP/i.test(n) ? 0 : 1;
-      return score(a) - score(b);
-    });
-    for(const sn of ordered){
-      const ws = wb.Sheets[sn];
+  function parseProvisionalWorkbook(wb){
+    let headerIdx = -1, colMap = null, sheetName = null, aoaUsed = null;
+    for(const name of wb.SheetNames){
+      const ws = wb.Sheets[name];
       const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
-      const headerIdx = _findHeaderRow(aoa);
-      if(headerIdx === -1) continue;
-      const colMap = _mapColumns(aoa[headerIdx]);
-      if(colMap.proveedor === undefined) continue;
-
-      const rows = [];
-      for(let r = headerIdx + 1; r < aoa.length; r++){
-        const row = aoa[r];
-        const proveedor = String(row[colMap.proveedor]||'').trim();
-        if(!proveedor) continue;
-        const montoTotal     = colMap.montoTotal !== undefined ? _parseNum(row[colMap.montoTotal]) : 0;
-        const montoPagado    = colMap.montoPagado !== undefined ? _parseNum(row[colMap.montoPagado]) : 0;
-        const saldoPendiente = colMap.saldoPendiente !== undefined ? _parseNum(row[colMap.saldoPendiente]) : (montoTotal - montoPagado);
-        const fecha = colMap.fecha !== undefined ? _excelDateToISO(row[colMap.fecha]) : '';
-        const d = fecha ? Utils.parseISODate(fecha) : null;
-
-        rows.push({
-          id: Utils.uid('cxp'),
-          empresa: 'Gstar Services',
-          fecha,
-          mes: d ? d.getMonth()+1 : 0,
-          año: d ? d.getFullYear() : 0,
-          proveedor,
-          rnc: colMap.rnc !== undefined ? String(row[colMap.rnc]||'').trim() : '',
-          comprobanteFiscal: colMap.comprobanteFiscal !== undefined ? String(row[colMap.comprobanteFiscal]||'').trim() : '',
-          numeroFactura: colMap.numeroFactura !== undefined ? String(row[colMap.numeroFactura]||'').trim() : '',
-          fechaVencimiento: colMap.fechaVencimiento !== undefined ? _excelDateToISO(row[colMap.fechaVencimiento]) : fecha,
-          moneda: colMap.moneda !== undefined ? _normMoneda(row[colMap.moneda]) : 'RD$',
-          montoTotal,
-          montoPagado,
-          saldoPendiente,
-          estado: colMap.estado !== undefined ? _normEstado(row[colMap.estado]) : 'Pendiente',
-          detalle: colMap.detalle !== undefined ? String(row[colMap.detalle]||'').trim() : '',
-          tipoGasto: colMap.tipoGasto !== undefined ? String(row[colMap.tipoGasto]||'').trim() : ''
-        });
+      const idx = _findProvisionalHeaderRow(aoa);
+      if(idx !== -1){
+        const map = _mapProvisionalColumns(aoa[idx]);
+        if(map.proveedor !== undefined && map.montoTotal !== undefined){
+          headerIdx = idx; colMap = map; sheetName = name; aoaUsed = aoa; break;
+        }
       }
-      if(rows.length){ best = { sheetName: sn, rows }; break; }
     }
-    if(!best) throw new Error('No se encontró una hoja con el formato esperado.\nVerifica que el archivo tenga columnas: Proveedor, Número de Factura, Monto/Saldo Pendiente, Estado.');
-    return best;
+    if(headerIdx === -1 || !colMap){
+      throw new Error('No se encontró una hoja con el formato esperado.\nVerifica que el archivo tenga columnas: Suplidor, No. Factura o Referencia, Fecha de Factura, Fecha de Vencimiento, Concepto, Moneda, Monto.');
+    }
+
+    const rows = [];
+    const errors = [];
+    for(let r = headerIdx + 1; r < aoaUsed.length; r++){
+      const row = aoaUsed[r];
+      if(!row || row.every(c => c === '' || c === null || c === undefined)) continue;
+
+      const proveedor = String(row[colMap.proveedor]||'').trim();
+      const monto = colMap.montoTotal !== undefined ? _parseNum(row[colMap.montoTotal]) : 0;
+      if(!proveedor && monto === 0) continue; // fila vacía
+
+      if(!proveedor){ errors.push(`Fila ${r+1}: falta el suplidor.`); continue; }
+      if(monto <= 0){ errors.push(`Fila ${r+1} (${proveedor}): el monto debe ser mayor a 0.`); continue; }
+
+      const fecha = (colMap.fecha !== undefined ? _excelDateToISO(row[colMap.fecha]) : '') || Utils.todayISO();
+      const fechaVencimiento = (colMap.fechaVencimiento !== undefined ? _excelDateToISO(row[colMap.fechaVencimiento]) : '') || fecha;
+
+      rows.push({
+        id: Utils.uid('prov'),
+        tipoPago: 'Provisional',
+        empresa: 'Gstar Services',
+        fecha,
+        mes: 0, año: 0,
+        proveedor,
+        rnc: '', comprobanteFiscal: '',
+        numeroFactura: colMap.numeroFactura !== undefined ? String(row[colMap.numeroFactura]||'').trim() : '',
+        fechaVencimiento,
+        moneda: colMap.moneda !== undefined ? _normMoneda(row[colMap.moneda]) : 'RD$',
+        montoTotal: monto,
+        montoPagado: 0,
+        saldoPendiente: monto,
+        estado: 'Pendiente',
+        detalle: colMap.detalle !== undefined ? String(row[colMap.detalle]||'').trim() : '',
+        tipoGasto: '',
+        observaciones: ''
+      });
+    }
+    return { sheetName, rows, errors };
   }
 
-  function parseFile(file){
+  function parseProvisionalFile(file){
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
       reader.onload = () => {
         try{
           const wb = XLSX.read(reader.result, { type:'array', cellDates:true });
-          resolve(parseWorkbook(wb));
+          resolve(parseProvisionalWorkbook(wb));
         }catch(err){ reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
   }
 
-  return { parseFile, rowKey };
+  return { rowKey, buildFijosFromAging, parseProvisionalFile };
 })();

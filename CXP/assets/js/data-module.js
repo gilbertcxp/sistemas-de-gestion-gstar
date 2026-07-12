@@ -30,9 +30,29 @@ const DataModule = (() => {
     return dv !== null && dv > 0;
   }
 
-  // ------ import (upsert por llave natural, no pisa Estado ya editado) ------
-  function importFile(file){
-    return Parser.parseFile(file).then(result => {
+  // ------ Pagos Fijos: sincronizados desde la Antigüedad de Saldo (Supabase) ------
+  // No se registran manualmente. Se regeneran completos en cada sync, preservando
+  // el Estado editado localmente (id determinístico por proveedor+factura+fecha).
+  // Los Pagos Provisionales (manuales o importados) nunca se tocan aquí.
+  async function syncFijosFromAging(){
+    if(!window.Sync) return { ok:false, reason:'no-sync' };
+    const aging = await Sync.pullAgingData();
+    if(!aging) return { ok:false, reason:'no-data' };
+
+    const nuevosFijos = Parser.buildFijosFromAging(aging);
+    const existing = Storage.getRows();
+    const estadoPorId = new Map(existing.filter(r => r.tipoPago === 'Fijo').map(r => [r.id, r.estado]));
+    const provisionales = existing.filter(r => r.tipoPago !== 'Fijo');
+    const fijosFinal = nuevosFijos.map(r => ({ ...r, estado: estadoPorId.get(r.id) || r.estado }));
+
+    Storage.saveRows([...fijosFinal, ...provisionales]);
+    load();
+    return { ok:true, total: fijosFinal.length };
+  }
+
+  // ------ Pagos Provisionales: importación de Excel (upsert por llave natural) ------
+  function importProvisionalFile(file){
+    return Parser.parseProvisionalFile(file).then(result => {
       const existing = Storage.getRows();
       const byKey = new Map(existing.map(r => [Parser.rowKey(r), r]));
       let added = 0, updated = 0;
@@ -40,7 +60,7 @@ const DataModule = (() => {
         const key = Parser.rowKey(nr);
         const prev = byKey.get(key);
         if(prev){
-          Object.assign(prev, { ...nr, id:prev.id, estado:prev.estado }); // conserva id y Estado local
+          Object.assign(prev, { ...nr, id:prev.id, estado:prev.estado, tipoPago:'Provisional' }); // conserva id y Estado local
           updated++;
         } else {
           byKey.set(key, nr);
@@ -50,7 +70,7 @@ const DataModule = (() => {
       const merged = Array.from(byKey.values());
       Storage.saveRows(merged);
       load();
-      return { added, updated, total: merged.length };
+      return { added, updated, total: merged.length, errors: result.errors || [] };
     });
   }
 
@@ -183,15 +203,16 @@ const DataModule = (() => {
     const pageRows = filtered.slice((_page-1)*PER_PAGE, _page*PER_PAGE);
 
     if(pageRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="10"><div class="t-empty">
+      tbody.innerHTML = `<tr><td colspan="12"><div class="t-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
-        <div>${_rows.length===0 ? 'Importa el Excel de Cuentas por Pagar para ver los datos aquí.' : 'No hay facturas que coincidan con los filtros.'}</div>
+        <div>${_rows.length===0 ? 'Aún no hay datos. Los Pagos Fijos se sincronizan automáticamente desde Antigüedad de Saldo, o importa/agrega Pagos Provisionales.' : 'No hay facturas que coincidan con los filtros.'}</div>
       </div></td></tr>`;
     } else {
       tbody.innerHTML = pageRows.map(r => {
         const dv = _diasVencimiento(r);
         const vencida = _isVencida(r);
         const estadoCls = r.estado === 'Pagada' ? 'ok' : r.estado === 'Pagar' ? 'blue' : (vencida ? 'red' : 'warn');
+        const tipoPago = r.tipoPago || 'Provisional';
         return `<tr>
           <td class="c"><input type="checkbox" class="chk" ${_selected.has(r.id)?'checked':''} onchange="DataModule.toggleSelect('${r.id}')"></td>
           <td>${Utils.escapeHtml(r.proveedor)}</td>
@@ -209,6 +230,7 @@ const DataModule = (() => {
               <option value="Pagada" ${r.estado==='Pagada'?'selected':''}>Pagada</option>
             </select>
           </td>
+          <td class="c"><span class="pill ${tipoPago==='Fijo'?'blue':'warn'}">${tipoPago}</span></td>
           <td class="c">
             <button class="btn btn-ghost btn-icon btn-sm" title="Eliminar" onclick="DataModule.deleteRow('${r.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -257,37 +279,39 @@ const DataModule = (() => {
     if(empresaField) empresaField.style.display = _distinctEmpresas().length > 1 ? '' : 'none';
   }
 
-  // ------ Agregar factura manual al Reporte ------
-  function abrirModalAgregarCXP(){
+  // ------ Agregar Provisión manual al Reporte (no afecta Antigüedad de Saldo) ------
+  function abrirModalAgregarProvision(){
     const hoy = Utils.todayISO();
     document.getElementById('cxpMiProveedor').value  = '';
     document.getElementById('cxpMiFactura').value    = '';
     document.getElementById('cxpMiDetalle').value    = '';
     document.getElementById('cxpMiMonto').value      = '';
     document.getElementById('cxpMiMoneda').value     = 'RD$';
-    document.getElementById('cxpMiEstado').value     = 'Pendiente';
     document.getElementById('cxpMiFecha').value      = hoy;
     document.getElementById('cxpMiVencimiento').value = hoy;
+    const obs = document.getElementById('cxpMiObservaciones');
+    if(obs) obs.value = '';
     UI.openModal('modalAgregarCXP');
     setTimeout(() => document.getElementById('cxpMiProveedor')?.focus(), 120);
   }
 
-  function submitAgregarCXP(){
-    const proveedor    = (document.getElementById('cxpMiProveedor')?.value   || '').trim();
-    const numeroFactura = (document.getElementById('cxpMiFactura')?.value    || '').trim();
-    const detalle      = (document.getElementById('cxpMiDetalle')?.value     || '').trim();
-    const monto        = parseFloat(document.getElementById('cxpMiMonto')?.value) || 0;
-    const moneda       = document.getElementById('cxpMiMoneda')?.value       || 'RD$';
-    const estado       = document.getElementById('cxpMiEstado')?.value       || 'Pendiente';
-    const fecha        = document.getElementById('cxpMiFecha')?.value        || Utils.todayISO();
-    const fechaVenc    = document.getElementById('cxpMiVencimiento')?.value  || fecha;
+  function submitAgregarProvision(){
+    const proveedor      = (document.getElementById('cxpMiProveedor')?.value      || '').trim();
+    const numeroFactura  = (document.getElementById('cxpMiFactura')?.value        || '').trim();
+    const detalle        = (document.getElementById('cxpMiDetalle')?.value        || '').trim();
+    const monto          = parseFloat(document.getElementById('cxpMiMonto')?.value) || 0;
+    const moneda         = document.getElementById('cxpMiMoneda')?.value          || 'RD$';
+    const fecha          = document.getElementById('cxpMiFecha')?.value           || Utils.todayISO();
+    const fechaVenc      = document.getElementById('cxpMiVencimiento')?.value     || fecha;
+    const observaciones  = (document.getElementById('cxpMiObservaciones')?.value  || '').trim();
 
     if(!proveedor){ UI.toast('El suplidor es requerido', 'err'); document.getElementById('cxpMiProveedor')?.focus(); return; }
     if(!detalle)  { UI.toast('El concepto es requerido', 'err'); document.getElementById('cxpMiDetalle')?.focus();   return; }
     if(monto <= 0){ UI.toast('El monto debe ser mayor a 0', 'err'); document.getElementById('cxpMiMonto')?.focus(); return; }
 
     const fila = {
-      id:               Utils.uid('cxp'),
+      id:               Utils.uid('prov'),
+      tipoPago:         'Provisional',
       empresa:          Storage.getSettings().empresa?.nombre || 'Gstar Services',
       proveedor,
       numeroFactura,
@@ -298,7 +322,8 @@ const DataModule = (() => {
       montoTotal:       monto,
       montoPagado:      0,
       saldoPendiente:   monto,
-      estado
+      estado:           'Pendiente',
+      observaciones
     };
 
     const list = Storage.getRows();
@@ -307,12 +332,12 @@ const DataModule = (() => {
     load();
     UI.closeModal('modalAgregarCXP');
     render();
-    UI.toast(`Factura de ${proveedor} agregada`, 'ok');
+    UI.toast(`Provisión de ${proveedor} agregada`, 'ok');
   }
 
   return {
-    render, load, importFile, setFilter, setSort, goPage,
+    render, load, syncFijosFromAging, importProvisionalFile, setFilter, setSort, goPage,
     toggleSelect, selectAllVisible, clearSelection, getSelectedRows, getSelectedCount,
-    updateEstado, deleteRow, abrirModalAgregarCXP, submitAgregarCXP
+    updateEstado, deleteRow, abrirModalAgregarProvision, submitAgregarProvision
   };
 })();
