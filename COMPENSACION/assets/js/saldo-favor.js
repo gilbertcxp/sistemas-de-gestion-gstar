@@ -9,7 +9,7 @@
    volver a renderizar — no hay estado intermedio que mantener.
    ============================================================ */
 const SaldoFavor = (() => {
-  const SALDO_INICIAL = 3000034689.70;
+  const SALDO_INICIAL = 2079093.14;
 
   let _rows = [];       // movimientos calculados, incluye la fila de saldo inicial
   let _filtered = [];
