@@ -18,6 +18,7 @@
 
     /* Sidebar */
     .sidebar{width:228px;background:var(--bg-sidebar);display:flex;flex-direction:column;flex-shrink:0}
+    .sidebar.collapsed{display:none!important}
     .sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
     .sb-logo img{height:44px;width:auto}
     .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
@@ -38,6 +39,7 @@
     /* Topbar */
     .topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 22px;
       height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;z-index:20}
+    .tb-left{display:flex;align-items:center;gap:8px}
     .tb-left .tb-title{font-size:15px;font-weight:700;color:#0f172a;line-height:1.2}
     .tb-left .tb-crumb{font-size:11px;color:var(--muted)}
     .tb-actions{display:flex;gap:8px;align-items:center}
@@ -191,8 +193,13 @@
 
   <header class="topbar">
     <div class="tb-left">
-      <div class="tb-title" id="tbTitle">Cargar Archivos</div>
-      <div class="tb-crumb" id="tbCrumb">Reportes › Cargar Archivos</div>
+      <button class="btn btn-ghost" id="btnToggleSidebar" onclick="toggleReportesSidebar()" title="Mostrar / ocultar panel" style="padding:7px 9px;margin-right:2px">
+        <i class="bi bi-chevron-double-left" id="toggleSbIco"></i>
+      </button>
+      <div>
+        <div class="tb-title" id="tbTitle">Cargar Archivos</div>
+        <div class="tb-crumb" id="tbCrumb">Reportes › Cargar Archivos</div>
+      </div>
     </div>
     <div class="tb-actions">
       <button id="btnPublicar" class="btn-publicar" style="display:none" onclick="publicarData()">
@@ -717,6 +724,13 @@ function nav(page){
   document.getElementById('sepExport').style.display    = onEr ? '' : 'none';
   document.getElementById('btnExcelExport').style.display = onEr ? '' : 'none';
   document.getElementById('btnPrint').style.display       = onEr ? '' : 'none';
+}
+
+function toggleReportesSidebar(){
+  const sb  = document.querySelector('.sidebar');
+  const ico = document.getElementById('toggleSbIco');
+  const collapsed = sb.classList.toggle('collapsed');
+  ico.className = collapsed ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
 }
 
 /* ══════════════════════════════════════════════════════
