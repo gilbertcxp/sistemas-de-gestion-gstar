@@ -7,6 +7,8 @@
 <link rel="icon" href="assets/img/logo.png">
 <script src="../auth/auth.js"></script>
 <script>if (window.Auth) Auth.requireAuth();</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
@@ -237,7 +239,7 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
     <p>Gstar Services S.A. · Antigüedad de Saldo</p>
   </div>
   <div class="topbar-right">
-    <button class="btn btn-ghost" onclick="CXPAging.navigate('upload')">
+    <button class="btn btn-ghost" id="btnCargar" onclick="CXPAging.navigate('upload')">
       <i class="bi bi-folder2-open"></i> Cargar Archivo
     </button>
     <button class="btn btn-ghost no-print" id="btnExport" onclick="CXPAging.exportExcel()" disabled>
@@ -245,6 +247,11 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
     </button>
     <button class="btn btn-ghost no-print" id="btnPrint" onclick="window.print()" disabled>
       <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <button id="btnPublicar" class="btn no-print"
+            style="display:none;background:linear-gradient(135deg,#2563eb,#8B5CF6);color:#fff;border:none"
+            onclick="CXPAging.publicar()">
+      <i class="bi bi-cloud-upload-fill"></i> Publicar
     </button>
   </div>
 </div>
@@ -652,6 +659,11 @@ const CXPAging = (() => {
     const n = _allRows.length;
     toast(`Reporte generado — ${n} proveedor${n!==1?'es':''} · ${totalFacturas} facturas`);
     navigate('report');
+
+    if (_isAdminUser()) {
+      const btn = document.getElementById('btnPublicar');
+      if (btn) { btn.style.display = ''; btn.style.background = ''; btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.disabled = false; }
+    }
   }
 
   /* ---- Render aging table ---- */
@@ -831,13 +843,117 @@ const CXPAging = (() => {
     toast('Excel exportado — 2 hojas: Resumen + Detalle Facturas');
   }
 
+  /* ---- Supabase persistence ----
+     Controla quién ve la carga de archivo y el botón Publicar. Se permite
+     tanto a Administrador como a Cargador de Archivos. */
+  function _isAdminUser() {
+    try {
+      const s = Auth.getSession();
+      const label = (s && s.user && s.user.role && s.user.role.label || '').toLowerCase();
+      return label.includes('administrador') || label.includes('cargador');
+    } catch(e) { return false; }
+  }
+
+  async function _saveCxpToDB() {
+    if (!window.db) throw new Error('Sin conexión a base de datos.');
+    const session = Auth.getSession();
+    const { error } = await window.db.from('app_state').upsert({
+      key: 'cxp_aging_data',
+      value: {
+        allRows:     _allRows,
+        fileName:    _fileName,
+        totalFact:   _totalFact,
+        generatedAt: new Date().toISOString()
+      },
+      updated_at: new Date().toISOString(),
+      updated_by: session && session.user ? session.user.id : null
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async function _loadCxpFromDB() {
+    try {
+      if (!window.db) return false;
+      const { data, error } = await window.db
+        .from('app_state').select('value,updated_at').eq('key','cxp_aging_data').single();
+      if (error || !data || !data.value) return false;
+      const v = data.value;
+      _allRows   = v.allRows   || [];
+      _filtered  = [..._allRows];
+      _fileName  = v.fileName  || '';
+      _totalFact = v.totalFact || 0;
+      if (!_allRows.length) return false;
+      document.getElementById('btnExport').disabled = false;
+      document.getElementById('btnPrint').disabled  = false;
+      _updateStats();
+      _populateProveedorFilter();
+      _render();
+      document.getElementById('footFile').textContent = _fileName;
+      if (data.updated_at) {
+        const d   = new Date(data.updated_at);
+        const fmt = d.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'})
+                  + ' ' + d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('footInfo').textContent =
+          `${_allRows.length} proveedores · Publicado el ${fmt}`;
+      }
+      return true;
+    } catch(e) { console.error('loadCxpFromDB:', e); return false; }
+  }
+
+  async function publicar() {
+    const btn = document.getElementById('btnPublicar');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publicando...'; }
+    try {
+      await _saveCxpToDB();
+      toast('¡Datos publicados! Todos los usuarios pueden verlos ahora.');
+      if (btn) {
+        btn.innerHTML = '<i class="bi bi-cloud-check-fill"></i> ¡Publicado!';
+        btn.style.background = '#10B981';
+        setTimeout(() => {
+          if (btn) {
+            btn.style.background = '';
+            btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
+            btn.disabled = false;
+          }
+        }, 3000);
+      }
+    } catch(e) {
+      toast('Error al publicar: ' + e.message, true);
+      if (btn) { btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.disabled = false; }
+    }
+  }
+
+  /* ---- Init ---- */
+  (async function _init() {
+    const isAdmin = _isAdminUser();
+
+    if (!isAdmin) {
+      const navUp   = document.getElementById('navUpload');
+      const btnCarg = document.getElementById('btnCargar');
+      if (navUp)   navUp.style.display   = 'none';
+      if (btnCarg) btnCarg.style.display = 'none';
+    }
+
+    const loaded = await _loadCxpFromDB();
+
+    if (loaded) {
+      navigate('report');
+      if (isAdmin) {
+        const btn = document.getElementById('btnPublicar');
+        if (btn) btn.style.display = '';
+      }
+    } else {
+      navigate(isAdmin ? 'upload' : 'report');
+    }
+  })();
+
   /* ---- Public API ---- */
   return {
     navigate, toggleGroup, toggleSidebar,
     handleDrop, loadFile,
     filterTable, clearFilters,
     ddOpen, ddClose,
-    exportExcel
+    exportExcel, publicar
   };
 
 })();
