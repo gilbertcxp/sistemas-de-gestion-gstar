@@ -83,6 +83,7 @@ const App = (() => {
     if(name === 'estado-cuenta') EstadoCuenta.render();
     if(name === 'pagos') Pagos.render();
     if(name === 'antiguedad') AgingComp.render();
+    if(name === 'saldo-favor') SaldoFavor.render();
   }
 
   function switchView(name){

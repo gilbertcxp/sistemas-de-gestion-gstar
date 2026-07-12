@@ -56,6 +56,18 @@ const Sync = (() => {
     }catch(e){ console.warn('Sync.pull ex', e); return { ok:false, reason:String(e) }; }
   }
 
+  // Trae las Transferencias entre Cuentas publicadas por Disponibilidad Bancaria
+  // (captura-disponibilidad.html). No es una SHARED_KEY de este módulo: solo se lee.
+  async function pullTransferData(){
+    const db = _db();
+    if(!db) return null;
+    try{
+      const { data, error } = await db.from(TABLE).select('value').eq('key','disponibilidad_transferencias_entre_cuentas').single();
+      if(error || !data) return null;
+      return data.value || null;
+    }catch(e){ console.warn('Sync.pullTransferData', e); return null; }
+  }
+
   // Empuje con debounce por clave (se llama desde Storage._set)
   function push(key, value){
     clearTimeout(_pushTimers[key]);
@@ -83,6 +95,12 @@ const Sync = (() => {
         .on('postgres_changes', { event:'*', schema:'public', table:TABLE }, payload => {
           const row = payload.new;
           if(!row || !row.key) return;
+          // Transferencias entre Cuentas (Disponibilidad Bancaria): no es SHARED_KEY local,
+          // solo dispara resync del Saldo a Favor de Compensación.
+          if(row.key === 'disponibilidad_transferencias_entre_cuentas'){
+            if(typeof onChange === 'function') onChange(row.key);
+            return;
+          }
           if(Storage.getSharedKeys().indexOf(row.key) === -1) return;
           if(row.updated_by && row.updated_by === _email()) return; // ignora eco propio
           Storage.applyRemote(row.key, row.value);
@@ -94,6 +112,6 @@ const Sync = (() => {
 
   function isReady(){ return _ready; }
 
-  return { pull, push, publishAll, subscribeRealtime, isReady };
+  return { pull, push, publishAll, subscribeRealtime, isReady, pullTransferData };
 })();
 window.Sync = Sync;
