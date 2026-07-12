@@ -83,7 +83,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);displa
 .upload-ico{font-size:52px;color:var(--ink-3);transition:color .2s}
 .upload-zone:hover .upload-ico,.upload-zone.dragging .upload-ico{color:var(--blue)}
 .upload-title{font-size:19px;font-weight:700}
-.upload-sub{font-size:13px;color:var(--ink-2);max-width:420px;line-height:1.6}
+.upload-sub{font-size:13px;color:var(--ink-2);max-width:440px;line-height:1.6}
 .upload-badge{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe;
   border-radius:20px;padding:4px 14px;font-size:11.5px;font-weight:600;
   display:flex;align-items:center;gap:6px}
@@ -91,7 +91,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);displa
 .upload-step-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;
   font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* ---- Inner padding ---- */
+/* ---- Inner ---- */
 .inner{padding:0 24px 32px}
 
 /* ---- Stats bar ---- */
@@ -125,7 +125,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);displa
 .sel:focus{outline:none;border-color:var(--blue)}
 .toolbar-sep{width:1px;height:26px;background:var(--line)}
 
-/* ---- Table ---- */
+/* ---- Aging table ---- */
 .table-wrap{background:var(--bg-card);border:1px solid var(--line);
   border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
 .table-scroll{overflow-x:auto}
@@ -137,10 +137,10 @@ table.aging thead tr:first-child th:first-child{text-align:left;min-width:260px}
 table.aging thead tr:nth-child(2) th{background:#274a8a;color:#bfdbfe;font-size:10px;
   font-weight:600;padding:4px 10px 8px;border-right:1px solid rgba(255,255,255,.1);text-align:right}
 table.aging thead tr:nth-child(2) th:first-child{color:transparent}
-table.aging tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s}
-table.aging tbody tr:hover{background:#f8fafc}
+table.aging tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s;cursor:pointer}
+table.aging tbody tr:hover{background:#eff6ff}
 table.aging tbody tr:nth-child(even){background:#fafbfc}
-table.aging tbody tr:nth-child(even):hover{background:#f3f6fa}
+table.aging tbody tr:nth-child(even):hover{background:#eff6ff}
 table.aging tbody td{padding:8px 10px;border-right:1px solid var(--line-2);vertical-align:middle}
 table.aging tbody td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
 table.aging tbody td.m{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;
@@ -164,6 +164,32 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 .tbl-footer{display:flex;justify-content:space-between;align-items:center;
   padding:11px 18px;border-top:1px solid var(--line);font-size:11.5px;
   color:var(--ink-3);flex-wrap:wrap;gap:8px}
+.click-hint{font-size:10.5px;color:var(--ink-3);font-style:italic}
+
+/* ---- Drill-down overlay ---- */
+.dd-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:1000;align-items:center;justify-content:center}
+.dd-overlay.open{display:flex}
+.dd-modal{background:#fff;border-radius:var(--r-lg);width:min(1100px,96vw);
+  max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.dd-modal-hdr{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;
+  padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.dd-modal-title{font-size:15px;font-weight:800;font-family:'Sora',sans-serif}
+.dd-modal-sub{font-size:11px;opacity:.75;margin-top:2px}
+.dd-modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;
+  padding:2px 6px;border-radius:4px;opacity:.8;line-height:1}
+.dd-modal-close:hover{opacity:1;background:rgba(255,255,255,.15)}
+.dd-modal-body{padding:20px;overflow-y:auto;flex:1}
+table.dd-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+table.dd-tbl thead th{background:#1f3864;color:#fff;padding:9px 10px;text-align:left;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;white-space:nowrap}
+table.dd-tbl thead th.r{text-align:right}
+table.dd-tbl tbody td{padding:7px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.dd-tbl tbody td.r{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+table.dd-tbl tbody tr:nth-child(even){background:#f8fafc}
+table.dd-tbl tfoot td{background:#f1f5f9;font-weight:700;padding:9px 10px;
+  border-top:2px solid var(--line)}
+table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
 
 /* ---- Toast ---- */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -178,7 +204,7 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
 
 /* ---- Print ---- */
 @media print{
-  .topbar,.toolbar,.stats-bar,.sidebar,.no-print{display:none!important}
+  .topbar,.toolbar,.stats-bar,.sidebar,.no-print,.dd-overlay{display:none!important}
   .app-body{display:block}
   html,body{overflow:auto;height:auto}
   .content-area{overflow:visible}
@@ -229,7 +255,6 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="nav-mod-label">Módulos</div>
-
     <div class="nav-group open active-mod" id="ng1">
       <div class="nav-group-hdr" onclick="CXPAging.toggleGroup('ng1')">
         <i class="bi bi-clock-history ng-ico"></i>
@@ -256,12 +281,12 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
         <i class="bi bi-file-earmark-arrow-up upload-ico"></i>
         <div class="upload-title">Cargar Estado de Cuenta CXP</div>
         <div class="upload-sub">
-          Haz clic aquí o arrastra el archivo <strong>frmRCxP.xlsx</strong> exportado
-          del sistema contable. El sistema generará automáticamente la antigüedad de saldo de proveedores.
+          Haz clic aquí o arrastra el archivo <strong>frmRCxP.xlsx</strong> exportado del sistema
+          contable. El reporte se genera automáticamente agrupando por proveedor.
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <div class="upload-step"><div class="upload-step-num">1</div> Exportar Estado de Cuenta del sistema contable</div>
-          <div class="upload-step"><div class="upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong></div>
+          <div class="upload-step"><div class="upload-step-num">1</div> Exportar <strong>frmRCxP.xlsx</strong> del sistema contable</div>
+          <div class="upload-step"><div class="upload-step-num">2</div> Presionar <strong>Cargar Archivo</strong> o arrastrarlo aquí</div>
           <div class="upload-step"><div class="upload-step-num">3</div> El reporte se genera automáticamente</div>
         </div>
         <div class="upload-badge"><i class="bi bi-file-earmark-spreadsheet"></i> Solo archivos .xlsx — frmRCxP.xlsx</div>
@@ -280,12 +305,16 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
             <div><div class="stat-lbl">Proveedores</div><div class="stat-val" id="statProveedores">—</div></div>
           </div>
           <div class="stat-card">
+            <div class="stat-ico amber"><i class="bi bi-receipt"></i></div>
+            <div><div class="stat-lbl">Facturas</div><div class="stat-val" id="statFacturas">—</div></div>
+          </div>
+          <div class="stat-card">
             <div class="stat-ico green"><i class="bi bi-cash-stack"></i></div>
             <div><div class="stat-lbl">Total CXP</div><div class="stat-val sm" id="statTotal">—</div></div>
           </div>
           <div class="stat-card">
             <div class="stat-ico red"><i class="bi bi-hourglass-bottom"></i></div>
-            <div><div class="stat-lbl">>90 Días Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
+            <div><div class="stat-lbl">&gt;90 Días Vencido</div><div class="stat-val sm" id="statVencido">—</div></div>
           </div>
           <div class="stat-card">
             <div class="stat-ico amber"><i class="bi bi-calendar-check"></i></div>
@@ -333,7 +362,7 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
                   <th>2 MESES</th>
                   <th>3 MESES</th>
                   <th>&gt;90 DÍAS</th>
-                  <th style="background:#17306d">TOTAL</th>
+                  <th style="background:#17306d">DEUDA PENDIENTE</th>
                 </tr>
                 <tr>
                   <th>No Vencidas</th>
@@ -362,6 +391,7 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
           </div>
           <div class="tbl-footer no-print" id="tblFooter" style="display:none">
             <span id="footInfo">—</span>
+            <span class="click-hint"><i class="bi bi-hand-index-thumb"></i> Clic en un proveedor para ver el detalle de facturas</span>
             <span id="footFile" style="font-style:italic;color:var(--ink-3)">—</span>
           </div>
         </div>
@@ -369,32 +399,81 @@ table.aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255,25
       </div>
     </div>
 
+  </div><!-- end content-area -->
+</div><!-- end app-body -->
+
+<!-- DRILL-DOWN: Facturas por proveedor -->
+<div class="dd-overlay" id="ddOverlay" onclick="if(event.target===this)CXPAging.ddClose()">
+  <div class="dd-modal">
+    <div class="dd-modal-hdr">
+      <div>
+        <div class="dd-modal-title" id="ddTitle">Detalle de Facturas</div>
+        <div class="dd-modal-sub" id="ddSub"></div>
+      </div>
+      <button class="dd-modal-close" onclick="CXPAging.ddClose()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="dd-modal-body">
+      <div style="overflow-x:auto">
+        <table class="dd-tbl">
+          <thead>
+            <tr>
+              <th>Doc</th>
+              <th>IdDoc</th>
+              <th>Fecha</th>
+              <th>Vence</th>
+              <th>No Factura</th>
+              <th>Descripción</th>
+              <th class="r">No Vencidas</th>
+              <th class="r">1–30 Días</th>
+              <th class="r">31–60 Días</th>
+              <th class="r">61–90 Días</th>
+              <th class="r">&gt;90 Días</th>
+              <th class="r">Deuda Pendiente</th>
+            </tr>
+          </thead>
+          <tbody id="ddBody"></tbody>
+          <tfoot id="ddFoot"></tfoot>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i><span id="toastMsg">OK</span></div>
 
 <script src="assets/vendor/xlsx.full.min.js"></script>
-
 <script>
 const CXPAging = (() => {
 
   /* ---- State ---- */
-  let _allRows = [];
-  let _filtered = [];
+  let _allRows   = [];   // {name, buckets[5], total, invoices[]}
+  let _filtered  = [];
   let _fileName  = '';
+  let _totalFact = 0;
 
   /* ---- Utils ---- */
   const norm = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
 
   function fmtM(v) {
-    if (v === 0) return '-';
+    if (v === 0 || v === undefined || v === null) return '-';
     const abs = Math.abs(v);
     const s = abs.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
     return v < 0 ? `(${s})` : s;
   }
   function fmtMFull(v) {
     return 'RD$ ' + v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtDate(v) {
+    if (!v) return '—';
+    if (v instanceof Date) {
+      const d = v.getDate(), m = v.getMonth()+1, y = v.getFullYear();
+      return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+    }
+    const s = String(v);
+    // ISO format
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    return s;
   }
   function _esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -425,27 +504,24 @@ const CXPAging = (() => {
       toast('Primero carga el archivo frmRCxP.xlsx', true);
       page = 'upload';
     }
-
-    ['pgUpload','pgReport'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('active');
-    });
-    const map = { upload:'pgUpload', report:'pgReport' };
-    document.getElementById(map[page])?.classList.add('active');
-
+    ['pgUpload','pgReport'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+    document.getElementById(page === 'upload' ? 'pgUpload' : 'pgReport')?.classList.add('active');
     ['navUpload','navReport'].forEach(id => document.getElementById(id)?.classList.remove('active'));
     document.getElementById(page === 'upload' ? 'navUpload' : 'navReport')?.classList.add('active');
 
-    const btnExport = document.getElementById('btnExport');
-    const btnPrint  = document.getElementById('btnPrint');
-    if (btnExport) btnExport.style.display = page === 'report' ? '' : 'none';
-    if (btnPrint)  btnPrint.style.display  = page === 'report' ? '' : 'none';
+    const hasData = _allRows.length > 0;
+    const onReport = page === 'report';
+    document.getElementById('btnExport').style.display = onReport ? '' : 'none';
+    document.getElementById('btnPrint').style.display  = onReport ? '' : 'none';
+    if (!hasData) {
+      document.getElementById('btnExport').disabled = true;
+      document.getElementById('btnPrint').disabled  = true;
+    }
   }
 
   function toggleGroup(id) {
     document.getElementById(id)?.classList.toggle('open');
   }
-
   function toggleSidebar() {
     const sb  = document.querySelector('.sidebar');
     const ico = document.getElementById('sidebarToggleIcon');
@@ -466,7 +542,6 @@ const CXPAging = (() => {
     if (f) _processFile(f);
     input.value = '';
   }
-
   function _processFile(file) {
     if (!file.name.match(/\.xlsx?$/i)) { toast('Solo se aceptan archivos .xlsx', true); return; }
     _fileName = file.name;
@@ -474,9 +549,9 @@ const CXPAging = (() => {
     const reader = new FileReader();
     reader.onload = ev => {
       try {
-        const wb   = XLSX.read(ev.target.result, { type:'array' });
+        const wb   = XLSX.read(ev.target.result, { type:'array', cellDates:true });
         const ws   = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+        const data = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
         _parse(data);
       } catch(err) {
         toast('Error al leer el archivo: ' + err.message, true);
@@ -486,43 +561,85 @@ const CXPAging = (() => {
     reader.readAsArrayBuffer(file);
   }
 
-  /* ---- Parse ---- */
+  /* ---- Parse ----
+     Formato del Excel (Sheet):
+       Fila 0: headers — Doc, IdDoc, Fecha, Vence, NoFactura, Descripción, NoVencidas,
+                         1-30 Días, 31-60 Días, 61-90 Días, > 90 Días, Deuda Pendiente
+       Fila 1: "Moneda: RD$" — saltar
+       Fila 2+: alternancia de:
+         - "Proveedor: Nombre (código) (RNC)" — header de grupo → extrae nombre
+         - Filas de factura (Doc=FC/SF/etc.)
+         - Filas en blanco — ignorar
+  */
   function _parse(data) {
-    // Row 0: headers  Row 1: "Moneda: RD$"  Row 2+: data  Last rows: totals (Doc empty)
-    // Columns: 0=Doc 1=IdDoc 2=Fecha 3=Proveedor 4=Vence 5=NoFactura 6=Descripción
-    //          7=NoVencidas  8=1-30Días  9=31-60Días  10=61-90Días  11=>90Días  12=DeudaPendiente
-    const map = {};
+    const map = {};         // nombre → { buckets[5], invoices[] }
+    let currentProv = '';
     let totalFacturas = 0;
 
-    for (let i = 2; i < data.length; i++) {
+    for (let i = 1; i < data.length; i++) {   // skip header row 0
       const row = data[i];
-      if (!row || row.length < 8) continue;
-      const doc = String(row[0] || '').trim();
-      if (!doc) continue; // blank/total rows at bottom
-      const proveedor = String(row[3] || '').trim();
-      if (!proveedor) continue;
+      if (!row || row.length === 0) continue;
 
-      const b0 = _parseNum(row[7]);   // No Vencidas
-      const b1 = _parseNum(row[8]);   // 1-30 Días
-      const b2 = _parseNum(row[9]);   // 31-60 Días
-      const b3 = _parseNum(row[10]);  // 61-90 Días
-      const b4 = _parseNum(row[11]);  // > 90 Días
+      const col0 = String(row[0] || '').trim();
+      if (!col0) continue;
 
-      const deuda = b0 + b1 + b2 + b3 + b4;
-      if (Math.abs(deuda) < 0.005) continue;
+      // "Moneda: RD$" — saltar
+      if (/^moneda:/i.test(col0)) continue;
+
+      // Header de proveedor: "Proveedor: Nombre (0xxx) (RNC)"
+      if (/^proveedor:/i.test(col0)) {
+        // Extrae nombre: quita prefijo y los paréntesis con código/RNC al final
+        currentProv = col0
+          .replace(/^proveedor:\s*/i, '')
+          .replace(/\s*\(\d+\)\s*\([^)]+\)\s*$/, '')
+          .replace(/\s*\([^)]+\)\s*$/, '')
+          .trim();
+        if (!map[currentProv]) map[currentProv] = { buckets:[0,0,0,0,0], invoices:[] };
+        continue;
+      }
+
+      // Fila de factura — debe haber un proveedor activo
+      if (!currentProv) continue;
+
+      const b0 = _parseNum(row[6]);   // NoVencidas
+      const b1 = _parseNum(row[7]);   // 1-30 Días
+      const b2 = _parseNum(row[8]);   // 31-60 Días
+      const b3 = _parseNum(row[9]);   // 61-90 Días
+      const b4 = _parseNum(row[10]);  // > 90 Días
+      const dp = _parseNum(row[11]);  // Deuda Pendiente
+
+      // Saltar filas con deuda cero en todos los tramos
+      if (b0===0 && b1===0 && b2===0 && b3===0 && b4===0 && dp===0) continue;
 
       totalFacturas++;
-      if (!map[proveedor]) map[proveedor] = [0,0,0,0,0];
-      map[proveedor][0] += b0;
-      map[proveedor][1] += b1;
-      map[proveedor][2] += b2;
-      map[proveedor][3] += b3;
-      map[proveedor][4] += b4;
+      map[currentProv].buckets[0] += b0;
+      map[currentProv].buckets[1] += b1;
+      map[currentProv].buckets[2] += b2;
+      map[currentProv].buckets[3] += b3;
+      map[currentProv].buckets[4] += b4;
+      map[currentProv].invoices.push({
+        doc:         col0,
+        idDoc:       String(row[1] || ''),
+        fecha:       row[2],
+        vence:       row[3],
+        noFactura:   String(row[4] || ''),
+        descripcion: String(row[5] || ''),
+        b0, b1, b2, b3, b4,
+        deuda:       dp
+      });
     }
 
+    _totalFact = totalFacturas;
     _allRows = Object.entries(map)
-      .map(([name, buckets]) => ({ name, buckets, total: buckets.reduce((s,v)=>s+v,0) }))
+      .map(([name, d]) => ({
+        name,
+        buckets: d.buckets,
+        total:   d.buckets.reduce((s,v)=>s+v, 0),
+        invoices: d.invoices
+      }))
+      .filter(r => Math.abs(r.total) > 0.001)
       .sort((a,b) => a.name.localeCompare(b.name, 'es'));
+
     _filtered = [..._allRows];
 
     document.getElementById('btnExport').disabled = false;
@@ -537,7 +654,7 @@ const CXPAging = (() => {
     navigate('report');
   }
 
-  /* ---- Render ---- */
+  /* ---- Render aging table ---- */
   function _render() {
     const tbody  = document.getElementById('agingBody');
     const tfoot  = document.getElementById('agingFoot');
@@ -555,18 +672,20 @@ const CXPAging = (() => {
 
     const totals = [0,0,0,0,0];
     let grandTotal = 0;
-    tbody.innerHTML = _filtered.map(row => {
+    tbody.innerHTML = _filtered.map((row, idx) => {
       const cells = row.buckets.map((v,i) => {
         totals[i] += v;
-        const cls = v === 0 ? 'm' : (v < 0 ? 'm neg' : 'm v');
+        const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
         return `<td class="${cls}">${fmtM(v)}</td>`;
       }).join('');
       grandTotal += row.total;
       const tCls = 'tot' + (row.total < 0 ? ' neg' : '');
-      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+      return `<tr onclick="CXPAging.ddOpen(${idx})" title="Ver ${_esc(row.name)} — ${row.invoices.length} factura${row.invoices.length!==1?'s':''}">
+        <td>${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td>
+      </tr>`;
     }).join('');
 
-    totals.forEach((v,i) => { const el = document.getElementById('ft'+i); if(el) el.textContent = fmtM(v); });
+    totals.forEach((v,i) => { const el=document.getElementById('ft'+i); if(el) el.textContent=fmtM(v); });
     document.getElementById('ftTotal').textContent = fmtM(grandTotal);
     tfoot.style.display = '';
     footer.style.display = '';
@@ -576,8 +695,9 @@ const CXPAging = (() => {
 
   function _updateStats() {
     const total   = _allRows.reduce((s,r)=>s+r.total, 0);
-    const vencido = _allRows.reduce((s,r)=>s+r.buckets[4], 0); // >90 Días
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[4], 0);
     document.getElementById('statProveedores').textContent = _allRows.length;
+    document.getElementById('statFacturas').textContent    = _totalFact;
     document.getElementById('statTotal').textContent       = fmtMFull(total);
     document.getElementById('statVencido').textContent     = fmtMFull(vencido);
     document.getElementById('statFecha').textContent =
@@ -598,53 +718,117 @@ const CXPAging = (() => {
     _filtered = _allRows.filter(r => {
       if (q  && !norm(r.name).includes(q)) return false;
       if (pr && r.name !== pr)             return false;
-      if (bk !== '' && r.buckets[+bk] === 0) return false;
+      if (bk !== '' && r.buckets[+bk]===0) return false;
       return true;
     });
     _render();
   }
 
   function clearFilters() {
-    document.getElementById('searchInput').value      = '';
-    document.getElementById('filterProveedor').value  = '';
-    document.getElementById('filterBucket').value     = '';
+    document.getElementById('searchInput').value     = '';
+    document.getElementById('filterProveedor').value = '';
+    document.getElementById('filterBucket').value    = '';
     _filtered = [..._allRows];
     _render();
+  }
+
+  /* ---- Drill-down: facturas por proveedor ---- */
+  function ddOpen(idx) {
+    const row = _filtered[idx];
+    if (!row) return;
+    document.getElementById('ddTitle').textContent = row.name;
+    document.getElementById('ddSub').textContent =
+      `${row.invoices.length} factura${row.invoices.length!==1?'s':''} · Deuda: ${fmtMFull(row.total)}`;
+
+    const totB = [0,0,0,0,0]; let totD = 0;
+    const rows = row.invoices.map(inv => {
+      totB[0]+=inv.b0; totB[1]+=inv.b1; totB[2]+=inv.b2; totB[3]+=inv.b3; totB[4]+=inv.b4;
+      totD += inv.deuda;
+      const mc = v => v===0 ? '<td class="r" style="color:#94a3b8">-</td>'
+                             : `<td class="r${v<0?' style="color:#dc2626"':''}">${fmtM(v)}</td>`;
+      return `<tr>
+        <td>${_esc(inv.doc)}</td>
+        <td>${_esc(inv.idDoc)}</td>
+        <td style="white-space:nowrap">${fmtDate(inv.fecha)}</td>
+        <td style="white-space:nowrap">${fmtDate(inv.vence)}</td>
+        <td>${_esc(inv.noFactura)}</td>
+        <td style="max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${_esc(inv.descripcion)}">${_esc(inv.descripcion)}</td>
+        ${mc(inv.b0)}${mc(inv.b1)}${mc(inv.b2)}${mc(inv.b3)}${mc(inv.b4)}
+        <td class="r" style="font-weight:700${inv.deuda<0?';color:#dc2626':''}">${fmtM(inv.deuda)}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('ddBody').innerHTML = rows;
+    document.getElementById('ddFoot').innerHTML = `<tr>
+      <td colspan="6"><strong>TOTAL</strong></td>
+      <td class="r"><strong>${fmtM(totB[0])}</strong></td>
+      <td class="r"><strong>${fmtM(totB[1])}</strong></td>
+      <td class="r"><strong>${fmtM(totB[2])}</strong></td>
+      <td class="r"><strong>${fmtM(totB[3])}</strong></td>
+      <td class="r"><strong>${fmtM(totB[4])}</strong></td>
+      <td class="r"><strong>${fmtM(totD)}</strong></td>
+    </tr>`;
+
+    document.getElementById('ddOverlay').classList.add('open');
+  }
+
+  function ddClose() {
+    document.getElementById('ddOverlay').classList.remove('open');
   }
 
   /* ---- Export Excel ---- */
   function exportExcel() {
     if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
-    const BUCKET_LABELS = ['No Vencidas','1-30 Días','31-60 Días','61-90 Días','>90 Días'];
-    const HEADER        = ['Proveedor',...BUCKET_LABELS,'Total Deuda'];
-    const SUB_HDR       = ['','No Vencidas','1 – 30','31 – 60','61 – 90','> 90',''];
+
+    const HEADER  = ['Proveedor','No Vencidas','1-30 Días','31-60 Días','61-90 Días','> 90 Días','Deuda Pendiente'];
+    const SUB_HDR = ['','No Vencidas','1 – 30','31 – 60','61 – 90','> 90',''];
+
+    // Resumen por proveedor
+    const summaryRows = _filtered.map(r => [
+      r.name,
+      ...r.buckets.map(v => v===0 ? '-' : v),
+      r.total===0 ? '-' : r.total
+    ]);
+    const totalRow = ['TOTAL GENERAL',
+      ...[0,1,2,3,4].map(i => _filtered.reduce((s,r)=>s+r.buckets[i],0)),
+      _filtered.reduce((s,r)=>s+r.total,0)
+    ];
 
     const aoa = [
-      ['Antigüedad de Cuentas por Pagar'], [],
+      ['Antigüedad de Cuentas por Pagar — Gstar Services S.A.'], [],
       HEADER, SUB_HDR,
-      ..._filtered.map(r => [
-        r.name,
-        ...r.buckets.map(v => v===0 ? '-' : v),
-        r.total===0 ? '-' : r.total
-      ]),
-      [],
-      ['TOTAL GENERAL',
-        ...[0,1,2,3,4].map(i => _filtered.reduce((s,r)=>s+r.buckets[i],0)),
-        _filtered.reduce((s,r)=>s+r.total,0)
-      ]
+      ...summaryRows,
+      [], totalRow
     ];
+
+    // Hoja de detalle: todas las facturas
+    const detHeader = ['Proveedor','Doc','IdDoc','Fecha','Vence','No Factura','Descripción',
+                       'No Vencidas','1-30 Días','31-60 Días','61-90 Días','> 90 Días','Deuda Pendiente'];
+    const detRows = [];
+    _filtered.forEach(r => {
+      r.invoices.forEach(inv => {
+        detRows.push([
+          r.name, inv.doc, inv.idDoc,
+          fmtDate(inv.fecha), fmtDate(inv.vence),
+          inv.noFactura, inv.descripcion,
+          inv.b0||'-', inv.b1||'-', inv.b2||'-', inv.b3||'-', inv.b4||'-', inv.deuda||'-'
+        ]);
+      });
+    });
 
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Column widths
-    ws['!cols'] = [
-      {wch:40},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}
-    ];
+    const ws1 = XLSX.utils.aoa_to_sheet(aoa);
+    ws1['!cols'] = [{wch:42},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Antigüedad CXP');
+    const ws2 = XLSX.utils.aoa_to_sheet([detHeader, ...detRows]);
+    ws2['!cols'] = [{wch:38},{wch:6},{wch:10},{wch:12},{wch:12},{wch:14},{wch:55},
+                   {wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Facturas');
+
     XLSX.writeFile(wb, `Antiguedad_CXP_${new Date().toISOString().slice(0,10)}.xlsx`);
-    toast('Excel exportado');
+    toast('Excel exportado — 2 hojas: Resumen + Detalle Facturas');
   }
 
   /* ---- Public API ---- */
@@ -652,6 +836,7 @@ const CXPAging = (() => {
     navigate, toggleGroup, toggleSidebar,
     handleDrop, loadFile,
     filterTable, clearFilters,
+    ddOpen, ddClose,
     exportExcel
   };
 
