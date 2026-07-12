@@ -8,28 +8,57 @@ const SolicitudPago = (() => {
   let _rows = [];
   let _solicitudNumero = null;   // número de la solicitud persistida para el corte actual
 
+  // Indicadores financieros: siempre auto-calculados desde Disponibilidad Bancaria
+  // y Saldo a Favor de Compensación, nunca digitados a mano (ver _fetchIndicadores).
+  let _indicadores = { balanceComp:0, transferencia:0, balanceOp:0 };
+
   // ------ helpers ------
   function _round2(n){ return Math.round((Number(n)||0)*100)/100; }
   function _findSolicitudForCorte(corte){
     const list = Storage.getSolicitudes().filter(s => s.corte === corte);
     return list.length ? list[list.length - 1] : null;
   }
-  function _getInputs(){
-    const n = id => parseFloat(document.getElementById(id)?.value)||0;
-    return {
-      balanceComp:  n('spBalanceComp'),
-      transferencia: n('spTransferencia'),
-      balanceOp:    n('spBalanceOp')
-    };
-  }
 
-  function _saveBalances(){
-    const { balanceComp, transferencia, balanceOp } = _getInputs();
-    Storage.saveBankData({ balanceComp, transferencia, balanceOperativa: balanceOp });
+  // ------ Indicadores automáticos (Disponibilidad Bancaria + Saldo a Favor) ------
+  async function _fetchIndicadores(){
+    let balanceComp = 0, transferencia = 0, balanceOp = 0;
+    try{
+      if(window.Sync){
+        const [bi, mov, transf] = await Promise.all([
+          Sync.pullBalanceInicial ? Sync.pullBalanceInicial() : null,
+          Sync.pullMovimientosCuenta ? Sync.pullMovimientosCuenta('compensacion') : null,
+          Sync.pullTransferData ? Sync.pullTransferData() : null
+        ]);
+        // Balance en Cuenta de Compensación = Disponibilidad Bancaria → Resumen Ejecutivo
+        // → Balance de la Cuenta de Compensación (último balanceRunning importado, o el
+        // Balance Inicial si todavía no se ha cargado ningún movimiento).
+        const movRows = (mov && mov.rows) || [];
+        balanceComp = movRows.length
+          ? (movRows[movRows.length-1].balanceRunning || 0)
+          : ((bi && bi.compensacion && bi.compensacion.balance) || 0);
+
+        // Transferencias entre Cuentas = neto de transferencias PENDIENTES (no Aplicadas)
+        // que involucran la cuenta de Compensación. Positivo = monto pendiente de salir.
+        const transferencias = transf || [];
+        const transferSigned = transferencias
+          .filter(t => (t.estado||'Pendiente') === 'Pendiente')
+          .reduce((s,t) => {
+            const monto = Number(t.monto)||0;
+            if(t.destino==='compensacion') return s + monto;
+            if(t.origen==='compensacion')  return s - monto;
+            return s;
+          }, 0);
+        transferencia = -transferSigned;
+      }
+      if(window.SaldoFavor && SaldoFavor.getUltimoSaldo){
+        balanceOp = await SaldoFavor.getUltimoSaldo();
+      }
+    }catch(e){ console.warn('SolicitudPago._fetchIndicadores', e); }
+    _indicadores = { balanceComp, transferencia, balanceOp };
   }
 
   function _calcTotals(){
-    const { balanceComp, transferencia, balanceOp } = _getInputs();
+    const { balanceComp, transferencia, balanceOp } = _indicadores;
     const balanceCompAct = balanceComp - transferencia;
     const totalPagar     = _rows.reduce((s,r) => s + Math.abs(r.pendiente), 0);
     const balanceDispOP  = balanceOp - totalPagar;
@@ -122,7 +151,7 @@ const SolicitudPago = (() => {
   }
 
   // ------ Public: render view ------
-  function render(){
+  async function render(){
     DataModule.load();
     if(_corteSelected){
       _rows = DataModule.getCXPByCorte(_corteSelected);
@@ -130,12 +159,12 @@ const SolicitudPago = (() => {
       _solicitudNumero = found ? found.numero : null;
     }
     _populateCortes();
-    // Restore saved balance values
-    const saved = Storage.getBankData();
     const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
-    set('spBalanceComp',   saved.balanceComp   || 0);
-    set('spTransferencia', saved.transferencia  || 0);
-    set('spBalanceOp',     saved.balanceOperativa || 0);
+    set('spBalanceComp', 'Cargando…'); set('spTransferencia', 'Cargando…'); set('spBalanceOp', 'Cargando…');
+    await _fetchIndicadores();
+    set('spBalanceComp',   Utils.fmtMoney(_indicadores.balanceComp));
+    set('spTransferencia', Utils.fmtMoney(_indicadores.transferencia));
+    set('spBalanceOp',     Utils.fmtMoney(_indicadores.balanceOp));
     updatePreview();
   }
 
@@ -173,7 +202,6 @@ const SolicitudPago = (() => {
   }
 
   function updatePreview(){
-    _saveBalances();
     const el = document.getElementById('spDocument');
     if(el) el.innerHTML = _buildDocHTML();
   }

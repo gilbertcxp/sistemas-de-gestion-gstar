@@ -56,17 +56,25 @@ const Sync = (() => {
     }catch(e){ console.warn('Sync.pull ex', e); return { ok:false, reason:String(e) }; }
   }
 
-  // Trae las Transferencias entre Cuentas publicadas por Disponibilidad Bancaria
-  // (captura-disponibilidad.html). No es una SHARED_KEY de este módulo: solo se lee.
-  async function pullTransferData(){
+  // Lectura puntual de una key de OTRO módulo (no es SHARED_KEY local, solo se lee)
+  async function _pullExternalKey(key){
     const db = _db();
     if(!db) return null;
     try{
-      const { data, error } = await db.from(TABLE).select('value').eq('key','disponibilidad_transferencias_entre_cuentas').single();
+      const { data, error } = await db.from(TABLE).select('value').eq('key', key).single();
       if(error || !data) return null;
       return data.value || null;
-    }catch(e){ console.warn('Sync.pullTransferData', e); return null; }
+    }catch(e){ console.warn('Sync._pullExternalKey', key, e); return null; }
   }
+
+  // Transferencias entre Cuentas publicadas por Disponibilidad Bancaria (captura-disponibilidad.html)
+  function pullTransferData(){ return _pullExternalKey('disponibilidad_transferencias_entre_cuentas'); }
+
+  // Balance Inicial por cuenta y último movimiento bancario de Compensación,
+  // publicados por Disponibilidad Bancaria — para el Balance en Cuenta COMP
+  // auto-calculado de la Solicitud de Pago.
+  function pullBalanceInicial(){ return _pullExternalKey('disponibilidad_balance_inicial'); }
+  function pullMovimientosCuenta(acc){ return _pullExternalKey('disponibilidad_movimientos_'+acc); }
 
   // Empuje con debounce por clave (se llama desde Storage._set)
   function push(key, value){
@@ -112,6 +120,6 @@ const Sync = (() => {
 
   function isReady(){ return _ready; }
 
-  return { pull, push, publishAll, subscribeRealtime, isReady, pullTransferData };
+  return { pull, push, publishAll, subscribeRealtime, isReady, pullTransferData, pullBalanceInicial, pullMovimientosCuenta };
 })();
 window.Sync = Sync;

@@ -80,6 +80,14 @@ const SaldoFavor = (() => {
     _rows = _buildMovimientos(solicitudes, transferencias);
   }
 
+  // Último saldo calculado del historial — usado por Solicitud de Pago
+  // ("Saldo a Favor en la Cuenta Operativa"), sin necesidad de tener esta vista abierta.
+  async function getUltimoSaldo(){
+    await _cargar();
+    const ultimo = _rows[_rows.length - 1];
+    return ultimo ? ultimo.saldo : SALDO_INICIAL;
+  }
+
   // ------ filtros y orden (solo afectan la presentación, no el cálculo) ------
   function _getFiltered(){
     return _rows.filter(r => {
@@ -196,5 +204,6 @@ const SaldoFavor = (() => {
     UI.toast('Excel descargado', 'ok');
   }
 
-  return { render, filter, clearFilters, setSort, exportExcel };
+  return { render, filter, clearFilters, setSort, exportExcel, getUltimoSaldo };
 })();
+window.SaldoFavor = SaldoFavor;

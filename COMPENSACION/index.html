@@ -1018,19 +1018,22 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
               </select>
             </div>
             <div class="field">
-              <label class="f-label">Balance en Cuenta COMP (RD$)</label>
-              <input type="number" class="input" id="spBalanceComp" value="0" step="0.01"
-                oninput="SolicitudPago.updatePreview()">
+              <label class="f-label">Balance en Cuenta COMP <span class="muted" style="font-weight:400;text-transform:none;">· automático</span></label>
+              <input type="text" class="input" id="spBalanceComp" value="RD$ 0.00" readonly
+                title="Desde Disponibilidad Bancaria → Resumen Ejecutivo → Balance de la Cuenta de Compensación"
+                style="background:var(--canvas);cursor:not-allowed;">
             </div>
             <div class="field">
-              <label class="f-label">Transferencia entre Cuentas (RD$)</label>
-              <input type="number" class="input" id="spTransferencia" value="0" step="0.01"
-                oninput="SolicitudPago.updatePreview()">
+              <label class="f-label">Transferencias entre Cuentas <span class="muted" style="font-weight:400;text-transform:none;">· automático</span></label>
+              <input type="text" class="input" id="spTransferencia" value="RD$ 0.00" readonly
+                title="Desde Disponibilidad Bancaria → Resumen Ejecutivo → Transferencias entre Cuentas de Compensación (solo pendientes de aplicar)"
+                style="background:var(--canvas);cursor:not-allowed;">
             </div>
             <div class="field">
-              <label class="f-label">Saldo en Cuenta Operativa (RD$)</label>
-              <input type="number" class="input" id="spBalanceOp" value="0" step="0.01"
-                oninput="SolicitudPago.updatePreview()">
+              <label class="f-label">Saldo a Favor en Cta. Operativa <span class="muted" style="font-weight:400;text-transform:none;">· automático</span></label>
+              <input type="text" class="input" id="spBalanceOp" value="RD$ 0.00" readonly
+                title="Último saldo calculado en Saldo a Favor de Compensación"
+                style="background:var(--canvas);cursor:not-allowed;">
             </div>
           </div>
         </div>
