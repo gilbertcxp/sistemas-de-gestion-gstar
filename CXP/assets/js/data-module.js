@@ -31,8 +31,11 @@ const DataModule = (() => {
   }
 
   // ------ Pagos Fijos: sincronizados desde la Antigüedad de Saldo (Supabase) ------
-  // No se registran manualmente. Se regeneran completos en cada sync, preservando
-  // el Estado editado localmente (id determinístico por proveedor+factura+fecha).
+  // No se registran manualmente. Se regeneran en cada sync (id determinístico por
+  // proveedor+factura+fecha), pero cualquier campo editado a mano en el Reporte
+  // (Suplidor, Concepto, Monto — ver updateField/_editedFields) queda "congelado"
+  // y ya no se pisa con lo que traiga la Antigüedad; el resto sigue sincronizándose.
+  // El Estado siempre se preserva (es un campo puramente local, no viene de Antigüedad).
   // Los Pagos Provisionales (manuales o importados) nunca se tocan aquí.
   async function syncFijosFromAging(){
     if(!window.Sync) return { ok:false, reason:'no-sync' };
@@ -41,13 +44,56 @@ const DataModule = (() => {
 
     const nuevosFijos = Parser.buildFijosFromAging(aging);
     const existing = Storage.getRows();
-    const estadoPorId = new Map(existing.filter(r => r.tipoPago === 'Fijo').map(r => [r.id, r.estado]));
+    const prevById = new Map(existing.filter(r => r.tipoPago === 'Fijo').map(r => [r.id, r]));
     const provisionales = existing.filter(r => r.tipoPago !== 'Fijo');
-    const fijosFinal = nuevosFijos.map(r => ({ ...r, estado: estadoPorId.get(r.id) || r.estado }));
+    const fijosFinal = nuevosFijos.map(r => {
+      const prev = prevById.get(r.id);
+      if(!prev) return r;
+      const merged = { ...r, estado: prev.estado, _editedFields: prev._editedFields || [] };
+      merged._editedFields.forEach(f => { merged[f] = prev[f]; });
+      return merged;
+    });
 
     Storage.saveRows([...fijosFinal, ...provisionales]);
     load();
     return { ok:true, total: fijosFinal.length };
+  }
+
+  // ------ Edición inline: Suplidor, Concepto y Monto (cualquier fila) ------
+  // Para Pagos Fijos, el campo editado queda marcado en _editedFields y se
+  // preserva en cada resync desde Antigüedad de Saldo (ver syncFijosFromAging).
+  function updateField(id, field, rawValue){
+    const row = _rows.find(r => r.id === id);
+    if(!row) return;
+    const patch = {};
+    const editedFields = new Set(row._editedFields || []);
+
+    if(field === 'proveedor'){
+      const v = String(rawValue||'').trim();
+      if(!v){ UI.toast('El suplidor no puede quedar vacío', 'err'); _renderTable(); return; }
+      patch.proveedor = v;
+      editedFields.add('proveedor');
+    } else if(field === 'detalle'){
+      const v = String(rawValue||'').trim();
+      if(!v){ UI.toast('El concepto no puede quedar vacío', 'err'); _renderTable(); return; }
+      patch.detalle = v;
+      editedFields.add('detalle');
+    } else if(field === 'saldoPendiente'){
+      const monto = parseFloat(rawValue) || 0;
+      if(monto <= 0){ UI.toast('El monto debe ser mayor a 0', 'err'); _renderTable(); return; }
+      patch.montoTotal = monto;
+      patch.saldoPendiente = monto;
+      editedFields.add('montoTotal');
+      editedFields.add('saldoPendiente');
+    } else {
+      return;
+    }
+
+    patch._editedFields = Array.from(editedFields);
+    Storage.updateRow(id, patch);
+    load();
+    _renderTable();
+    _renderKPIs();
   }
 
   // ------ Pagos Provisionales: importación de Excel (upsert por llave natural) ------
@@ -215,13 +261,19 @@ const DataModule = (() => {
         const tipoPago = r.tipoPago || 'Provisional';
         return `<tr>
           <td class="c"><input type="checkbox" class="chk" ${_selected.has(r.id)?'checked':''} onchange="DataModule.toggleSelect('${r.id}')"></td>
-          <td>${Utils.escapeHtml(r.proveedor)}</td>
+          <td><input type="text" class="input cxp-inline-input" value="${Utils.escapeHtml(r.proveedor)}"
+                onblur="DataModule.updateField('${r.id}','proveedor', this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()"></td>
           <td class="mono" style="font-size:11.5px;">${Utils.escapeHtml(r.numeroFactura||'—')}</td>
           <td>${Utils.fmtDate(r.fecha)}</td>
           <td>${Utils.fmtDate(r.fechaVencimiento)}</td>
-          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${Utils.escapeHtml(r.detalle)}">${Utils.escapeHtml(r.detalle||'—')}</td>
+          <td style="max-width:260px;"><input type="text" class="input cxp-inline-input" value="${Utils.escapeHtml(r.detalle)}" title="${Utils.escapeHtml(r.detalle)}"
+                onblur="DataModule.updateField('${r.id}','detalle', this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()"></td>
           <td class="c">${Utils.escapeHtml(r.moneda)}</td>
-          <td class="r num">${Utils.fmtNum(r.saldoPendiente)}</td>
+          <td class="r"><input type="number" class="input cxp-inline-input r" step="0.01" min="0" value="${r.saldoPendiente}"
+                onblur="DataModule.updateField('${r.id}','saldoPendiente', this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()"></td>
           <td class="c">${dv===null?'—':(vencida?`<span class="pill red">${dv}d</span>`:dv+'d')}</td>
           <td class="c">
             <select class="input data-status-sel" onchange="DataModule.updateEstado('${r.id}', this.value)">
@@ -338,6 +390,6 @@ const DataModule = (() => {
   return {
     render, load, syncFijosFromAging, importProvisionalFile, setFilter, setSort, goPage,
     toggleSelect, selectAllVisible, clearSelection, getSelectedRows, getSelectedCount,
-    updateEstado, deleteRow, abrirModalAgregarProvision, submitAgregarProvision
+    updateEstado, updateField, deleteRow, abrirModalAgregarProvision, submitAgregarProvision
   };
 })();
