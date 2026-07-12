@@ -139,6 +139,7 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
       <div class="frow">
         <div class="ffield" style="flex:1.6;min-width:240px"><label>User UID (Supabase Auth)</label><input type="text" class="fi mono" id="nuUid" placeholder="ej. 3fa85f64-5717-4562-b3fc-2c963f66afa6"></div>
         <div class="ffield"><label>Nombre</label><input type="text" class="fi" id="nuNombre" placeholder="Nombre completo"></div>
+        <div class="ffield"><label>Correo</label><input type="email" class="fi" id="nuEmail" placeholder="correo@gstarservices.com"></div>
         <div class="ffield"><label>Rol</label>
           <select class="fi" id="nuRol">
             <option value="Administrador General">Administrador General</option>
@@ -252,16 +253,19 @@ async function guardarRol(id){
 async function vincularUsuario(){
   const uid = document.getElementById('nuUid').value.trim();
   const nombre = document.getElementById('nuNombre').value.trim();
+  const email = document.getElementById('nuEmail').value.trim();
   let rol = document.getElementById('nuRol').value;
   if(rol === 'Otro') rol = document.getElementById('nuRolOtro').value.trim();
   if(!uid || !/^[0-9a-f-]{20,}$/i.test(uid)){ toast('Ingresa un User UID válido (cópialo desde Supabase → Authentication → Users)', true); return; }
   if(!nombre){ toast('El nombre es requerido', true); return; }
+  if(!email){ toast('El correo es requerido', true); return; }
   if(!rol){ toast('El rol es requerido', true); return; }
   try{
-    const { error } = await window.db.from('usuarios').upsert({ id: uid, nombre, rol }, { onConflict: 'id' });
+    const { error } = await window.db.from('usuarios').upsert({ id: uid, nombre, email, rol }, { onConflict: 'id' });
     if(error) throw error;
     document.getElementById('nuUid').value = '';
     document.getElementById('nuNombre').value = '';
+    document.getElementById('nuEmail').value = '';
     document.getElementById('nuRolOtro').value = '';
     toast('Usuario vinculado con rol "'+rol+'"');
     loadUsuarios();
