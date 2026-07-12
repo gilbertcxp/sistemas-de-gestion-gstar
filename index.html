@@ -457,15 +457,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
-  <!-- ======= CXP · ANTIGÜEDAD DE SALDO (en desarrollo) ======= -->
+  <!-- ======= CXP · ANTIGÜEDAD DE SALDO ======= -->
   <section class="page" id="page-cxp-antiguedad">
-    <div class="empty-state">
-      <div class="empty-card">
-        <div class="empty-ico amber"><i class="bi bi-clock-history"></i></div>
-        <div class="empty-title">Antigüedad de Saldo</div>
-        <div class="empty-msg">Este módulo se encuentra en desarrollo y estará disponible próximamente.</div>
-        <div class="empty-sign"><i class="bi bi-hourglass-split"></i> En desarrollo</div>
-      </div>
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-cxp-antiguedad"
+              data-src="CXP/antiguedad-cxp.html"
+              title="Antigüedad de Saldo CXP"></iframe>
     </div>
   </section>
 
@@ -600,6 +597,11 @@ function lazyLoadFrame(page){
   // CXC · Antigüedad de Saldo
   if(page==='cxc'){
     const f=document.getElementById('frame-cxc');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // CXP · Antigüedad de Saldo
+  if(page==='cxp-antiguedad'){
+    const f=document.getElementById('frame-cxp-antiguedad');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // CXP · Reporte de CXP
