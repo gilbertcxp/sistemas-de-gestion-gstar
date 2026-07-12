@@ -440,7 +440,7 @@ const App = (() => {
     const solicitudes = Storage.getSolicitudes().slice().reverse();
     const tbodySol = document.querySelector('#tblRepSolicitudes tbody');
     tbodySol.innerHTML = solicitudes.length === 0
-      ? `<tr><td colspan="6"><div class="t-empty">No hay solicitudes generadas todavía.</div></td></tr>`
+      ? `<tr><td colspan="7"><div class="t-empty">No hay solicitudes generadas todavía.</div></td></tr>`
       : solicitudes.map(s => {
           const total = (s.items||[]).reduce((acc,i)=>acc+(Number(i.monto)||0),0);
           const estadoPill = s.estado === 'Aplicada'
@@ -453,8 +453,23 @@ const App = (() => {
             <td>${estadoPill}</td>
             <td class="r num"><b>${Utils.fmtMoney(total)}</b></td>
             <td class="c">${(s.items||[]).length}</td>
+            <td class="c">
+              <button class="btn btn-ghost btn-icon btn-sm" title="Eliminar solicitud" onclick="App.confirmDeleteSolicitud('${s.numero}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+              </button>
+            </td>
           </tr>`;
         }).join('');
+  }
+
+  function confirmDeleteSolicitud(numero){
+    UI.requirePin(() => {
+      UI.confirm('Eliminar solicitud', `¿Eliminar la Solicitud de Pago No. ${numero}? Esta acción no se puede deshacer.`, () => {
+        Storage.deleteSolicitud(numero);
+        renderReportes();
+        UI.toast('Solicitud eliminada', 'ok');
+      });
+    });
   }
 
   function _exportPagosExcel(){
@@ -680,7 +695,7 @@ const App = (() => {
   return {
     init, switchView, viewInvoice, openVincular, confirmVinculo, crearDesdeVincular,
     toggleStagedRow, toggleSelectInvoice, confirmDeleteInvoice, clearPendingVinculo,
-    cargarData, publishAll
+    cargarData, publishAll, confirmDeleteSolicitud
   };
 })();
 

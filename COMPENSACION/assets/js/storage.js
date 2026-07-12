@@ -168,6 +168,9 @@ const Storage = (() => {
     if(idx >= 0){ list[idx] = {...list[idx], ...patch}; saveSolicitudes(list); return list[idx]; }
     return null;
   }
+  function deleteSolicitud(numero){
+    saveSolicitudes(getSolicitudes().filter(s => String(s.numero) !== String(numero)));
+  }
   function getSolicitudCounter(){ return _get(K_SOLICITUD_COUNTER, 0); }
   function setSolicitudCounter(n){ _set(K_SOLICITUD_COUNTER, n); }
   function nextSolicitudNumber(){ const n = getSolicitudCounter() + 1; setSolicitudCounter(n); return n; }
@@ -226,7 +229,7 @@ const Storage = (() => {
     getDataRows, saveDataRows, clearDataRows, updateDataRow,
     getBankData, saveBankData,
     getPagos, savePagos, addPago, getPagoCounter, nextPagoNumber,
-    getSolicitudes, saveSolicitudes, getSolicitud, addSolicitud, updateSolicitud,
+    getSolicitudes, saveSolicitudes, getSolicitud, addSolicitud, updateSolicitud, deleteSolicitud,
     getSolicitudCounter, nextSolicitudNumber, peekNextSolicitudNumber,
     exportBackup, importBackup, resetAll,
     applyRemote, getSharedKeys
