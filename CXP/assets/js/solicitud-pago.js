@@ -6,6 +6,7 @@ const SolicitudPago = (() => {
 
   let _sol    = null;   // solicitud activa (Pendiente) o cargada del historial
   let _locked = false;  // true cuando se cargó solo para ver (historial)
+  let _dragIdx = null;  // índice del ítem que se está arrastrando
 
   // ------ helpers ------
   function _getBankInputs(){
@@ -127,6 +128,56 @@ const SolicitudPago = (() => {
     _sol.totalDocs    = _sol.items.length;
     Storage.upsertSolicitud(_sol);
     render();
+  }
+
+  // ------ Orden manual de los documentos (sube/baja, drag & drop) ------
+  function _persistOrder(){
+    Storage.upsertSolicitud(_sol);
+    render();
+    UI.toast('Orden del reporte actualizado correctamente.', 'ok');
+  }
+
+  function moveItem(idx, dir){
+    if(_locked || !_sol) return;
+    const newIdx = idx + dir;
+    if(newIdx < 0 || newIdx >= _sol.items.length) return;
+    const items = _sol.items;
+    [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+    _persistOrder();
+  }
+
+  function dragStart(idx, ev){
+    if(_locked){ ev.preventDefault(); return; }
+    _dragIdx = idx;
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.currentTarget.classList.add('dragging');
+  }
+
+  function dragOver(idx, ev){
+    ev.preventDefault();
+    if(_locked || _dragIdx === null) return;
+    ev.currentTarget.classList.add('drag-over');
+  }
+
+  function dragLeave(ev){
+    ev.currentTarget.classList.remove('drag-over');
+  }
+
+  function dragEnd(ev){
+    ev.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('#spItemsTable tr.drag-over').forEach(el => el.classList.remove('drag-over'));
+    _dragIdx = null;
+  }
+
+  function drop(idx, ev){
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    if(_locked || !_sol || _dragIdx === null || _dragIdx === idx) { _dragIdx = null; return; }
+    const items = _sol.items;
+    const [moved] = items.splice(_dragIdx, 1);
+    items.splice(idx, 0, moved);
+    _dragIdx = null;
+    _persistOrder();
   }
 
   function habilitarEdicion(){
@@ -442,9 +493,17 @@ const SolicitudPago = (() => {
       </div>`;
     }
     return `<div class="table-wrap"><table class="t">
-      <thead><tr><th>Fecha</th><th>Suplidor</th><th>Detalle</th><th class="c">Moneda</th><th class="r">Valor</th><th>Observaciones</th><th class="c">Acción</th></tr></thead>
+      <thead><tr><th style="width:28px"></th><th>Fecha</th><th>Suplidor</th><th>Detalle</th><th class="c">Moneda</th><th class="r">Valor</th><th>Observaciones</th><th class="c">Acción</th></tr></thead>
       <tbody>
-        ${_sol.items.map((i,idx) => `<tr>
+        ${_sol.items.map((i,idx) => `<tr class="sp-drag-row" draggable="${_locked?'false':'true'}"
+              ondragstart="SolicitudPago.dragStart(${idx}, event)"
+              ondragover="SolicitudPago.dragOver(${idx}, event)"
+              ondragleave="SolicitudPago.dragLeave(event)"
+              ondrop="SolicitudPago.drop(${idx}, event)"
+              ondragend="SolicitudPago.dragEnd(event)">
+          <td class="c"><span class="sp-drag-handle" title="${_locked?'':'Arrastra para reordenar'}">
+            ${_locked?'':'<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>'}
+          </span></td>
           <td>${Utils.fmtDate(i.fecha)}</td>
           <td>${Utils.escapeHtml(i.proveedor)}</td>
           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
@@ -457,10 +516,20 @@ const SolicitudPago = (() => {
               oninput="SolicitudPago.setObservacion(${idx}, this.value)">
           </td>
           <td class="c">
-            <button class="btn btn-ghost btn-icon btn-sm" ${_locked?'disabled':''} title="Quitar de la solicitud"
-              onclick="SolicitudPago.eliminarItem(${idx})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
+            <div style="display:flex;gap:2px;justify-content:center;">
+              <button class="btn btn-ghost btn-icon btn-sm" ${_locked||idx===0?'disabled':''} title="Subir"
+                onclick="SolicitudPago.moveItem(${idx},-1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
+              <button class="btn btn-ghost btn-icon btn-sm" ${_locked||idx===_sol.items.length-1?'disabled':''} title="Bajar"
+                onclick="SolicitudPago.moveItem(${idx},1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+              </button>
+              <button class="btn btn-ghost btn-icon btn-sm" ${_locked?'disabled':''} title="Quitar de la solicitud"
+                onclick="SolicitudPago.eliminarItem(${idx})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -624,6 +693,7 @@ const SolicitudPago = (() => {
     generar, cargar, loadActive, render, updatePreview,
     setObservacion, eliminarItem, habilitarEdicion, guardar,
     abrirModalAgregar, submitItemManual,
+    moveItem, dragStart, dragOver, dragLeave, dragEnd, drop,
     pagar, confirmarPago, toggleAllPagar, updatePagarSummary,
     printDoc, exportPDF, exportExcel
   };

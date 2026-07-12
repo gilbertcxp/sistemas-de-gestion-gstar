@@ -26,6 +26,11 @@
 .cxp-inline-input:focus { border-color:var(--brand-blue,#1768FF); background:#fff; }
 .cxp-inline-input.r { text-align:right; }
 .kpi.warn{ --accent:var(--warn); }
+.sp-drag-row { transition:opacity .15s, background .15s; }
+.sp-drag-row.dragging { opacity:.4; }
+.sp-drag-row.drag-over { background:var(--brand-blue-10,rgba(23,104,255,.08)); }
+.sp-drag-handle { cursor:grab; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
+.sp-drag-handle:active { cursor:grabbing; }
 
 /* ---- Document preview container — réplica horizontal del Excel ---- */
 .doc-preview { background:var(--canvas); border-radius:var(--r-lg); padding:20px; min-height:300px; overflow-x:auto; }
