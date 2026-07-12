@@ -143,6 +143,7 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
           <select class="fi" id="nuRol">
             <option value="Administrador General">Administrador General</option>
             <option value="Cargador de Archivos">Cargador de Archivos</option>
+            <option value="Auxiliar de Facturación y CXC">Auxiliar de Facturación y CXC</option>
             <option value="Otro">Otro (especificar)</option>
           </select>
         </div>
@@ -174,7 +175,7 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
 
 <script>
-const ROLE_OPTIONS = { admin:'Administrador General', cargador:'Cargador de Archivos' };
+const ROLE_OPTIONS = { admin:'Administrador General', cargador:'Cargador de Archivos', auxiliar:'Auxiliar de Facturación y CXC' };
 let USUARIOS = [];
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -223,7 +224,8 @@ async function loadUsuarios(){
             <select class="fi" style="min-width:190px" id="rolSel_${esc(u.id)}">
               <option value="${ROLE_OPTIONS.admin}" ${u.rol===ROLE_OPTIONS.admin?'selected':''}>${ROLE_OPTIONS.admin}</option>
               <option value="${ROLE_OPTIONS.cargador}" ${u.rol===ROLE_OPTIONS.cargador?'selected':''}>${ROLE_OPTIONS.cargador}</option>
-              <option value="__custom" ${(u.rol && u.rol!==ROLE_OPTIONS.admin && u.rol!==ROLE_OPTIONS.cargador)?'selected':''}>Otro: ${esc(u.rol)||'—'}</option>
+              <option value="${ROLE_OPTIONS.auxiliar}" ${u.rol===ROLE_OPTIONS.auxiliar?'selected':''}>${ROLE_OPTIONS.auxiliar}</option>
+              <option value="__custom" ${(u.rol && u.rol!==ROLE_OPTIONS.admin && u.rol!==ROLE_OPTIONS.cargador && u.rol!==ROLE_OPTIONS.auxiliar)?'selected':''}>Otro: ${esc(u.rol)||'—'}</option>
             </select>
           </td>
           <td><button class="btn btn-p btn-sm" onclick="guardarRol('${esc(u.id)}')"><i class="bi bi-check2"></i> Guardar</button></td>
