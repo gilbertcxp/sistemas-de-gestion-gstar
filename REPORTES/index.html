@@ -99,46 +99,35 @@
     /* ER Table */
     .er-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
     .er-table thead th{background:var(--blue-dk);color:#fff;padding:7px 12px;font-size:11px;font-weight:700;text-align:right;border-right:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:5}
-    .er-table thead th:first-child{text-align:left;min-width:80px}
-    .er-table thead th:nth-child(2){text-align:left;min-width:300px;position:sticky;left:0;z-index:6;background:var(--blue-dk)}
-    .er-table thead th.acc-col{position:sticky;left:80px;z-index:6;background:var(--blue-dk);padding-left:8px;border-right:2px solid rgba(255,255,255,.15)}
+    .er-table thead th.acc-col{text-align:left;min-width:300px;position:sticky;left:0;z-index:6;background:var(--blue-dk);padding-left:8px;border-right:2px solid rgba(255,255,255,.15)}
     .er-table thead th.acum{background:#152a50;border-left:2px solid rgba(255,255,255,.2)}
 
     /* Row types */
     .er-table td{padding:5px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
     .er-table td.num{text-align:right;font-variant-numeric:tabular-nums}
     .er-table td.desc-cell{position:sticky;left:0;background:inherit;z-index:2}
-    .er-table td.cuenta-cell{position:sticky;left:0;background:inherit;z-index:2;min-width:80px;color:#94a3b8;font-size:11px}
 
     /* Tipo header */
     .r-tipo td{background:#1f3864;color:#fff;padding:9px 12px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
-    .r-tipo td.cuenta-cell{background:#1f3864}
     .r-tipo td.desc-cell{background:#1f3864;color:#fff}
 
-    /* CtaPadre header */
-    .r-ctapadre td{background:#e8eef8;padding:7px 12px;font-size:11px;font-weight:700;color:#1f3864;text-transform:uppercase;letter-spacing:.4px}
-    .r-ctapadre td.cuenta-cell{background:#e8eef8}
+    /* CtaPadre header (expandible) */
+    .r-ctapadre td{background:#e8eef8;padding:7px 12px;font-size:11.5px;font-weight:700;color:#1f3864}
     .r-ctapadre td.desc-cell{background:#e8eef8;color:#1f3864}
+    .r-ctapadre .grp-chev{display:inline-block;width:14px;font-size:9px;margin-right:6px;transition:transform .15s}
 
     /* Item row */
     .r-item td{font-size:12px;color:#374151}
     .r-item:hover td{background:#f8fafc}
-    .r-item td.desc-cell{padding-left:28px;color:#374151}
-
-    /* Subtotal */
-    .r-sub td{background:#eef2f9;border-top:1px solid #c8d6ec;border-bottom:1px solid #c8d6ec;font-weight:700;color:#1f3864}
-    .r-sub td.desc-cell{background:#eef2f9;color:#1f3864;padding-left:28px}
-    .r-sub td.cuenta-cell{background:#eef2f9}
+    .r-item td.desc-cell{padding-left:34px;color:#374151}
 
     /* Tipo total */
     .r-tipo-total td{background:#1f3864;color:#fff;font-weight:800;padding:8px 12px;font-size:12.5px}
     .r-tipo-total td.desc-cell{background:#1f3864;color:#fff}
-    .r-tipo-total td.cuenta-cell{background:#1f3864}
 
     /* Ingreso neto */
     .r-neto td{background:var(--green);color:#fff;font-weight:800;padding:10px 12px;font-size:13.5px}
     .r-neto td.desc-cell{background:var(--green);color:#fff}
-    .r-neto td.cuenta-cell{background:var(--green)}
     .r-neto-neg td{background:var(--red) !important;color:#fff !important}
 
     /* Accumulated column */
@@ -172,7 +161,7 @@
       .rcard{border:none;border-radius:0;overflow:visible}
       .table-wrap{overflow:visible}
       .er-table thead th{position:static}
-      .er-table td.cuenta-cell,.er-table td.desc-cell{position:static}
+      .er-table td.desc-cell{position:static}
     }
 
     @media(max-width:768px){.sidebar{display:none}}
@@ -244,6 +233,10 @@
           <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
           <select id="fYear" onchange="onYearChange()"></select>
         </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Mes</span>
+          <select id="fMonth" onchange="onMonthChange()"></select>
+        </div>
         <div class="fsep"></div>
         <div class="fg">
           <span class="fg-lbl"><i class="bi bi-search"></i> Buscar</span>
@@ -297,9 +290,11 @@ const MONTH_FULL = {
   '07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'
 };
 
-let _allData   = {};   // keyed by year → { months, structure, meta }
-let _year      = null;
-let _searchQ   = '';
+let _allData       = {};   // keyed by year → { months, structure, meta }
+let _year          = null;
+let _searchQ       = '';
+let _monthFilter   = '';   // '' = todos los meses, o 'YYYY-MM' para un mes específico
+let _expandedGroups = new Set(); // ids de CtaPadre expandidos (colapsados por defecto)
 
 const STORE_KEY = 'gstar_er_v2';
 
@@ -391,6 +386,10 @@ function fmtPlain(n){
   const f = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   return n < 0 ? `(${f})` : (n===0?'—':f);
 }
+// Quita un código contable inicial (ej. "4100-Ventas" → "Ventas"); no hace nada si no hay código
+function cleanLabel(s){
+  return String(s||'').replace(/^\s*\d+\s*[-–]\s*/, '').trim();
+}
 
 /* ══════════════════════════════════════════════════════
    CÁLCULO DE SUBTOTALES
@@ -412,21 +411,22 @@ function render(){
   const data = _allData[_year];
   if(!data){ showEmpty(); return; }
 
-  const { months, structure } = data;
+  const allMonths = data.months;
+  const structure = data.structure;
+  const months = _monthFilter ? allMonths.filter(m => m.key === _monthFilter) : allMonths;
   const q = _searchQ.toLowerCase();
 
   // Update period label
   const firstM = months[0]?.key; const lastM = months[months.length-1]?.key;
-  const pLabel = firstM === lastM
+  const pLabel = !firstM ? '—' : firstM === lastM
     ? `${MONTH_FULL[firstM?.split('-')[1]]} ${_year}`
     : `${MONTH_FULL[firstM?.split('-')[1]]} – ${MONTH_FULL[lastM?.split('-')[1]]} ${_year}`;
   document.getElementById('rPeriod').textContent = pLabel;
-  document.getElementById('dataInfo').textContent = `${months.length} meses · ${_year}`;
+  document.getElementById('dataInfo').textContent = `${months.length} ${months.length===1?'mes':'meses'} · ${_year}`;
 
   // Build header
   const head = document.getElementById('erHead');
   head.innerHTML = `<tr>
-    <th style="text-align:left">Cuenta</th>
     <th class="acc-col" style="text-align:left">Descripción</th>
     ${months.map(m=>`<th>${MONTH_NAMES[m.key.split('-')[1]]}</th>`).join('')}
     <th class="acum">Acumulado</th>
@@ -442,9 +442,8 @@ function render(){
     if(tipo.id === 'ingreso_neto' || /^Tipo:\s*4/i.test(tipo.label)) return;
 
     // Tipo header
-    const tipoLabel = tipo.label.replace(/^Tipo:\s*/,'').replace(/-/,' – ');
+    const tipoLabel = cleanLabel(tipo.label.replace(/^Tipo:\s*/,''));
     rows.push(`<tr class="r-tipo">
-      <td class="cuenta-cell"></td>
       <td class="desc-cell">${tipoLabel}</td>
       ${months.map(()=>'<td></td>').join('')}
       <td class="acum"></td>
@@ -461,32 +460,28 @@ function render(){
 
       if(q && visibleAccounts.length === 0) return;
 
-      // CtaPadre header
-      rows.push(`<tr class="r-ctapadre">
-        <td class="cuenta-cell"></td>
-        <td class="desc-cell">${grp.label}</td>
-        ${months.map(()=>'<td></td>').join('')}
-        <td class="acum"></td>
-      </tr>`);
-
-      // Account rows
-      visibleAccounts.forEach(acc => {
-        rows.push(`<tr class="r-item">
-          <td class="cuenta-cell">${acc.cuenta}</td>
-          <td class="desc-cell">${acc.descripcion}</td>
-          ${months.map(m=>`<td class="num">${fmt(acc.valores[m.key])}</td>`).join('')}
-          <td class="num acum">${fmt(acc.valores.acumulado)}</td>
-        </tr>`);
-      });
-
-      // CtaPadre subtotal
+      // Total del grupo (se muestra en el propio encabezado, colapsado o expandido)
       const sub = sumAccounts(grp.accounts, months);
-      rows.push(`<tr class="r-sub">
-        <td class="cuenta-cell"></td>
-        <td class="desc-cell">Subtotal ${grp.label}</td>
+      // Con búsqueda activa se fuerza expandido para que se vean los resultados
+      const expanded = q ? true : _expandedGroups.has(grp.id);
+
+      // CtaPadre header — colapsable
+      rows.push(`<tr class="r-ctapadre" style="cursor:pointer" onclick="toggleGroup('${grp.id.replace(/'/g,"\\'")}')">
+        <td class="desc-cell"><i class="bi bi-chevron-${expanded?'down':'right'} grp-chev"></i>${cleanLabel(grp.label)}</td>
         ${months.map(m=>`<td class="num">${fmt(sub[m.key])}</td>`).join('')}
         <td class="num acum">${fmt(sub.acumulado)}</td>
       </tr>`);
+
+      // Account rows — solo si el grupo está expandido
+      if(expanded){
+        visibleAccounts.forEach(acc => {
+          rows.push(`<tr class="r-item">
+            <td class="desc-cell">${acc.descripcion}</td>
+            ${months.map(m=>`<td class="num">${fmt(acc.valores[m.key])}</td>`).join('')}
+            <td class="num acum">${fmt(acc.valores.acumulado)}</td>
+          </tr>`);
+        });
+      }
 
       // Add to tipo totals
       months.forEach(m => tipoTotals[m.key] += sub[m.key]||0);
@@ -495,13 +490,12 @@ function render(){
 
     // Tipo total
     if(!q){
-      const tipoName = tipo.label.replace(/^Tipo:\s*/,'').replace(/\d+-/,'').trim();
+      const tipoName = cleanLabel(tipo.label.replace(/^Tipo:\s*/,''));
       rows.push(`<tr class="r-tipo-total">
-        <td class="cuenta-cell"></td>
         <td class="desc-cell">TOTAL ${tipoName.toUpperCase()}</td>
         ${months.map(m=>`<td class="num">${fmtPlain(tipoTotals[m.key])}</td>`).join('')}
         <td class="num acum">${fmtPlain(tipoTotals.acumulado)}</td>
-      </tr><tr><td colspan="${months.length+2}" style="height:4px;background:#f8fafc"></td></tr>`);
+      </tr><tr><td colspan="${months.length+1}" style="height:4px;background:#f8fafc"></td></tr>`);
     }
 
     // Acumular para Ingreso Neto: Tipo 1 = Ingreso (+), Tipo 2/3 = Costo/Gasto (-)
@@ -515,7 +509,6 @@ function render(){
   if(!q){
     const cls = netoTotals.acumulado < 0 ? 'r-neto r-neto-neg' : 'r-neto';
     rows.push(`<tr class="${cls}">
-      <td class="cuenta-cell"></td>
       <td class="desc-cell">INGRESO NETO</td>
       ${months.map(m=>`<td class="num">${fmtPlain(netoTotals[m.key])}</td>`).join('')}
       <td class="num acum">${fmtPlain(netoTotals.acumulado)}</td>
@@ -564,7 +557,9 @@ function processFile(file){
       };
       saveStore();
       _year = parsed.year;
+      _monthFilter = '';
       populateYearSelector();
+      populateMonthSelector();
       updateUploadZone(file.name);
       render();
       nav('er');
@@ -623,11 +618,36 @@ function populateYearSelector(){
 }
 function onYearChange(){
   _year = document.getElementById('fYear').value;
+  _monthFilter = '';
   updateUploadZone();
+  populateMonthSelector();
+  render();
+}
+function populateMonthSelector(){
+  const sel = document.getElementById('fMonth');
+  const data = _allData[_year];
+  sel.innerHTML = '<option value="">Todos</option>';
+  if(!data) return;
+  if(_monthFilter && !data.months.some(m => m.key === _monthFilter)) _monthFilter = '';
+  data.months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.key;
+    opt.textContent = MONTH_FULL[m.key.split('-')[1]];
+    if(m.key === _monthFilter) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function onMonthChange(){
+  _monthFilter = document.getElementById('fMonth').value;
   render();
 }
 function onSearch(){
   _searchQ = document.getElementById('fSearch').value.trim();
+  render();
+}
+function toggleGroup(groupId){
+  if(_expandedGroups.has(groupId)) _expandedGroups.delete(groupId);
+  else _expandedGroups.add(groupId);
   render();
 }
 
@@ -639,25 +659,26 @@ function exportPrint(){ window.print(); }
 function exportCSV(){
   const data = _allData[_year];
   if(!data){ showToast('No hay datos para exportar'); return; }
-  const { months, structure } = data;
+  const { structure } = data;
+  const months = _monthFilter ? data.months.filter(m => m.key === _monthFilter) : data.months;
   const csvRows = [
     ['Estado de Resultados — Gstar Services S.A'],
     ['RNC 131751016'],
     ['Período: ' + document.getElementById('rPeriod').textContent],
     [''],
-    ['Cuenta','Descripción',...months.map(m=>MONTH_FULL[m.key.split('-')[1]]),'Acumulado']
+    ['Descripción',...months.map(m=>MONTH_FULL[m.key.split('-')[1]]),'Acumulado']
   ];
 
   structure.forEach(tipo => {
     if(tipo.id === 'ingreso_neto' || /^Tipo:\s*4/i.test(tipo.label)) return;
-    csvRows.push(['',tipo.label.replace(/^Tipo:\s*/,'')]);
+    csvRows.push([cleanLabel(tipo.label.replace(/^Tipo:\s*/,''))]);
     tipo.groups.forEach(grp => {
-      csvRows.push(['',grp.label]);
+      csvRows.push([cleanLabel(grp.label)]);
       grp.accounts.forEach(acc => {
-        csvRows.push([acc.cuenta,acc.descripcion,...months.map(m=>acc.valores[m.key]),acc.valores.acumulado]);
+        csvRows.push([acc.descripcion,...months.map(m=>acc.valores[m.key]),acc.valores.acumulado]);
       });
       const sub = sumAccounts(grp.accounts, months);
-      csvRows.push(['','Subtotal '+grp.label,...months.map(m=>sub[m.key]),sub.acumulado]);
+      csvRows.push(['Subtotal '+cleanLabel(grp.label),...months.map(m=>sub[m.key]),sub.acumulado]);
     });
   });
 
@@ -711,6 +732,7 @@ function nav(page){
   if(years.length > 0){
     _year = years[0];
     populateYearSelector();
+    populateMonthSelector();
     updateUploadZone();
     render();
     nav('er');
