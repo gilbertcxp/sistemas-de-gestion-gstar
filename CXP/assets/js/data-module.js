@@ -59,7 +59,7 @@ const DataModule = (() => {
     return { ok:true, total: fijosFinal.length };
   }
 
-  // ------ Edición inline: Suplidor, Concepto y Monto (cualquier fila) ------
+  // ------ Edición inline: Suplidor, Concepto, Monto y Fechas (cualquier fila) ------
   // Para Pagos Fijos, el campo editado queda marcado en _editedFields y se
   // preserva en cada resync desde Antigüedad de Saldo (ver syncFijosFromAging).
   function updateField(id, field, rawValue){
@@ -85,6 +85,11 @@ const DataModule = (() => {
       patch.saldoPendiente = monto;
       editedFields.add('montoTotal');
       editedFields.add('saldoPendiente');
+    } else if(field === 'fecha' || field === 'fechaVencimiento'){
+      const v = String(rawValue||'').trim();
+      if(!v){ UI.toast('La fecha no puede quedar vacía', 'err'); _renderTable(); return; }
+      patch[field] = v;
+      editedFields.add(field);
     } else {
       return;
     }
@@ -265,8 +270,10 @@ const DataModule = (() => {
                 onblur="DataModule.updateField('${r.id}','proveedor', this.value)"
                 onkeydown="if(event.key==='Enter')this.blur()"></td>
           <td class="mono" style="font-size:11.5px;">${Utils.escapeHtml(r.numeroFactura||'—')}</td>
-          <td>${Utils.fmtDate(r.fecha)}</td>
-          <td>${Utils.fmtDate(r.fechaVencimiento)}</td>
+          <td><input type="date" class="input cxp-inline-input" value="${r.fecha||''}"
+                onchange="DataModule.updateField('${r.id}','fecha', this.value)"></td>
+          <td><input type="date" class="input cxp-inline-input" value="${r.fechaVencimiento||''}"
+                onchange="DataModule.updateField('${r.id}','fechaVencimiento', this.value)"></td>
           <td style="max-width:260px;"><input type="text" class="input cxp-inline-input" value="${Utils.escapeHtml(r.detalle)}" title="${Utils.escapeHtml(r.detalle)}"
                 onblur="DataModule.updateField('${r.id}','detalle', this.value)"
                 onkeydown="if(event.key==='Enter')this.blur()"></td>
