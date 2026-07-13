@@ -665,8 +665,8 @@ const SolicitudPago = (() => {
     .doc-logo2{height:130px}
     .doc-bankblock{min-width:400px}
     .bb-row{display:flex;justify-content:space-between;gap:20px;padding:2px 0;font-size:11.5px}
-    .bb-row .l{flex:1;text-align:right;color:#1f2937}
-    .bb-row .v{font-weight:700;text-align:right;min-width:110px}
+    .bb-row .l{flex:1;text-align:right;color:#1f2937;font-weight:600}
+    .bb-row .v{font-weight:800;text-align:right;min-width:110px}
     .bb-row .v .neg{color:#dc2626}
     .bb-row.header .l,.bb-row.header .v{font-weight:800}
     .bb-row.total{background:#d9d9d9;font-weight:800}
@@ -679,8 +679,8 @@ const SolicitudPago = (() => {
     .doc-table2 th{background:#1f3864;color:#fff;padding:7px 10px;text-align:left;font-size:10.5px;font-weight:700}
     .doc-table2 th.r,.doc-table2 td.r{text-align:right}
     .doc-table2 th.c,.doc-table2 td.c{text-align:center}
-    .doc-table2 td{padding:5px 10px;border-bottom:1px solid #f1f5f9}
-    .doc-table2 td.r{font-weight:600}
+    .doc-table2 td{padding:5px 10px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1f2937}
+    .doc-table2 td.r{font-weight:800}
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
     .doc-firmas{display:flex;justify-content:space-between;margin-top:64px;gap:32px}
     .doc-firma{flex:1;text-align:center}
