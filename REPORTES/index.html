@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="../auth/auth.js"></script>
+  <script>if (window.Auth) Auth.requireAuth();</script>
+  <script src="../supabase-client.js"></script>
   <style>
     :root{
       --bg-sidebar:#0f172a; --bg-app:#f1f5f9; --blue:#2563EB; --blue-dk:#1f3864;
@@ -300,10 +303,45 @@ let _monthFilter   = '';   // '' = todos los meses, o 'YYYY-MM' para un mes espe
 let _expandedGroups = new Set(); // ids de CtaPadre expandidos (colapsados por defecto)
 
 const STORE_KEY = 'gstar_er_v2';
+const DB_KEY    = 'estado_resultados_data';
 
 function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(_allData)); }catch(e){} }
 function loadStore(){
   try{ const r = localStorage.getItem(STORE_KEY); if(r) _allData = JSON.parse(r); }catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════
+   SUPABASE — publicar/cargar para todos los usuarios
+══════════════════════════════════════════════════════ */
+function _isAdminUser(){
+  try{
+    const s = window.Auth && Auth.getSession();
+    const label = (s && s.user && s.user.role && s.user.role.label || '').toLowerCase();
+    return label.includes('administrador') || label.includes('cargador');
+  }catch(e){ return false; }
+}
+
+async function _saveERToDB(){
+  if(!window.db) throw new Error('Sin conexión a base de datos.');
+  const session = window.Auth && Auth.getSession();
+  const { error } = await window.db.from('app_state').upsert({
+    key: DB_KEY,
+    value: _allData,
+    updated_at: new Date().toISOString(),
+    updated_by: session && session.user ? session.user.id : null
+  });
+  if(error) throw new Error(error.message);
+}
+
+async function _loadERFromDB(){
+  try{
+    if(!window.db) return false;
+    const { data, error } = await window.db
+      .from('app_state').select('value').eq('key', DB_KEY).single();
+    if(error || !data || !data.value) return false;
+    _allData = data.value;
+    return Object.keys(_allData).length > 0;
+  }catch(e){ console.error('_loadERFromDB', e); return false; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -581,29 +619,37 @@ function updateUploadZone(fileName){
   document.getElementById('upName').textContent = fileName || (_allData[_year]?.meta?.fileName || '');
   document.getElementById('upHint').textContent = 'Cargado: ' + (_allData[_year]?.meta?.importedAt || '') + ' · Clic para reemplazar';
   const btn = document.getElementById('btnPublicar');
-  btn.style.display = '';
+  btn.style.display = _isAdminUser() ? '' : 'none';
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
   btn.style.background = '';
 }
 
-function publicarData(){
+async function publicarData(){
   const data = _allData[_year];
   if(!data){ showToast('No hay datos para publicar'); return; }
-  data.meta.published = true;
-  data.meta.publishedAt = new Date().toLocaleString('es-DO');
-  saveStore();
   const btn = document.getElementById('btnPublicar');
-  btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Publicado';
-  btn.style.background = 'var(--green)';
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.style.display = 'none';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
-    btn.style.background = '';
-  }, 3000);
-  showToast('Estado de Resultados publicado correctamente');
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publicando...'; }
+  try{
+    data.meta.published = true;
+    data.meta.publishedAt = new Date().toLocaleString('es-DO');
+    saveStore();
+    await _saveERToDB();
+    if(btn){
+      btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ¡Publicado!';
+      btn.style.background = 'var(--green)';
+      setTimeout(() => {
+        btn.style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar';
+        btn.style.background = '';
+      }, 3000);
+    }
+    showToast('Estado de Resultados publicado — visible para todos los usuarios');
+  }catch(e){
+    showToast('Error al publicar: ' + e.message);
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.style.background = ''; }
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -736,8 +782,17 @@ function toggleReportesSidebar(){
 /* ══════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════ */
-(function init(){
-  loadStore();
+(async function init(){
+  const isAdmin = _isAdminUser();
+  if(!isAdmin){
+    const navUp = document.getElementById('nav-upload');
+    if(navUp) navUp.style.display = 'none';
+  }
+
+  loadStore();                            // borrador local (por si el admin no ha publicado aún)
+  const loadedFromDB = await _loadERFromDB();  // datos publicados — visibles para todos
+  if(loadedFromDB) saveStore();
+
   const years = Object.keys(_allData).sort().reverse();
   if(years.length > 0){
     _year = years[0];
