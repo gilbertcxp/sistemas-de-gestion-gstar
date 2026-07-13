@@ -52,11 +52,20 @@ const Storage = (() => {
   }
   function getSharedKeys(){ return SHARED_KEYS.slice(); }
 
+  // Siembra valores por defecto SOLO en localStorage, sin empujar a la nube: si se
+  // dispara antes de que Sync.pull() traiga los datos reales, un push aquí borraría
+  // en Supabase lo que otros usuarios ya guardaron (p.ej. "cxp_solicitudes" con []).
+  // Sync.pull() ya se encarga de sembrar la nube solo cuando de verdad está vacía.
+  function _seedLocal(key, value){
+    if(localStorage.getItem(key) === null){
+      try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+    }
+  }
   function init(){
-    if(localStorage.getItem(K_ROWS) === null) _set(K_ROWS, []);
-    if(localStorage.getItem(K_SETTINGS) === null) _set(K_SETTINGS, DEFAULT_SETTINGS);
-    if(localStorage.getItem(K_BANK) === null) _set(K_BANK, DEFAULT_BANK);
-    if(localStorage.getItem(K_SOLICITUDES) === null) _set(K_SOLICITUDES, []);
+    _seedLocal(K_ROWS, []);
+    _seedLocal(K_SETTINGS, DEFAULT_SETTINGS);
+    _seedLocal(K_BANK, DEFAULT_BANK);
+    _seedLocal(K_SOLICITUDES, []);
     if(localStorage.getItem(K_COUNTER) === null) localStorage.setItem(K_COUNTER, '0');
   }
 

@@ -54,18 +54,27 @@ const Storage = (() => {
   }
   function getSharedKeys(){ return SHARED_KEYS.slice(); }
 
+  // Siembra valores por defecto SOLO en localStorage, sin empujar a la nube: si se
+  // dispara antes de que Sync.pull() traiga los datos reales, un push aquí borraría
+  // en Supabase lo que otros usuarios ya guardaron (p.ej. "fc_solicitudes" con []).
+  // Sync.pull() ya se encarga de sembrar la nube solo cuando de verdad está vacía.
+  function _seedLocal(key, value){
+    if(localStorage.getItem(key) === null){
+      try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+    }
+  }
   function init(){
     if(localStorage.getItem(K_CLIENTS) === null){
       const seeded = SEED_CLIENTS.map(c => ({ id: Utils.uid('cli'), ...c }));
-      _set(K_CLIENTS, seeded);
+      _seedLocal(K_CLIENTS, seeded);
     }
-    if(localStorage.getItem(K_INVOICES) === null) _set(K_INVOICES, []);
-    if(localStorage.getItem(K_COUNTER) === null) _set(K_COUNTER, 0);
-    if(localStorage.getItem(K_SETTINGS) === null) _set(K_SETTINGS, DEFAULT_SETTINGS);
-    if(localStorage.getItem(K_PAGOS) === null) _set(K_PAGOS, []);
-    if(localStorage.getItem(K_PAGO_COUNTER) === null) _set(K_PAGO_COUNTER, 0);
-    if(localStorage.getItem(K_SOLICITUDES) === null) _set(K_SOLICITUDES, []);
-    if(localStorage.getItem(K_SOLICITUD_COUNTER) === null) _set(K_SOLICITUD_COUNTER, 0);
+    _seedLocal(K_INVOICES, []);
+    _seedLocal(K_COUNTER, 0);
+    _seedLocal(K_SETTINGS, DEFAULT_SETTINGS);
+    _seedLocal(K_PAGOS, []);
+    _seedLocal(K_PAGO_COUNTER, 0);
+    _seedLocal(K_SOLICITUDES, []);
+    _seedLocal(K_SOLICITUD_COUNTER, 0);
   }
 
   // ---------- Clients ----------
