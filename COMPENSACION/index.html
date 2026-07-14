@@ -1580,6 +1580,17 @@ const AgingComp = (() => {
     return 5;
   }
 
+  // Parsea "YYYY-MM-DD" como fecha LOCAL, no UTC — `new Date("YYYY-MM-DD")`
+  // se interpreta como medianoche UTC y podía correr la fecha un día hacia
+  // atrás al compararla con "hoy" (fecha local), empujando facturas al
+  // rango de antigüedad incorrecto justo en el límite entre dos rangos.
+  function _parseFechaLocal(s){
+    if(!s) return null;
+    const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!m) return null;
+    return new Date(+m[1], +m[2]-1, +m[3]);
+  }
+
   function render(){
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -1589,7 +1600,8 @@ const AgingComp = (() => {
     const map = {};
     for(const r of cxcRows){
       const client = r.consorcio;
-      const dias = r.fecha ? Math.floor((today - new Date(r.fecha)) / 86400000) : 0;
+      const fechaFactura = _parseFechaLocal(r.fecha);
+      const dias = fechaFactura ? Math.round((today - fechaFactura) / 86400000) : 0;
       if(!map[client]) map[client] = [0,0,0,0,0,0];
       map[client][getBucket(dias)] += Number(r.pendiente)||0;
     }

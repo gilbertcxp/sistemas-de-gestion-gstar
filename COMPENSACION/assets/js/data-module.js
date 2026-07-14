@@ -39,10 +39,17 @@ const DataModule = (() => {
       return `${y}-${m}-${d}`;
     }
     if(typeof val === 'number'){
-      const d = new Date((val - 25569) * 86400 * 1000);
-      return Utils.toISODate(d);
+      // Serial de Excel (días desde 1899-12-30). Se lee en UTC para no depender
+      // de la zona horaria del navegador — mezclar UTC (cálculo) con local
+      // (lectura) corría la fecha un día hacia atrás en RD (UTC-4).
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(val) * 86400000);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
     }
     const s = String(val).trim();
+    // Ya viene en formato ISO (YYYY-MM-DD…) — se deja tal cual, sin re-parsear
+    // con `new Date()` (un string "YYYY-MM-DD" se interpreta como UTC, no local).
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
     // DD/MM/YYYY or DD-MM-YYYY
     const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
