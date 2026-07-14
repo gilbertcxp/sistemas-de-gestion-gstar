@@ -342,11 +342,12 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
           </select>
           <select class="sel" id="filterBucket" onchange="CXPAging.filterTable()">
             <option value="">Todos los períodos</option>
-            <option value="0">No Vencidas</option>
-            <option value="1">1 – 30 Días</option>
+            <option value="0">0 – 7 Días</option>
+            <option value="1">8 – 30 Días</option>
             <option value="2">31 – 60 Días</option>
             <option value="3">61 – 90 Días</option>
-            <option value="4">&gt; 90 Días</option>
+            <option value="4">91 – 120 Días</option>
+            <option value="5">&gt; 120 Días</option>
           </select>
           <button class="btn btn-outline" onclick="CXPAging.clearFilters()" style="padding:8px 12px">
             <i class="bi bi-x-circle"></i> Limpiar
@@ -363,25 +364,18 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
             <table class="aging" id="agingTable">
               <thead>
                 <tr>
-                  <th rowspan="2" style="text-align:left;vertical-align:middle">Proveedor</th>
-                  <th>NO VENCIDAS</th>
-                  <th>1 MES</th>
-                  <th>2 MESES</th>
-                  <th>3 MESES</th>
-                  <th>&gt;90 DÍAS</th>
+                  <th style="text-align:left;vertical-align:middle">Proveedor</th>
+                  <th>0 – 7 DÍAS</th>
+                  <th>8 – 30 DÍAS</th>
+                  <th>31 – 60 DÍAS</th>
+                  <th>61 – 90 DÍAS</th>
+                  <th>91 – 120 DÍAS</th>
+                  <th>&gt; 120 DÍAS</th>
                   <th style="background:#17306d">DEUDA PENDIENTE</th>
-                </tr>
-                <tr>
-                  <th>No Vencidas</th>
-                  <th>1 – 30</th>
-                  <th>31 – 60</th>
-                  <th>61 – 90</th>
-                  <th>&gt; 90</th>
-                  <th style="background:#1d3d73"></th>
                 </tr>
               </thead>
               <tbody id="agingBody">
-                <tr><td colspan="7"><div class="st-empty">
+                <tr><td colspan="8"><div class="st-empty">
                   <i class="bi bi-inbox ico"></i>
                   <span class="msg">Carga un archivo para generar el reporte</span>
                 </div></td></tr>
@@ -390,7 +384,7 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
                 <tr>
                   <td>TOTAL GENERAL</td>
                   <td id="ft0">—</td><td id="ft1">—</td><td id="ft2">—</td>
-                  <td id="ft3">—</td><td id="ft4">—</td>
+                  <td id="ft3">—</td><td id="ft4">—</td><td id="ft5">—</td>
                   <td class="tot-ft" id="ftTotal">—</td>
                 </tr>
               </tfoot>
@@ -430,11 +424,12 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
               <th>Vence</th>
               <th>No Factura</th>
               <th>Descripción</th>
-              <th class="r">No Vencidas</th>
-              <th class="r">1–30 Días</th>
+              <th class="r">0–7 Días</th>
+              <th class="r">8–30 Días</th>
               <th class="r">31–60 Días</th>
               <th class="r">61–90 Días</th>
-              <th class="r">&gt;90 Días</th>
+              <th class="r">91–120 Días</th>
+              <th class="r">&gt;120 Días</th>
               <th class="r">Deuda Pendiente</th>
             </tr>
           </thead>
@@ -453,7 +448,7 @@ table.dd-tbl tfoot td.r{text-align:right;font-family:'IBM Plex Mono',monospace}
 const CXPAging = (() => {
 
   /* ---- State ---- */
-  let _allRows   = [];   // {name, buckets[5], total, invoices[]}
+  let _allRows   = [];   // {name, buckets[6], total, invoices[]}
   let _filtered  = [];
   let _fileName  = '';
   let _totalFact = 0;
@@ -490,6 +485,31 @@ const CXPAging = (() => {
     if (typeof v === 'number') return v;
     const n = parseFloat(String(v).replace(/[RD$\s,]/g,''));
     return isNaN(n) ? 0 : n;
+  }
+  // Convierte el valor crudo de la celda "Fecha" (Date, ISO string u otro formato) a Date local
+  function _parseFecha(v) {
+    if (!v) return null;
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+    const s = String(v).trim();
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Días de antigüedad = fecha de corte − fecha de la factura
+  function _diasAntiguedad(fechaFactura, fechaCorte) {
+    const f = new Date(fechaFactura.getFullYear(), fechaFactura.getMonth(), fechaFactura.getDate());
+    const c = new Date(fechaCorte.getFullYear(), fechaCorte.getMonth(), fechaCorte.getDate());
+    return Math.round((c - f) / 86400000);
+  }
+  // Rangos: 0-7, 8-30, 31-60, 61-90, 91-120, >120
+  function _bucketIndex(dias) {
+    if (dias <= 7)   return 0;
+    if (dias <= 30)  return 1;
+    if (dias <= 60)  return 2;
+    if (dias <= 90)  return 3;
+    if (dias <= 120) return 4;
+    return 5;
   }
 
   /* ---- Toast ---- */
@@ -577,11 +597,19 @@ const CXPAging = (() => {
          - "Proveedor: Nombre (código) (RNC)" — header de grupo → extrae nombre
          - Filas de factura (Doc=FC/SF/etc.)
          - Filas en blanco — ignorar
+
+     Clasificación por rango: NO se usan las columnas de rango que trae el Excel
+     (columnas 6-10), ya que reflejan el corte con el que el sistema de origen
+     generó el archivo y puede no coincidir con "hoy". En su lugar, cada factura
+     se clasifica individualmente con: días = fecha de corte (hoy) − fecha de la
+     factura (columna 2), y el monto de "Deuda Pendiente" (columna 11) se suma
+     íntegro al rango que le corresponde a esa factura.
   */
   function _parse(data) {
-    const map = {};         // nombre → { buckets[5], invoices[] }
+    const map = {};         // nombre → { buckets[6], invoices[] }
     let currentProv = '';
     let totalFacturas = 0;
+    const fechaCorte = new Date();   // fecha actual — no hay filtro de corte seleccionable
 
     for (let i = 1; i < data.length; i++) {   // skip header row 0
       const row = data[i];
@@ -601,29 +629,33 @@ const CXPAging = (() => {
           .replace(/\s*\(\d+\)\s*\([^)]+\)\s*$/, '')
           .replace(/\s*\([^)]+\)\s*$/, '')
           .trim();
-        if (!map[currentProv]) map[currentProv] = { buckets:[0,0,0,0,0], invoices:[] };
+        if (!map[currentProv]) map[currentProv] = { buckets:[0,0,0,0,0,0], invoices:[] };
         continue;
       }
 
       // Fila de factura — debe haber un proveedor activo
       if (!currentProv) continue;
 
-      const b0 = _parseNum(row[6]);   // NoVencidas
-      const b1 = _parseNum(row[7]);   // 1-30 Días
-      const b2 = _parseNum(row[8]);   // 31-60 Días
-      const b3 = _parseNum(row[9]);   // 61-90 Días
-      const b4 = _parseNum(row[10]);  // > 90 Días
       const dp = _parseNum(row[11]);  // Deuda Pendiente
+      if (dp === 0) continue;         // sin saldo pendiente, no se clasifica
 
-      // Saltar filas con deuda cero en todos los tramos
-      if (b0===0 && b1===0 && b2===0 && b3===0 && b4===0 && dp===0) continue;
+      const fechaFactura = _parseFecha(row[2]);
+      let dias = null, bIdx;
+      if (fechaFactura) {
+        dias = _diasAntiguedad(fechaFactura, fechaCorte);
+        bIdx = _bucketIndex(dias);
+      } else {
+        // Fecha inválida/ausente: no se puede calcular la antigüedad real —
+        // se ubica en el rango más crítico (>120) para que no pase desapercibida.
+        console.warn('Antigüedad CXP: factura sin fecha válida', col0, row[4]);
+        bIdx = 5;
+      }
+
+      const buckets = [0,0,0,0,0,0];
+      buckets[bIdx] = dp;
 
       totalFacturas++;
-      map[currentProv].buckets[0] += b0;
-      map[currentProv].buckets[1] += b1;
-      map[currentProv].buckets[2] += b2;
-      map[currentProv].buckets[3] += b3;
-      map[currentProv].buckets[4] += b4;
+      for (let k = 0; k < 6; k++) map[currentProv].buckets[k] += buckets[k];
       map[currentProv].invoices.push({
         doc:         col0,
         idDoc:       String(row[1] || ''),
@@ -631,7 +663,9 @@ const CXPAging = (() => {
         vence:       row[3],
         noFactura:   String(row[4] || ''),
         descripcion: String(row[5] || ''),
-        b0, b1, b2, b3, b4,
+        dias,
+        b0: buckets[0], b1: buckets[1], b2: buckets[2],
+        b3: buckets[3], b4: buckets[4], b5: buckets[5],
         deuda:       dp
       });
     }
@@ -673,7 +707,7 @@ const CXPAging = (() => {
     const footer = document.getElementById('tblFooter');
 
     if (_filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="st-empty">
+      tbody.innerHTML = `<tr><td colspan="8"><div class="st-empty">
         <i class="bi bi-search ico"></i>
         <span class="msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -682,7 +716,7 @@ const CXPAging = (() => {
       return;
     }
 
-    const totals = [0,0,0,0,0];
+    const totals = [0,0,0,0,0,0];
     let grandTotal = 0;
     tbody.innerHTML = _filtered.map((row, idx) => {
       const cells = row.buckets.map((v,i) => {
@@ -707,7 +741,7 @@ const CXPAging = (() => {
 
   function _updateStats() {
     const total   = _allRows.reduce((s,r)=>s+r.total, 0);
-    const vencido = _allRows.reduce((s,r)=>s+r.buckets[4], 0);
+    const vencido = _allRows.reduce((s,r)=>s+r.buckets[4]+r.buckets[5], 0);  // 91-120 + >120
     document.getElementById('statProveedores').textContent = _allRows.length;
     document.getElementById('statFacturas').textContent    = _totalFact;
     document.getElementById('statTotal').textContent       = fmtMFull(total);
@@ -752,9 +786,9 @@ const CXPAging = (() => {
     document.getElementById('ddSub').textContent =
       `${row.invoices.length} factura${row.invoices.length!==1?'s':''} · Deuda: ${fmtMFull(row.total)}`;
 
-    const totB = [0,0,0,0,0]; let totD = 0;
+    const totB = [0,0,0,0,0,0]; let totD = 0;
     const rows = row.invoices.map(inv => {
-      totB[0]+=inv.b0; totB[1]+=inv.b1; totB[2]+=inv.b2; totB[3]+=inv.b3; totB[4]+=inv.b4;
+      totB[0]+=inv.b0; totB[1]+=inv.b1; totB[2]+=inv.b2; totB[3]+=inv.b3; totB[4]+=inv.b4; totB[5]+=inv.b5;
       totD += inv.deuda;
       const mc = v => v===0 ? '<td class="r" style="color:#94a3b8">-</td>'
                              : `<td class="r${v<0?' style="color:#dc2626"':''}">${fmtM(v)}</td>`;
@@ -765,7 +799,7 @@ const CXPAging = (() => {
         <td style="white-space:nowrap">${fmtDate(inv.vence)}</td>
         <td>${_esc(inv.noFactura)}</td>
         <td style="max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${_esc(inv.descripcion)}">${_esc(inv.descripcion)}</td>
-        ${mc(inv.b0)}${mc(inv.b1)}${mc(inv.b2)}${mc(inv.b3)}${mc(inv.b4)}
+        ${mc(inv.b0)}${mc(inv.b1)}${mc(inv.b2)}${mc(inv.b3)}${mc(inv.b4)}${mc(inv.b5)}
         <td class="r" style="font-weight:700${inv.deuda<0?';color:#dc2626':''}">${fmtM(inv.deuda)}</td>
       </tr>`;
     }).join('');
@@ -778,6 +812,7 @@ const CXPAging = (() => {
       <td class="r"><strong>${fmtM(totB[2])}</strong></td>
       <td class="r"><strong>${fmtM(totB[3])}</strong></td>
       <td class="r"><strong>${fmtM(totB[4])}</strong></td>
+      <td class="r"><strong>${fmtM(totB[5])}</strong></td>
       <td class="r"><strong>${fmtM(totD)}</strong></td>
     </tr>`;
 
@@ -792,8 +827,7 @@ const CXPAging = (() => {
   function exportExcel() {
     if (!_allRows.length) { toast('No hay datos para exportar', true); return; }
 
-    const HEADER  = ['Proveedor','No Vencidas','1-30 Días','31-60 Días','61-90 Días','> 90 Días','Deuda Pendiente'];
-    const SUB_HDR = ['','No Vencidas','1 – 30','31 – 60','61 – 90','> 90',''];
+    const HEADER  = ['Proveedor','0-7 Días','8-30 Días','31-60 Días','61-90 Días','91-120 Días','> 120 Días','Deuda Pendiente'];
 
     // Resumen por proveedor
     const summaryRows = _filtered.map(r => [
@@ -802,20 +836,20 @@ const CXPAging = (() => {
       r.total===0 ? '-' : r.total
     ]);
     const totalRow = ['TOTAL GENERAL',
-      ...[0,1,2,3,4].map(i => _filtered.reduce((s,r)=>s+r.buckets[i],0)),
+      ...[0,1,2,3,4,5].map(i => _filtered.reduce((s,r)=>s+r.buckets[i],0)),
       _filtered.reduce((s,r)=>s+r.total,0)
     ];
 
     const aoa = [
       ['Antigüedad de Cuentas por Pagar — Gstar Services S.A.'], [],
-      HEADER, SUB_HDR,
+      HEADER,
       ...summaryRows,
       [], totalRow
     ];
 
     // Hoja de detalle: todas las facturas
     const detHeader = ['Proveedor','Doc','IdDoc','Fecha','Vence','No Factura','Descripción',
-                       'No Vencidas','1-30 Días','31-60 Días','61-90 Días','> 90 Días','Deuda Pendiente'];
+                       '0-7 Días','8-30 Días','31-60 Días','61-90 Días','91-120 Días','> 120 Días','Deuda Pendiente'];
     const detRows = [];
     _filtered.forEach(r => {
       r.invoices.forEach(inv => {
@@ -823,7 +857,7 @@ const CXPAging = (() => {
           r.name, inv.doc, inv.idDoc,
           fmtDate(inv.fecha), fmtDate(inv.vence),
           inv.noFactura, inv.descripcion,
-          inv.b0||'-', inv.b1||'-', inv.b2||'-', inv.b3||'-', inv.b4||'-', inv.deuda||'-'
+          inv.b0||'-', inv.b1||'-', inv.b2||'-', inv.b3||'-', inv.b4||'-', inv.b5||'-', inv.deuda||'-'
         ]);
       });
     });
@@ -831,12 +865,12 @@ const CXPAging = (() => {
     const wb = XLSX.utils.book_new();
 
     const ws1 = XLSX.utils.aoa_to_sheet(aoa);
-    ws1['!cols'] = [{wch:42},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:18}];
+    ws1['!cols'] = [{wch:42},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
 
     const ws2 = XLSX.utils.aoa_to_sheet([detHeader, ...detRows]);
     ws2['!cols'] = [{wch:38},{wch:6},{wch:10},{wch:12},{wch:12},{wch:14},{wch:55},
-                   {wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:16}];
+                   {wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:16}];
     XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Facturas');
 
     XLSX.writeFile(wb, `Antiguedad_CXP_${new Date().toISOString().slice(0,10)}.xlsx`);
