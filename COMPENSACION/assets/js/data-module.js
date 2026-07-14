@@ -463,6 +463,12 @@ const DataModule = (() => {
     const pct    = Number(Storage.getSettings().porcentaje) || 2;
     const round2 = n => Math.round(n * 100) / 100;
 
+    // Fecha de la factura para efectos de antigüedad: el corte cubre desde-hasta,
+    // pero la factura se emite el día siguiente al cierre del período (hasta + 1),
+    // no en el primer día del corte (desde) — usar "desde" hacía ver las facturas
+    // varios días más viejas de lo real.
+    const fechaFactura = hasta ? Utils.addDays(hasta, 1) : (desde || '');
+
     const mkRow = (consorcio, balance, grupo) => {
       const montoBase  = Math.abs(balance);
       const comision   = round2(montoBase * (pct / 100));
@@ -471,7 +477,7 @@ const DataModule = (() => {
       return {
         id:        Utils.uid('dr'),
         consorcio,
-        fecha:     desde || '',
+        fecha:     fechaFactura,
         mesLetra,
         mes,
         año,
