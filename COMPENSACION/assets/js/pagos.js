@@ -93,7 +93,7 @@ const Pagos = (() => {
     if(el) el.textContent = Utils.fmtMoney(total);
   }
 
-  function guardarRecibo(){
+  async function guardarRecibo(){
     if(!_consorcioSelected){ UI.toast('Selecciona un consorcio', 'err'); return; }
     const inputs = document.querySelectorAll('#pagosReciboTable tbody input[data-rowid]');
     let applied = 0, total = 0;
@@ -115,6 +115,10 @@ const Pagos = (() => {
       total,
       registros: applied
     });
+    // Espera a que el cambio llegue a Supabase antes de continuar: si el envío
+    // se queda en el debounce (400ms) y el usuario recarga o tiene otra pestaña
+    // abierta, la nube "gana" en el próximo pull y borra el pago recién aplicado.
+    if(window.Sync && Sync.publishAll){ try{ await Sync.publishAll(); }catch(e){ console.warn('publishAll', e); } }
     UI.toast(`Recibo No.${numero} guardado — ${applied} registro(s) actualizado(s)`, 'ok');
     DataModule.load();
     _cxcRows = DataModule.getCXCByConsorcio(_consorcioSelected);
@@ -202,7 +206,7 @@ const Pagos = (() => {
     `;
   }
 
-  function aplicarPago(){
+  async function aplicarPago(){
     if(!_solicitudLoaded){ UI.toast('No hay solicitud cargada', 'err'); return; }
     const sol = _solicitudLoaded;
     const rows = Storage.getDataRows();
@@ -216,6 +220,11 @@ const Pagos = (() => {
     });
     if(applied === 0){ UI.toast('Todos los ítems ya están pagados', 'ok'); return; }
     Storage.updateSolicitud(sol.numero, { estado:'Aplicada', fechaAplicacion: Utils.todayISO() });
+    // Espera a que el pago llegue a Supabase antes de continuar: si el envío se
+    // queda en el debounce (400ms) y el usuario recarga o tiene otra pestaña
+    // abierta con datos viejos, la nube "gana" en el próximo pull y el pago
+    // recién aplicado se pierde silenciosamente.
+    if(window.Sync && Sync.publishAll){ try{ await Sync.publishAll(); }catch(e){ console.warn('publishAll', e); } }
     _solicitudLoaded = Storage.getSolicitud(sol.numero);
     DataModule.load();
     _renderSolicitudPanel();
