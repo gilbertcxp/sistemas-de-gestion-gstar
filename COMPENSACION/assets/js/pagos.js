@@ -210,15 +210,25 @@ const Pagos = (() => {
     if(!_solicitudLoaded){ UI.toast('No hay solicitud cargada', 'err'); return; }
     const sol = _solicitudLoaded;
     const rows = Storage.getDataRows();
-    let applied = 0;
+    let applied = 0, missing = 0;
     sol.items.forEach(item => {
       const dataRow = rows.find(r => r.id === item.dataRowId);
-      if(dataRow && (Number(dataRow.pendiente)||0) > 0.001){
+      if(!dataRow){ missing++; return; }               // el registro ya no existe en Data
+      if((Number(dataRow.pendiente)||0) > 0.001){
         DataModule.applyPagoTotal(item.dataRowId);
         applied++;
       }
     });
-    if(applied === 0){ UI.toast('Todos los ítems ya están pagados', 'ok'); return; }
+    // Si faltan registros, NO es lo mismo que "ya pagado" — avisar en vez de
+    // fallar en silencio. Pasa cuando el corte se borró y se volvió a cargar:
+    // los ids de Data cambian y la solicitud queda apuntando a filas que ya no existen.
+    if(missing > 0){
+      UI.toast(`${missing} ítem(s) de esta solicitud ya no existen en Data (el corte fue eliminado o vuelto a cargar) — genera una nueva solicitud para este corte desde "Solicitud de Pago"`, 'err');
+      if(applied === 0) return;
+    } else if(applied === 0){
+      UI.toast('Todos los ítems ya están pagados', 'ok');
+      return;
+    }
     Storage.updateSolicitud(sol.numero, { estado:'Aplicada', fechaAplicacion: Utils.todayISO() });
     // Espera a que el pago llegue a Supabase antes de continuar: si el envío se
     // queda en el debounce (400ms) y el usuario recarga o tiene otra pestaña
