@@ -170,9 +170,12 @@ const Pagos = (() => {
     }).length;
 
     const totalMonto = sol.items.reduce((s, i) => s + (Number(i.monto)||0), 0);
-    const estadoPill = sol.estado === 'Aplicada'
-      ? `<span class="pill ok"><span class="pill-dot"></span>Aplicada</span>`
-      : `<span class="pill warn"><span class="pill-dot"></span>Pendiente — ${pendingCount} ítem${pendingCount !== 1 ? 's' : ''}</span>`;
+    const estado = sol.estado || 'Pendiente';
+    const estadoPill = (estado === 'Pagada' || estado === 'Aplicada')
+      ? `<span class="pill ok"><span class="pill-dot"></span>Pagada</span>`
+      : estado === 'Parcialmente Pagada'
+        ? `<span class="pill blue"><span class="pill-dot"></span>Parcialmente Pagada</span>`
+        : `<span class="pill warn"><span class="pill-dot"></span>Pendiente — ${pendingCount} ítem${pendingCount !== 1 ? 's' : ''}</span>`;
 
     container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
@@ -198,48 +201,165 @@ const Pagos = (() => {
         </tr></tfoot>
       </table>
 
-      ${sol.estado !== 'Aplicada' && pendingCount > 0 ? `
-        <button class="btn btn-accent" onclick="Pagos.aplicarPago()">
+      ${pendingCount > 0 ? `
+        <button class="btn btn-accent" onclick="Pagos.abrirModalPagarSolicitud()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m5 13 4 4L19 7"/></svg>
           Aplicar Pago (${pendingCount} ítem${pendingCount !== 1 ? 's' : ''} pendiente${pendingCount !== 1 ? 's' : ''})
         </button>` : ''}
     `;
   }
 
-  async function aplicarPago(){
+  // ------ Confirmar pagos: checklist (igual que Solicitud de Pago de CXP) ------
+  function abrirModalPagarSolicitud(){
     if(!_solicitudLoaded){ UI.toast('No hay solicitud cargada', 'err'); return; }
     const sol = _solicitudLoaded;
     const rows = Storage.getDataRows();
-    let applied = 0, missing = 0;
-    sol.items.forEach(item => {
+
+    const numEl = document.getElementById('pagarSolNumero');
+    if(numEl) numEl.textContent = '#' + sol.numero;
+
+    const checklist = document.getElementById('pagarSolChecklist');
+    if(!checklist) return;
+
+    const rowsHTML = sol.items.map((item, idx) => {
       const dataRow = rows.find(r => r.id === item.dataRowId);
-      if(!dataRow){ missing++; return; }               // el registro ya no existe en Data
-      if((Number(dataRow.pendiente)||0) > 0.001){
+      const pend = dataRow ? (Number(dataRow.pendiente)||0) : 0;
+      if(pend <= 0.001) return '';   // ya pagado en una ronda anterior — no se lista
+      return `<tr style="border-bottom:1px solid var(--line)">
+        <td style="padding:10px 12px;text-align:center">
+          <input type="checkbox" class="pagar-sol-chk" data-idx="${idx}" checked onchange="Pagos.updatePagarSolSummary()">
+        </td>
+        <td style="padding:10px 12px;font-weight:600">${Utils.escapeHtml(item.consorcio)}</td>
+        <td style="padding:10px 12px;color:var(--ink-soft)">${Utils.escapeHtml(item.corte)}</td>
+        <td style="padding:10px 12px;text-align:right;font-family:monospace;font-weight:600;white-space:nowrap">${Utils.fmtMoney(item.monto)}</td>
+      </tr>`;
+    }).join('');
+
+    checklist.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--canvas);border-bottom:2px solid var(--line)">
+            <th style="padding:10px 12px;text-align:center;width:44px">
+              <input type="checkbox" id="pagarSolChkAll" checked onchange="Pagos.toggleAllPagarSol(this.checked)">
+            </th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600">Consorcio</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600">Corte</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:600">Monto</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>`;
+
+    updatePagarSolSummary();
+    UI.openModal('modalPagarSolicitud');
+  }
+
+  function toggleAllPagarSol(checked){
+    document.querySelectorAll('.pagar-sol-chk').forEach(c => c.checked = checked);
+    updatePagarSolSummary();
+  }
+
+  function updatePagarSolSummary(){
+    const items = _solicitudLoaded ? _solicitudLoaded.items : [];
+    const checks = [...document.querySelectorAll('.pagar-sol-chk')];
+    let count = 0, total = 0;
+    checks.forEach(c => {
+      if(c.checked){ count++; total += Number(items[+c.dataset.idx]?.monto)||0; }
+    });
+    const countEl = document.getElementById('pagarSolSelCount');
+    const montoEl = document.getElementById('pagarSolTotalMonto');
+    const chkAll  = document.getElementById('pagarSolChkAll');
+    if(countEl) countEl.textContent = count;
+    if(montoEl) montoEl.textContent = Utils.fmtMoney(total);
+    if(chkAll)  chkAll.indeterminate = (count > 0 && count < checks.length);
+    if(chkAll && !chkAll.indeterminate) chkAll.checked = (count === checks.length && checks.length > 0);
+  }
+
+  // ------ Confirmar: paga los marcados, arrastra los desmarcados a la siguiente solicitud ------
+  async function confirmarPagoSolicitud(){
+    if(!_solicitudLoaded) return;
+    const sol = _solicitudLoaded;
+    const items = sol.items;
+    const checks = [...document.querySelectorAll('.pagar-sol-chk')];
+    if(checks.length === 0) return;
+
+    const checkedIdx   = new Set(checks.filter(c => c.checked).map(c => +c.dataset.idx));
+    const listedIdx    = new Set(checks.map(c => +c.dataset.idx));
+    if(checkedIdx.size === 0){ UI.toast('Marca al menos un pago para confirmar', 'err'); return; }
+
+    const rows = Storage.getDataRows();
+    const pagados = [], pendientes = [];
+    let missing = 0;
+
+    items.forEach((item, idx) => {
+      if(!listedIdx.has(idx)) return;   // ya estaba pagado antes de abrir el modal — se deja como está
+      if(checkedIdx.has(idx)){
+        const dataRow = rows.find(r => r.id === item.dataRowId);
+        if(!dataRow){ missing++; pendientes.push(item); return; }  // ya no existe en Data — se conserva pendiente
         DataModule.applyPagoTotal(item.dataRowId);
-        applied++;
+        pagados.push(item);
+      } else {
+        pendientes.push(item);
       }
     });
-    // Si faltan registros, NO es lo mismo que "ya pagado" — avisar en vez de
-    // fallar en silencio. Pasa cuando el corte se borró y se volvió a cargar:
-    // los ids de Data cambian y la solicitud queda apuntando a filas que ya no existen.
+
+    UI.closeModal('modalPagarSolicitud');
+
     if(missing > 0){
-      UI.toast(`${missing} ítem(s) de esta solicitud ya no existen en Data (el corte fue eliminado o vuelto a cargar) — genera una nueva solicitud para este corte desde "Solicitud de Pago"`, 'err');
-      if(applied === 0) return;
-    } else if(applied === 0){
-      UI.toast('Todos los ítems ya están pagados', 'ok');
-      return;
+      UI.toast(`${missing} ítem(s) marcados ya no existen en Data (el corte fue eliminado o vuelto a cargar) — quedaron pendientes para la siguiente solicitud`, 'err');
     }
-    Storage.updateSolicitud(sol.numero, { estado:'Aplicada', fechaAplicacion: Utils.todayISO() });
+    if(pagados.length === 0 && missing === 0){ return; }
+
+    const totalPagado = pagados.reduce((s,i) => s + (Number(i.monto)||0), 0);
+    const estado       = pendientes.length === 0 ? 'Pagada' : 'Parcialmente Pagada';
+    const session      = window.Auth ? Auth.getSession() : null;
+    const usuario       = session?.user?.email || session?.user?.name || '';
+
+    Storage.updateSolicitud(sol.numero, {
+      estado,
+      items: pagados,
+      itemsNoProcesados: pendientes,
+      fechaPago: new Date().toISOString(),
+      totalDocsPagados: pagados.length,
+      totalPagado,
+      totalDocs: pagados.length,
+      totalGeneral: totalPagado,
+      usuarioPago: usuario
+    });
+
+    let msg = `Solicitud No.${sol.numero} marcada como ${estado} — ${pagados.length} pago(s) registrado(s)`;
+
+    // Los ítems desmarcados (o sin registro en Data) pasan a una nueva solicitud
+    // consecutiva, para no perderlos ni duplicarlos en la próxima aplicación.
+    if(pendientes.length > 0){
+      const nextNum = Storage.nextSolicitudNumber();
+      const nextSol = {
+        numero: nextNum,
+        corte: sol.corte,
+        fecha: Utils.todayISO(),
+        creadoEn: new Date().toISOString(),
+        estado: 'Pendiente',
+        items: pendientes
+      };
+      Storage.addSolicitud(nextSol);
+      _solicitudLoaded = nextSol;
+      msg += ` · ${pendientes.length} ítem(s) movido(s) a Solicitud No.${nextNum}`;
+    } else {
+      _solicitudLoaded = Storage.getSolicitud(sol.numero);
+    }
+
     // Espera a que el pago llegue a Supabase antes de continuar: si el envío se
     // queda en el debounce (400ms) y el usuario recarga o tiene otra pestaña
     // abierta con datos viejos, la nube "gana" en el próximo pull y el pago
     // recién aplicado se pierde silenciosamente.
     if(window.Sync && Sync.publishAll){ try{ await Sync.publishAll(); }catch(e){ console.warn('publishAll', e); } }
-    _solicitudLoaded = Storage.getSolicitud(sol.numero);
+
     DataModule.load();
     _renderSolicitudPanel();
-    UI.toast(`Solicitud No.${sol.numero} aplicada — ${applied} pago(s) registrado(s)`, 'ok');
+    UI.toast(msg, 'ok');
   }
 
-  return { render, switchTab, onConsorcioChange, guardarRecibo, onSolicitudSearch, aplicarPago, _onAbonoInput };
+  return { render, switchTab, onConsorcioChange, guardarRecibo, onSolicitudSearch,
+    abrirModalPagarSolicitud, toggleAllPagarSol, updatePagarSolSummary, confirmarPagoSolicitud,
+    _onAbonoInput };
 })();

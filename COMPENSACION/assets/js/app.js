@@ -443,9 +443,12 @@ const App = (() => {
       ? `<tr><td colspan="7"><div class="t-empty">No hay solicitudes generadas todavía.</div></td></tr>`
       : solicitudes.map(s => {
           const total = (s.items||[]).reduce((acc,i)=>acc+(Number(i.monto)||0),0);
-          const estadoPill = s.estado === 'Aplicada'
-            ? `<span class="pill ok"><span class="pill-dot"></span>Aplicada</span>`
-            : `<span class="pill warn"><span class="pill-dot"></span>Pendiente</span>`;
+          const estado = s.estado || 'Pendiente';
+          const estadoPill = (estado === 'Pagada' || estado === 'Aplicada')
+            ? `<span class="pill ok"><span class="pill-dot"></span>Pagada</span>`
+            : estado === 'Parcialmente Pagada'
+              ? `<span class="pill blue"><span class="pill-dot"></span>Parcialmente Pagada</span>`
+              : `<span class="pill warn"><span class="pill-dot"></span>Pendiente</span>`;
           return `<tr>
             <td><b>${s.numero}</b></td>
             <td>${Utils.escapeHtml(s.corte||'—')}</td>
