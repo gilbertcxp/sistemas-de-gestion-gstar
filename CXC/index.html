@@ -897,6 +897,18 @@ const CXC = (() => {
   function _esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+  // Excel guarda las fechas como número de serie (ej. 44774); si no se
+  // convierte, se muestra el número crudo en vez de la fecha.
+  function _fmtExcelDate(val) {
+    if (val === null || val === undefined || val === '') return '';
+    if (typeof val === 'number' && !isNaN(val)) {
+      const d = new Date(Date.UTC(1899, 11, 30) + val * 86400000);
+      const dd = String(d.getUTCDate()).padStart(2,'0');
+      const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+      return `${dd}/${mm}/${d.getUTCFullYear()}`;
+    }
+    return String(val).trim();
+  }
 
   /* ---- File handling ---- */
   function handleDrop(e) {
@@ -1134,8 +1146,8 @@ const CXC = (() => {
 
     const invoiceRows = invoices.map(row => {
       const idDoc = String(row[1]||'').trim();
-      const fec   = String(row[3]||'');
-      const venc  = String(row[4]||'');
+      const fec   = _fmtExcelDate(row[3]);
+      const venc  = _fmtExcelDate(row[4]);
       const dias  = Number(row[6])||0;
       const nota  = String(row[7]||'').trim();
       const pend  = parseFloat(String(row[10]).replace(/,/g,''))||0;
@@ -1320,8 +1332,8 @@ const CXC = (() => {
         _dashInvoices.push({
           cliente:  clientName,
           idDoc:    String(row[1]||'').trim(),
-          fecha:    String(row[3]||''),
-          vence:    String(row[4]||''),
+          fecha:    _fmtExcelDate(row[3]),
+          vence:    _fmtExcelDate(row[4]),
           vendedor: String(row[5]||'').trim(),
           dias,
           nota:     String(row[7]||'').trim(),
