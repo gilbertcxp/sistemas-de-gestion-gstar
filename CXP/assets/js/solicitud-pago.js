@@ -63,7 +63,7 @@ const SolicitudPago = (() => {
 
     const newItems = rows.map(r => ({
       rowId:        r.id,
-      fecha:        r.fechaVencimiento || r.fecha,
+      fecha:        r.fecha || r.fechaVencimiento,
       proveedor:    r.proveedor,
       empresa:      r.empresa || 'Gstar Services',
       moneda:       r.moneda || 'RD$',
