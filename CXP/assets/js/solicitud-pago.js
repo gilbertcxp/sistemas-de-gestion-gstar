@@ -121,6 +121,28 @@ const SolicitudPago = (() => {
     Storage.upsertSolicitud(_sol);
   }
 
+  function setDetalle(idx, val){
+    if(_locked || !_sol) return;
+    if(_sol.items[idx]) _sol.items[idx].detalle = val;
+    Storage.upsertSolicitud(_sol);
+  }
+
+  function setFecha(idx, val){
+    if(_locked || !_sol || !_sol.items[idx]) return;
+    _sol.items[idx].fecha = val;
+    Storage.upsertSolicitud(_sol);
+    render();
+  }
+
+  function setValor(idx, val){
+    if(_locked || !_sol || !_sol.items[idx]) return;
+    _sol.items[idx].valor = parseFloat(val) || 0;
+    _sol.totalGeneral = _sol.items.reduce((s,i)=>s+(i.valor||0),0);
+    _sol.totalDocs    = _sol.items.length;
+    Storage.upsertSolicitud(_sol);
+    render();
+  }
+
   function eliminarItem(idx){
     if(_locked || !_sol) return;
     _sol.items.splice(idx,1);
@@ -504,12 +526,23 @@ const SolicitudPago = (() => {
           <td class="c"><span class="sp-drag-handle" title="${_locked?'':'Arrastra para reordenar'}">
             ${_locked?'':'<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>'}
           </span></td>
-          <td>${Utils.fmtDate(i.fecha)}</td>
+          <td>
+            <input type="date" class="input" style="font-size:12px;padding:5px 6px;width:128px"
+              value="${Utils.escapeHtml(i.fecha||'')}" ${_locked?'disabled':''}
+              onchange="SolicitudPago.setFecha(${idx}, this.value)">
+          </td>
           <td>${Utils.escapeHtml(i.proveedor)}</td>
-          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-              title="${Utils.escapeHtml(i.detalle)}">${Utils.escapeHtml(i.detalle||'—')}</td>
+          <td style="min-width:180px">
+            <input type="text" class="input" style="font-size:12px;padding:5px 8px;width:100%" placeholder="Detalle…"
+              value="${Utils.escapeHtml(i.detalle||'')}" ${_locked?'disabled':''}
+              oninput="SolicitudPago.setDetalle(${idx}, this.value)">
+          </td>
           <td class="c">${Utils.escapeHtml(i.moneda)}</td>
-          <td class="r num">${Utils.fmtNum(i.valor)}</td>
+          <td class="r">
+            <input type="number" class="input" style="font-size:12px;padding:5px 6px;width:104px;text-align:right" step="0.01"
+              value="${i.valor||0}" ${_locked?'disabled':''}
+              onchange="SolicitudPago.setValor(${idx}, this.value)">
+          </td>
           <td>
             <input type="text" class="input" style="font-size:12px;padding:5px 8px;" placeholder="Observación…"
               value="${Utils.escapeHtml(i.observaciones||'')}" ${_locked?'disabled':''}
@@ -691,7 +724,7 @@ const SolicitudPago = (() => {
 
   return {
     generar, cargar, loadActive, render, updatePreview,
-    setObservacion, eliminarItem, habilitarEdicion, guardar,
+    setObservacion, setDetalle, setFecha, setValor, eliminarItem, habilitarEdicion, guardar,
     abrirModalAgregar, submitItemManual,
     moveItem, dragStart, dragOver, dragLeave, dragEnd, drop,
     pagar, confirmarPago, toggleAllPagar, updatePagarSummary,
