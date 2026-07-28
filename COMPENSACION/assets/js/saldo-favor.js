@@ -23,7 +23,9 @@ const SaldoFavor = (() => {
     const movs = [];
 
     solicitudes
-      .filter(s => s.estado === 'Aplicada')
+      // 'Pagada' es el estado actual de una solicitud totalmente aplicada;
+      // 'Aplicada' se conserva por compatibilidad con solicitudes antiguas.
+      .filter(s => s.estado === 'Pagada' || s.estado === 'Aplicada')
       .forEach(s => {
         const total = (s.items||[]).reduce((sum,i) => sum + (Number(i.monto)||0), 0);
         if(total <= 0) return;
