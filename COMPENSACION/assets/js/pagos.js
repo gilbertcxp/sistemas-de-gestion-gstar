@@ -97,10 +97,12 @@ const Pagos = (() => {
     if(!_consorcioSelected){ UI.toast('Selecciona un consorcio', 'err'); return; }
     const inputs = document.querySelectorAll('#pagosReciboTable tbody input[data-rowid]');
     let applied = 0, total = 0;
+    const items = [];
     inputs.forEach(inp => {
       const abono = parseFloat(inp.value)||0;
       if(abono > 0.001){
         DataModule.applyCobro(inp.dataset.rowid, abono);
+        items.push({ rowId: inp.dataset.rowid, abono });
         total += abono;
         applied++;
       }
@@ -113,7 +115,8 @@ const Pagos = (() => {
       consorcio: _consorcioSelected,
       fecha: Utils.todayISO(),
       total,
-      registros: applied
+      registros: applied,
+      items // detalle por factura (rowId + abono) — permite revertir el recibo con precisión
     });
     // Espera a que el cambio llegue a Supabase antes de continuar: si el envío
     // se queda en el debounce (400ms) y el usuario recarga o tiene otra pestaña
@@ -123,6 +126,72 @@ const Pagos = (() => {
     DataModule.load();
     _cxcRows = DataModule.getCXCByConsorcio(_consorcioSelected);
     _renderRecibo();
+  }
+
+  // ------ Revertir un Recibo de Pago ya guardado ------
+  // Solo funciona para recibos con detalle (items) guardado; los recibos
+  // creados antes de esta función no tienen ese detalle y no se pueden
+  // revertir automáticamente sin riesgo de tocar la factura equivocada.
+  async function revertirRecibo(numero){
+    const pago = Storage.getPagos().find(p => p.numero === numero);
+    if(!pago) { UI.toast('No se encontró el recibo', 'err'); return false; }
+    if(!pago.items || pago.items.length === 0){
+      UI.toast('Este recibo es anterior a esta función y no tiene detalle guardado', 'err');
+      return false;
+    }
+    pago.items.forEach(it => DataModule.revertCobro(it.rowId, it.abono));
+    Storage.deletePago(numero);
+    if(window.Sync && Sync.publishAll){ try{ await Sync.publishAll(); }catch(e){ console.warn('publishAll', e); } }
+    DataModule.load();
+    UI.toast(`Recibo No.${numero} revertido`, 'ok');
+    return true;
+  }
+
+  // ------ Revertir recibos antiguos sin detalle (best-effort por coincidencia) ------
+  // Busca, entre las CXC del mismo consorcio cobradas en la fecha del recibo,
+  // una combinación de exactamente "registros" facturas cuyo pago actual sume
+  // el total del recibo. No modifica nada — solo devuelve candidatos para que
+  // la UI los muestre y el usuario confirme antes de revertir.
+  function _round2(n){ return Math.round((Number(n)||0) * 100) / 100; }
+
+  function buscarCandidatosRevertir(numero){
+    const pago = Storage.getPagos().find(p => p.numero === numero);
+    if(!pago) return { pago:null, candidatos:null };
+    const rows = Storage.getDataRows().filter(r =>
+      r.tipo === 'CXC' &&
+      r.consorcio === pago.consorcio &&
+      r.fechaPago === pago.fecha &&
+      (Number(r.pago)||0) > 0.001
+    );
+    const target = _round2(pago.total);
+    const k = Math.max(1, pago.registros||1);
+    let found = null;
+    (function combos(start, chosen){
+      if(found || chosen.length > k) return;
+      if(chosen.length === k){
+        const sum = _round2(chosen.reduce((s,r)=>s+(Number(r.pago)||0),0));
+        if(Math.abs(sum - target) < 0.01) found = [...chosen];
+        return;
+      }
+      for(let i=start; i<rows.length && !found; i++){
+        chosen.push(rows[i]);
+        combos(i+1, chosen);
+        chosen.pop();
+      }
+    })(0, []);
+    return { pago, candidatos: found };
+  }
+
+  async function aplicarRevertirHeuristico(numero, rowIds){
+    const pago = Storage.getPagos().find(p => p.numero === numero);
+    if(!pago) return false;
+    const rows = Storage.getDataRows().filter(r => rowIds.includes(r.id));
+    rows.forEach(r => DataModule.revertCobro(r.id, Number(r.pago)||0));
+    Storage.deletePago(numero);
+    if(window.Sync && Sync.publishAll){ try{ await Sync.publishAll(); }catch(e){ console.warn('publishAll', e); } }
+    DataModule.load();
+    UI.toast(`Recibo No.${numero} revertido (por coincidencia)`, 'ok');
+    return true;
   }
 
   // ------ Aplicación por Solicitud ------
@@ -359,7 +428,8 @@ const Pagos = (() => {
     UI.toast(msg, 'ok');
   }
 
-  return { render, switchTab, onConsorcioChange, guardarRecibo, onSolicitudSearch,
+  return { render, switchTab, onConsorcioChange, guardarRecibo, revertirRecibo,
+    buscarCandidatosRevertir, aplicarRevertirHeuristico, onSolicitudSearch,
     abrirModalPagarSolicitud, toggleAllPagarSol, updatePagarSolSummary, confirmarPagoSolicitud,
     _onAbonoInput };
 })();

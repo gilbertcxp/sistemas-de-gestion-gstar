@@ -163,6 +163,7 @@ const Storage = (() => {
   function setPagoCounter(n){ _set(K_PAGO_COUNTER, n); }
   function nextPagoNumber(){ const n = getPagoCounter() + 1; setPagoCounter(n); return n; }
   function addPago(pago){ const list = getPagos(); list.push(pago); savePagos(list); return pago; }
+  function deletePago(numero){ savePagos(getPagos().filter(p => p.numero !== numero)); }
 
   // ---------- Solicitudes de Pago (persistidas, numeración consecutiva) ----------
   const K_SOLICITUDES        = 'fc_solicitudes';
@@ -237,7 +238,7 @@ const Storage = (() => {
     getSettings, saveSettings,
     getDataRows, saveDataRows, clearDataRows, updateDataRow,
     getBankData, saveBankData,
-    getPagos, savePagos, addPago, getPagoCounter, nextPagoNumber,
+    getPagos, savePagos, addPago, deletePago, getPagoCounter, nextPagoNumber,
     getSolicitudes, saveSolicitudes, getSolicitud, addSolicitud, updateSolicitud, deleteSolicitud,
     getSolicitudCounter, nextSolicitudNumber, peekNextSolicitudNumber,
     exportBackup, importBackup, resetAll,

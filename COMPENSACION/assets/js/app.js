@@ -426,15 +426,27 @@ const App = (() => {
     const pagos = Storage.getPagos().slice().reverse();
     const tbodyPagos = document.querySelector('#tblRepPagos tbody');
     tbodyPagos.innerHTML = pagos.length === 0
-      ? `<tr><td colspan="5"><div class="t-empty">No hay recibos registrados todavía.</div></td></tr>`
-      : pagos.map(p => `
+      ? `<tr><td colspan="6"><div class="t-empty">No hay recibos registrados todavía.</div></td></tr>`
+      : pagos.map(p => {
+          const canRevert = Array.isArray(p.items) && p.items.length > 0;
+          return `
         <tr>
           <td><b>${p.numero}</b></td>
           <td>${Utils.escapeHtml(p.consorcio||'—')}</td>
           <td>${Utils.fmtDate(p.fecha)}</td>
           <td class="r num"><b>${Utils.fmtMoney(p.total||0)}</b></td>
           <td class="c">${p.registros||0}</td>
-        </tr>`).join('');
+          <td class="c">
+            ${canRevert
+              ? `<button class="btn btn-ghost btn-icon btn-sm" title="Revertir recibo" onclick="App.confirmRevertirRecibo(${p.numero})">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+                 </button>`
+              : `<button class="btn btn-ghost btn-icon btn-sm" title="Recibo anterior sin detalle — buscar coincidencia para revertir" onclick="App.confirmRevertirHeuristico(${p.numero})">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                 </button>`}
+          </td>
+        </tr>`;
+        }).join('');
 
     // ---- Historial de Solicitudes de Pago ----
     const solicitudes = Storage.getSolicitudes().slice().reverse();
@@ -471,6 +483,35 @@ const App = (() => {
         Storage.deleteSolicitud(numero);
         renderReportes();
         UI.toast('Solicitud eliminada', 'ok');
+      });
+    });
+  }
+
+  function confirmRevertirRecibo(numero){
+    UI.requirePin(() => {
+      UI.confirm('Revertir recibo', `¿Revertir el Recibo de Pago No. ${numero}? Esto deshace el cobro aplicado a las facturas de CXC correspondientes. Esta acción no se puede deshacer.`, async () => {
+        const ok = await Pagos.revertirRecibo(numero);
+        if(ok){ renderReportes(); Dashboard.renderAll(); }
+      });
+    });
+  }
+
+  // Recibos anteriores a la función de detalle: busca una combinación exacta
+  // de facturas CXC del mismo consorcio/fecha que sume el total del recibo,
+  // y pide confirmación mostrando cuáles encontró antes de tocar nada.
+  function confirmRevertirHeuristico(numero){
+    UI.requirePin(() => {
+      const { pago, candidatos } = Pagos.buscarCandidatosRevertir(numero);
+      if(!pago){ UI.toast('No se encontró el recibo', 'err'); return; }
+      if(!candidatos || candidatos.length === 0){
+        UI.toast('No se encontró una combinación exacta de facturas para este recibo — no se puede revertir automáticamente', 'err');
+        return;
+      }
+      const detalle = candidatos.map(r => `${r.corte||'—'} (${Utils.fmtMoney(r.pago)})`).join(' · ');
+      const msg = `Se encontraron ${candidatos.length} factura(s) de "${pago.consorcio}" cobradas el ${Utils.fmtDate(pago.fecha)} que suman exactamente ${Utils.fmtMoney(pago.total)}: ${detalle}. ¿Revertir el cobro de estas facturas y eliminar el Recibo No.${numero}? Esta acción no se puede deshacer.`;
+      UI.confirm('Revertir por coincidencia', msg, async () => {
+        const ok = await Pagos.aplicarRevertirHeuristico(numero, candidatos.map(r => r.id));
+        if(ok){ renderReportes(); Dashboard.renderAll(); }
       });
     });
   }
@@ -698,7 +739,7 @@ const App = (() => {
   return {
     init, switchView, viewInvoice, openVincular, confirmVinculo, crearDesdeVincular,
     toggleStagedRow, toggleSelectInvoice, confirmDeleteInvoice, clearPendingVinculo,
-    cargarData, publishAll, confirmDeleteSolicitud
+    cargarData, publishAll, confirmDeleteSolicitud, confirmRevertirRecibo, confirmRevertirHeuristico
   };
 })();
 

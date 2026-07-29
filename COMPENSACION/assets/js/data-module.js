@@ -357,6 +357,18 @@ const DataModule = (() => {
     return { pago:pagoNew, pendiente:pendNew, estado };
   }
 
+  // Deshace un cobro previamente aplicado (revertir Recibo de Pago).
+  function revertCobro(id, abono){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r) return null;
+    const monto   = Number(r.monto)||0;
+    const pagoNew = _round2(Math.max((Number(r.pago)||0) - (Number(abono)||0), 0));
+    const pendNew = _round2(Math.max(monto - pagoNew, 0));
+    const estado  = _deriveEstado(r.tipo, monto, pagoNew, pendNew);
+    Storage.updateDataRow(id, { pago:pagoNew, pendiente:pendNew, estado, fechaPago: pagoNew <= 0.001 ? '' : r.fechaPago });
+    return { pago:pagoNew, pendiente:pendNew, estado };
+  }
+
   // Marca una fila como saldada por completo (CXP -> Pagada, CXC -> Cobrada).
   function applyPagoTotal(id){
     const r = Storage.getDataRows().find(x => x.id === id);
@@ -517,7 +529,7 @@ const DataModule = (() => {
   }
 
   return { render, importFile, load, goPage, setFilter,
-           applyCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
+           applyCobro, revertCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly,
            showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte };
