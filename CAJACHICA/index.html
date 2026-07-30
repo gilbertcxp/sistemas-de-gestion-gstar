@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caja Chica — Gstar Services</title>
+<link rel="icon" href="assets/img/logo.png">
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<!-- Guard de autenticación -->
+<script src="../auth/auth.js"></script>
+<script>if (window.Auth) Auth.requireAuth();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ---- Caja Chica: ajustes específicos del módulo ---- */
+.sidebar{ background:#0B1437; }
+.sidebar-brand{ padding:18px 16px 14px; border-bottom:1px solid rgba(255,255,255,.06); gap:0; }
+.sidebar-brand .mark{ display:none; }
+.sidebar-brand .txt b{ font-size:17px; font-weight:800; letter-spacing:-.3px; color:#fff; display:block; line-height:1.1; }
+.sidebar-brand .txt b span{ color:#3B82F6; }
+.sidebar-brand .txt span{ font-size:9px; font-weight:600; color:#3A5080; text-transform:uppercase; letter-spacing:.9px; }
+.nav-group-label{ font-size:10px; font-weight:700; color:#3A5080; text-transform:uppercase; letter-spacing:1px; padding:12px 10px 4px; }
+.nav-item{ color:#7E94B8; padding:9px 10px; border-radius:8px; }
+.nav-item:hover{ background:rgba(255,255,255,.07) !important; color:#c8d8f0 !important; box-shadow:none !important; }
+.nav-item.active{ background:rgba(59,130,246,.18) !important; color:#fff !important; box-shadow:none !important; border-left:3px solid #3B82F6 !important; padding-left:7px !important; }
+.sidebar-foot{ border-top:1px solid rgba(255,255,255,.05); padding:14px 20px 20px; font-size:11px; color:#4A6090; }
+.sidebar-foot b{ color:#7E94B8; }
+
+/* ---- Alertas ---- */
+.cc-alert{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:var(--r-md); font-size:13px; font-weight:600; }
+.cc-alert svg{ width:18px; height:18px; flex:none; }
+.cc-alert.danger{ background:var(--danger-soft); color:var(--danger-dark,var(--danger)); }
+.cc-alert.warn{ background:var(--warn-soft); color:var(--warn); }
+.cc-alert.info{ background:var(--brand-blue-soft); color:var(--brand-blue-dark); }
+
+/* ---- Charts grid ---- */
+.chart-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:1100px){ .chart-grid{ grid-template-columns:1fr; } }
+.chart-card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow-sm); padding:18px 20px; }
+.chart-card h4{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
+.chart-card .sub{ font-size:11.5px; color:var(--ink-faint); margin-bottom:12px; }
+.chart-box{ position:relative; height:260px; }
+.chart-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:8px; text-align:center; }
+
+/* ---- Comprobante preview ---- */
+.attach-preview{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--canvas); font-size:12.5px; }
+.attach-preview svg{ width:20px; height:20px; color:var(--brand-blue); flex:none; }
+.attach-preview .name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---- Ajuste sign toggle ---- */
+.sign-toggle{ display:flex; gap:8px; }
+.sign-toggle button{ flex:1; padding:9px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--paper); font-weight:700; cursor:pointer; font-size:14px; }
+.sign-toggle button.active.pos{ background:var(--ok-soft); border-color:var(--ok); color:var(--ok); }
+.sign-toggle button.active.neg{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+
+/* ---- Reportes grid ---- */
+.rep-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media(max-width:1100px){ .rep-grid{ grid-template-columns:repeat(2,1fr); } }
+@media(max-width:600px){ .rep-grid{ grid-template-columns:1fr; } }
+.rep-card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md); padding:16px; cursor:pointer; transition:border-color .15s, transform .1s; }
+.rep-card:hover{ border-color:var(--brand-blue); transform:translateY(-1px); }
+.rep-card.active{ border-color:var(--brand-red); box-shadow:0 0 0 2px var(--brand-red-soft); }
+.rep-card .ico{ width:36px; height:36px; border-radius:9px; background:var(--brand-blue-soft); color:var(--brand-blue-dark); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.rep-card .ico svg{ width:18px; height:18px; }
+.rep-card h4{ font-size:13px; font-weight:600; }
+.rep-card p{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; }
+
+/* ---- Responsive: sidebar collapse ---- */
+.sidebar-collapse-btn{ display:none; margin-left:auto; background:rgba(255,255,255,.08); border:none; border-radius:6px; cursor:pointer; padding:5px 6px; color:#9196B5; flex:none; align-items:center; justify-content:center; }
+.sidebar-collapse-btn:hover{ background:rgba(255,255,255,.16); color:#fff; }
+.sidebar-collapse-btn svg{ width:15px; height:15px; display:block; }
+#sidebarExpandBtn{ position:fixed; top:14px; left:12px; z-index:200; width:36px; height:36px; display:none; align-items:center; justify-content:center; background:#181A28; border:1px solid rgba(255,255,255,.18); border-radius:9px; cursor:pointer; color:#fff; box-shadow:0 2px 14px rgba(0,0,0,.35); }
+#sidebarExpandBtn.show{ display:flex; }
+@media(min-width:769px){
+  .sidebar-collapse-btn{ display:flex; }
+  .sidebar{ transition:width .28s cubic-bezier(.4,0,.2,1); overflow:hidden; }
+  .sidebar.sidebar-collapsed{ width:0; }
+  .menu-btn{ display:none !important; }
+}
+@media(max-width:768px){ #sidebarExpandBtn{ display:none !important; } .sidebar-collapse-btn{ display:none !important; } }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <button id="sidebarExpandBtn" onclick="toggleCcSidebar()" title="Mostrar panel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 17l5-5-5-5"/><path d="M6 17l5-5-5-5"/></svg>
+  </button>
+  <div class="sidebar-scrim" id="scrim" onclick="UI.closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="txt">
+        <b>CAJA<span> CHICA</span></b>
+        <span>GSTAR SERVICES S.A.</span>
+      </div>
+      <button class="sidebar-collapse-btn" onclick="toggleCcSidebar()" title="Ocultar panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 17l-5-5 5-5"/><path d="M18 17l-5-5 5-5"/></svg>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group-label">PRINCIPAL</div>
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+
+      <div class="nav-group-label">GESTIÓN</div>
+      <button class="nav-item" data-view="movimientos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Movimientos
+      </button>
+      <button class="nav-item" data-view="reposiciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8M7 21.9l-4-4 4-4"/><path d="M21 11.8v2a4 4 0 0 1-4 4H4.2"/></svg>
+        Reposiciones
+      </button>
+      <button class="nav-item" data-view="conceptos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+        Catálogo de Conceptos
+      </button>
+
+      <div class="nav-group-label">ANÁLISIS</div>
+      <button class="nav-item" data-view="reportes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7"/><path d="M3 19h18"/></svg>
+        Reportes
+      </button>
+
+      <div class="nav-group-label">SISTEMA</div>
+      <button class="nav-item" data-view="config">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V20a2.06 2.06 0 1 1-4.12 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H4a2.06 2.06 0 1 1 0-4.12h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1.03-1.55V4a2.06 2.06 0 1 1 4.12 0v.1a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1.03H20a2.06 2.06 0 1 1 0 4.12h-.1a1.7 1.7 0 0 0-1.55 1.03Z"/></svg>
+        Configuración
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <b>Gstar Services S.A.</b><br>RNC 131751016
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Caja Chica</h1>
+          <p class="sub">Control y balance en tiempo real</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" onclick="App.abrirModalMovimiento()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Nuevo Gasto
+          </button>
+        </div>
+      </div>
+
+      <div id="dashAlerts" class="stack" style="gap:8px;"></div>
+
+      <div class="grid-kpi">
+        <div class="kpi ok">
+          <div class="lbl">Balance Actual</div>
+          <div class="val" id="kpiBalance">RD$ 0.00</div>
+          <div class="delta">Disponible en caja chica</div>
+        </div>
+        <div class="kpi blue">
+          <div class="lbl">Total Ingresos</div>
+          <div class="val" id="kpiIngresos">RD$ 0.00</div>
+          <div class="delta">En el período seleccionado</div>
+        </div>
+        <div class="kpi red">
+          <div class="lbl">Total Gastos</div>
+          <div class="val" id="kpiGastos">RD$ 0.00</div>
+          <div class="delta">En el período seleccionado</div>
+        </div>
+        <div class="kpi indigo">
+          <div class="lbl">Reposiciones</div>
+          <div class="val" id="kpiReposiciones">0</div>
+          <div class="delta">Realizadas en el período</div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Movimientos</div>
+          <div class="val" id="kpiMovimientos">0</div>
+          <div class="delta">Registros totales</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Estadísticas de gasto</h3><p class="sub">Promedio de gasto diario, semanal y mensual</p></div></div>
+        <div class="card-body flex gap14 wrap">
+          <div class="d-kpi" style="background:var(--brand-blue-soft);flex:1;min-width:160px;">
+            <div class="d-kpi-val" id="statDiario" style="color:var(--brand-blue-dark)">RD$ 0.00</div>
+            <div class="d-kpi-lbl">Promedio diario</div>
+          </div>
+          <div class="d-kpi" style="background:var(--indigo-soft);flex:1;min-width:160px;">
+            <div class="d-kpi-val" id="statSemanal" style="color:var(--indigo)">RD$ 0.00</div>
+            <div class="d-kpi-lbl">Promedio semanal</div>
+          </div>
+          <div class="d-kpi" style="background:var(--brand-red-soft);flex:1;min-width:160px;">
+            <div class="d-kpi-val" id="statMensual" style="color:var(--brand-red-dark)">RD$ 0.00</div>
+            <div class="d-kpi-lbl">Promedio mensual</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Gastos por Categoría</h4><p class="sub">Doble clic en un segmento para ver el detalle</p>
+          <div class="chart-box"><canvas id="chartCategoria"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Gastos por Mes</h4><p class="sub">Doble clic en una barra para ver el detalle</p>
+          <div class="chart-box"><canvas id="chartMes"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Ingresos vs Gastos</h4><p class="sub">Comparativo mensual — doble clic para ver el detalle</p>
+          <div class="chart-box"><canvas id="chartComparativo"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Balance Histórico</h4><p class="sub">Evolución del balance tras cada movimiento</p>
+          <div class="chart-box"><canvas id="chartBalance"></canvas></div>
+        </div>
+        <div class="chart-card" style="grid-column:1/-1">
+          <h4>Distribución de Gastos por Responsable</h4><p class="sub">Doble clic en un segmento para ver el detalle</p>
+          <div class="chart-box" style="height:280px"><canvas id="chartResponsable"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MOVIMIENTOS ===================== -->
+    <section class="view" id="view-movimientos">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Movimientos</h1>
+          <p class="sub">Registro completo de ingresos, gastos, reposiciones y ajustes</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" onclick="App.abrirModalMovimiento()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Nuevo Gasto
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding-bottom:12px;">
+          <div class="filters-bar">
+            <div class="field">
+              <label class="f-label">Desde</label>
+              <input type="date" class="input" id="fDesde">
+            </div>
+            <div class="field">
+              <label class="f-label">Hasta</label>
+              <input type="date" class="input" id="fHasta">
+            </div>
+            <div class="field">
+              <label class="f-label">Año</label>
+              <select class="input" id="fAnio"><option value="">Todos</option></select>
+            </div>
+            <div class="field">
+              <label class="f-label">Mes</label>
+              <select class="input" id="fMes">
+                <option value="">Todos</option>
+                <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+                <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+                <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Responsable</label>
+              <select class="input" id="fResponsable"><option value="">Todos</option></select>
+            </div>
+            <div class="field">
+              <label class="f-label">Estado</label>
+              <select class="input" id="fEstado">
+                <option value="">Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Aprobado">Aprobado</option>
+                <option value="Anulado">Anulado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="f-label">Tipo de Movimiento</label>
+              <select class="input" id="fTipo">
+                <option value="">Todos</option>
+                <option value="Gasto">Gasto</option>
+                <option value="Reposición">Reposición</option>
+              </select>
+            </div>
+            <div class="field" style="min-width:0;">
+              <label class="f-label">&nbsp;</label>
+              <div class="flex gap8">
+                <button class="btn btn-primary" onclick="App.aplicarFiltros()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  Buscar
+                </button>
+                <button class="btn btn-ghost" onclick="App.limpiarFiltros()">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap" style="max-height:520px;">
+            <table class="t" id="tblMovimientos">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Concepto</th>
+                  <th>Descripción</th>
+                  <th>Beneficiario</th>
+                  <th>Responsable</th>
+                  <th>Forma de Pago</th>
+                  <th class="r">Monto</th>
+                  <th class="r">Balance</th>
+                  <th class="c">Estado</th>
+                  <th>Usuario que Registró</th>
+                  <th>Fecha de Registro</th>
+                  <th class="c">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tblMovimientosBody">
+                <tr><td colspan="14"><div class="t-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+                  <div>Aún no hay movimientos registrados.</div>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot" style="border-radius:0 0 var(--r-lg) var(--r-lg);justify-content:flex-start;">
+          <div id="movPagination" class="flex gap8" style="font-size:13px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REPOSICIONES ===================== -->
+    <section class="view" id="view-reposiciones">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Historial de Reposiciones</h1>
+          <p class="sub">Reposiciones de fondo realizadas a la Caja Chica</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" onclick="App.abrirModalReposicion()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Nueva Reposición
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblReposiciones">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th class="r">Monto</th><th>Banco</th><th>Cuenta Bancaria</th>
+                  <th class="c">Comprobante</th><th>Usuario</th><th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="tblReposicionesBody">
+                <tr><td colspan="7"><div class="t-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+                  <div>Aún no hay reposiciones registradas.</div>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CATÁLOGO DE CONCEPTOS ===================== -->
+    <section class="view" id="view-conceptos">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Catálogo de Conceptos</h1>
+          <p class="sub">Administra las categorías disponibles para clasificar movimientos</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-accent" onclick="App.abrirModalConcepto()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
+            Agregar Concepto
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t" id="tblConceptos">
+              <thead><tr><th>Concepto</th><th class="c">Estado</th><th class="c">Acciones</th></tr></thead>
+              <tbody id="tblConceptosBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REPORTES ===================== -->
+    <section class="view" id="view-reportes">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Reportes</h1>
+          <p class="sub">Genera y exporta reportes de Caja Chica</p>
+        </div>
+      </div>
+
+      <div class="rep-grid" id="repGrid"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3 id="repTitle">Estado de Caja Chica</h3><p class="sub" id="repSub">Resumen general del fondo</p></div>
+          <div class="flex gap8">
+            <button class="btn btn-soft" onclick="Reportes.exportExcel()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Excel
+            </button>
+            <button class="btn btn-accent" onclick="Reportes.exportPDF()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              PDF
+            </button>
+            <button class="btn btn-ghost" onclick="Reportes.imprimir()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+              Imprimir
+            </button>
+          </div>
+        </div>
+        <div class="card-body" id="repContent"></div>
+      </div>
+    </section>
+
+    <!-- ===================== CONFIGURACIÓN ===================== -->
+    <section class="view" id="view-config">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Configuración</h1>
+          <p class="sub">Parámetros del fondo de Caja Chica — acceso de administrador</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Fondo</h3><p class="sub">Balance inicial y umbral de alerta</p></div></div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field">
+              <label class="f-label">Balance inicial de Caja Chica</label>
+              <input type="number" class="input" id="cfgBalanceInicial" step="0.01">
+            </div>
+            <div class="field">
+              <label class="f-label">Monto mínimo antes de alerta</label>
+              <input type="number" class="input" id="cfgMontoMinimo" step="0.01">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="f-label">Responsable principal</label>
+              <input type="text" class="input" id="cfgResponsable" placeholder="Nombre del custodio de la caja">
+            </div>
+            <div class="field">
+              <label class="f-label">Moneda</label>
+              <select class="input" id="cfgMoneda">
+                <option value="RD$">RD$ — Peso Dominicano</option>
+                <option value="US$">US$ — Dólar Estadounidense</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="f-label">Cuenta bancaria para reposiciones</label>
+              <input type="text" class="input" id="cfgCuentaBancaria" placeholder="Ej. BR 9600882715">
+            </div>
+            <div class="field">
+              <label class="f-label">Estado inicial de los movimientos</label>
+              <select class="input" id="cfgEstadoInicial">
+                <option value="Activo">Activo (afecta el balance de inmediato)</option>
+                <option value="Pendiente">Pendiente (requiere aprobación)</option>
+              </select>
+            </div>
+          </div>
+          <div><button class="btn btn-primary" onclick="App.guardarConfigFondo()">Guardar configuración</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Seguridad</h3><p class="sub">PIN de administrador</p></div></div>
+        <div class="card-body stack" style="gap:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label class="f-label">PIN de administrador</label>
+            <input type="password" class="input" id="cfgAdminPin" placeholder="PIN actual o nuevo">
+            <p class="hint">Requerido para anular movimientos, administrar conceptos y borrar todos los datos. Default: 1234</p>
+          </div>
+          <div><button class="btn btn-primary" onclick="App.guardarConfigPin()">Guardar PIN</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Datos del sistema</h3><p class="sub">Respaldo y mantenimiento</p></div></div>
+        <div class="card-body flex gap10 wrap">
+          <button class="btn btn-soft" onclick="App.descargarBackup()">Descargar respaldo (JSON)</button>
+          <button class="btn btn-soft" onclick="document.getElementById('inputRestore').click()">Restaurar respaldo</button>
+          <input type="file" id="inputRestore" accept=".json" style="display:none;" onchange="App.restaurarBackup(this)">
+          <button class="btn btn-danger" onclick="App.confirmarBorrarTodo()">Borrar todos los datos</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Sincronización en la nube</h3><p class="sub">Comparte los datos con todos los usuarios</p></div></div>
+        <div class="card-body stack" style="gap:12px;">
+          <p class="hint">Los datos de Caja Chica se guardan en la nube y se cargan automáticamente para todos los usuarios al iniciar sesión. Usa este botón si quieres forzar que <b>tus datos actuales</b> queden publicados para todos.</p>
+          <div class="flex gap10 wrap">
+            <button class="btn btn-primary" onclick="App.publicarTodo()">Publicar mis datos para todos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== MODAL: NUEVO MOVIMIENTO ===================== -->
+<div class="modal-overlay" id="modalMovimiento">
+  <div class="modal" style="max-width:640px;width:95vw">
+    <div class="modal-head">
+      <h3>Nuevo Gasto</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalMovimiento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Fecha</label>
+          <input type="date" class="input" id="mvFecha">
+        </div>
+        <div class="field">
+          <label class="f-label">Concepto</label>
+          <select class="input" id="mvConcepto"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Descripción</label>
+        <input type="text" class="input" id="mvDescripcion" placeholder="Detalle del movimiento">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Beneficiario</label>
+          <input type="text" class="input" id="mvBeneficiario" placeholder="A quién se le paga / de quién se recibe">
+        </div>
+        <div class="field">
+          <label class="f-label">Monto</label>
+          <input type="number" class="input" id="mvMonto" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Forma de Pago</label>
+          <select class="input" id="mvFormaPago">
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Cheque</option>
+            <option>Tarjeta</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="f-label">Responsable</label>
+          <input type="text" class="input" id="mvResponsable" placeholder="Quién autoriza / gestiona">
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Adjuntar comprobante (PDF, JPG o PNG)</label>
+        <div class="dropzone" id="mvDropzone" style="padding:22px;">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <h4 style="font-size:13px;">Arrastra el archivo o haz clic para seleccionarlo</h4>
+          <p>PDF, JPG, JPEG o PNG</p>
+          <input type="file" id="mvComprobante" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div id="mvComprobantePreview" style="display:none;margin-top:8px;"></div>
+      </div>
+      <div class="field">
+        <label class="f-label">Observaciones</label>
+        <textarea class="input" id="mvObservaciones" rows="2" placeholder="Notas adicionales (opcional)"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalMovimiento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="App.guardarMovimiento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NUEVA REPOSICIÓN ===================== -->
+<div class="modal-overlay" id="modalReposicion">
+  <div class="modal" style="max-width:560px;width:95vw">
+    <div class="modal-head">
+      <h3>Nueva Reposición</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalReposicion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Fecha</label>
+          <input type="date" class="input" id="rpFecha">
+        </div>
+        <div class="field">
+          <label class="f-label">Monto</label>
+          <input type="number" class="input" id="rpMonto" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Banco</label>
+          <input type="text" class="input" id="rpBanco" placeholder="Ej. Banreservas">
+        </div>
+        <div class="field">
+          <label class="f-label">Cuenta Bancaria</label>
+          <input type="text" class="input" id="rpCuenta" placeholder="Número de cuenta">
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Comprobante (PDF, JPG o PNG)</label>
+        <div class="dropzone" id="rpDropzone" style="padding:22px;">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <h4 style="font-size:13px;">Arrastra el archivo o haz clic para seleccionarlo</h4>
+          <p>PDF, JPG, JPEG o PNG</p>
+          <input type="file" id="rpComprobante" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div id="rpComprobantePreview" style="display:none;margin-top:8px;"></div>
+      </div>
+      <div class="field">
+        <label class="f-label">Observaciones</label>
+        <textarea class="input" id="rpObservaciones" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalReposicion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="App.guardarReposicion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONCEPTO ===================== -->
+<div class="modal-overlay" id="modalConcepto">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h3 id="cptModalTitle">Nuevo Concepto</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalConcepto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cptId">
+      <div class="field">
+        <label class="f-label">Nombre del concepto</label>
+        <input type="text" class="input" id="cptNombre" placeholder="Ej. Combustible" onkeydown="if(event.key==='Enter')App.guardarConcepto()">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConcepto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="App.guardarConcepto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE MOVIMIENTO / DRILL-DOWN ===================== -->
+<div class="modal-overlay" id="modalDetalle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="detTitle">Detalle</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="detBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: PIN ADMINISTRADOR ===================== -->
+<div class="modal-overlay" id="modalAdminPin" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Verificación de administrador</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
+          onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button>
+      <button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR ===================== -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<script>
+function toggleCcSidebar(){
+  const sidebar = document.getElementById('sidebar');
+  const expandBtn = document.getElementById('sidebarExpandBtn');
+  const isNowCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+  expandBtn.classList.toggle('show', isNowCollapsed);
+  sessionStorage.setItem('ccSidebarCollapsed', isNowCollapsed ? '1' : '0');
+}
+(function initCcSidebar(){
+  if(sessionStorage.getItem('ccSidebarCollapsed') === '1'){
+    document.getElementById('sidebar').classList.add('sidebar-collapsed');
+    document.getElementById('sidebarExpandBtn').classList.add('show');
+  }
+})();
+</script>
+
+<!-- Librerías empaquetadas localmente: la app funciona 100% sin internet (salvo Chart.js) -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<script src="assets/vendor/html2canvas.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+<script src="assets/vendor/jspdf.plugin.autotable.min.js"></script>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/reportes.js"></script>
+</body>
+</html>

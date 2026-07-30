@@ -1,0 +1,58 @@
+/* ============================================================
+   FACTURAS DE COMPENSACIÓN — Design Tokens
+   Paleta derivada del logo Gstar Services (rojo/azul) y del
+   sello corporativo (índigo). El rojo marca "a facturar"
+   (balance negativo) y el azul marca informativo/positivo,
+   reflejando la lógica real del negocio en todo el sistema.
+   ============================================================ */
+
+:root{
+  /* Brand */
+  --brand-red: #ED1556;
+  --brand-red-dark: #B80F42;
+  --brand-red-soft: #FDE7EE;
+  --brand-blue: #1768FF;
+  --brand-blue-dark: #0F4FCC;
+  --brand-blue-soft: #E8F0FF;
+  --indigo: #3E4095;
+  --indigo-soft: #ECECFB;
+  --cream: #FFF6DD;
+  --cream-line: #F0E2B8;
+
+  /* Estado */
+  --ok: #15875A;
+  --ok-soft: #E3F5ED;
+  --warn: #B7791F;
+  --warn-soft: #FBF0DD;
+  --danger: #D6293E;
+  --danger-soft: #FBE7E9;
+
+  /* Neutros */
+  --ink: #13141C;
+  --ink-soft: #4B4E5E;
+  --ink-faint: #898DA0;
+  --paper: #FFFFFF;
+  --canvas: #F5F6FA;
+  --canvas-deep: #ECEEF5;
+  --line: #E4E6EF;
+  --line-soft: #EEF0F6;
+
+  /* Tipografía */
+  --f-display: 'Sora', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --f-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --f-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Courier New', monospace;
+
+  /* Forma */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(19,20,28,.06);
+  --shadow-md: 0 4px 16px rgba(19,20,28,.08);
+  --shadow-lg: 0 16px 40px rgba(19,20,28,.14);
+
+  --sidebar-w: 248px;
+}
+
+@media print{
+  :root{ --sidebar-w: 0px; }
+}

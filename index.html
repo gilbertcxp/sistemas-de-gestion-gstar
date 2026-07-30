@@ -238,6 +238,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     <button class="nav-btn" data-page="compensacion">
       <i class="bi bi-arrow-left-right nav-ico"></i> Compensación
     </button>
+    <button class="nav-btn" data-page="cajachica">
+      <i class="bi bi-briefcase-fill nav-ico"></i> Caja Chica
+    </button>
     <button class="nav-btn" data-page="cxc">
       <i class="bi bi-cash-coin nav-ico"></i> Cuentas por Cobrar
     </button>
@@ -365,6 +368,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="mc-desc">Gestión de facturas y solicitudes de compensación de consorcios.</div>
           <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
         </button>
+        <button class="mod-card" data-page="cajachica">
+          <div class="mc-top"><div class="mc-icon a"><i class="bi bi-briefcase-fill"></i></div></div>
+          <div class="mc-title">Caja Chica</div>
+          <div class="mc-desc">Control de movimientos, balance en tiempo real y reposiciones del fondo.</div>
+          <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
+        </button>
         <button class="mod-card" data-page="cxc">
           <div class="mc-top"><div class="mc-icon p"><i class="bi bi-cash-coin"></i></div></div>
           <div class="mc-title">Cuentas por Cobrar</div>
@@ -447,6 +456,13 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
             title="Facturas de Compensación"></iframe>
   </section>
 
+  <!-- ======= CAJA CHICA ======= -->
+  <section class="page" id="page-cajachica">
+    <iframe class="embed-frame" id="frame-cajachica"
+            data-src="CAJACHICA/index.html"
+            title="Caja Chica"></iframe>
+  </section>
+
   <!-- ======= CUENTAS POR COBRAR — Antigüedad de Saldo ======= -->
   <section class="page" id="page-cxc">
     <div class="embed-wrap">
@@ -513,6 +529,7 @@ const APPS = {
   preconciliacion : "CONCILIAR/conciliadorav2.0.html",          // ✅ integrada
   erogaciones     : "EROGACIONES/dashboard-erogaciones.html",   // ✅ integrada
   compensacion    : "COMPENSACION/index.html",                  // ✅ integrada
+  cajachica       : "CAJACHICA/index.html",                     // ✅ integrada
   "cxp-reporte"   : "CXP/index.html",                           // ✅ integrada
   "reportes-erog" : "EROGACIONES/reporte-erogaciones.html",     // ✅ integrada
   "er"            : "REPORTES/index.html"                       // ✅ integrada
@@ -529,6 +546,7 @@ const PAGES = {
   'disponibilidad':  {title:'Disponibilidad Bancaria',   crumb:'Banco › Disponibilidad Bancaria', sub:'banco'},
   'captura-disponibilidad': {title:'Captura de Disponibilidad', crumb:'Banco › Captura de Disponibilidad', sub:'banco'},
   'compensacion':    {title:'Compensación',              crumb:'Compensación',                    sub:false},
+  'cajachica':       {title:'Caja Chica',                 crumb:'Caja Chica',                      sub:false},
   'cxc':             {title:'Cuentas por Cobrar',        crumb:'Cuentas por Cobrar',              sub:false},
   'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
@@ -591,6 +609,11 @@ function lazyLoadFrame(page){
   // Compensación
   if(page==='compensacion'){
     const f=document.getElementById('frame-compensacion');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Caja Chica
+  if(page==='cajachica'){
+    const f=document.getElementById('frame-cajachica');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // CXC · Antigüedad de Saldo
