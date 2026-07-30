@@ -148,6 +148,9 @@ const Storage = (() => {
     if(idx >= 0){ list[idx] = {...list[idx], ...patch}; saveDataRows(list); return list[idx]; }
     return null;
   }
+  function deleteDataRow(id){
+    saveDataRows(getDataRows().filter(r => r.id !== id));
+  }
 
   // ---------- Bank Data (balances para Solicitud de Pago) ----------
   const DEFAULT_BANK = { balanceComp:0, transferencia:0, balanceOperativa:0 };
@@ -236,7 +239,7 @@ const Storage = (() => {
     getInvoices, saveInvoices, addInvoices, updateInvoice, deleteInvoice,
     getCounter, setCounter, nextInvoiceNumber, peekNextInvoiceNumber,
     getSettings, saveSettings,
-    getDataRows, saveDataRows, clearDataRows, updateDataRow,
+    getDataRows, saveDataRows, clearDataRows, updateDataRow, deleteDataRow,
     getBankData, saveBankData,
     getPagos, savePagos, addPago, deletePago, getPagoCounter, nextPagoNumber,
     getSolicitudes, saveSolicitudes, getSolicitud, addSolicitud, updateSolicitud, deleteSolicitud,

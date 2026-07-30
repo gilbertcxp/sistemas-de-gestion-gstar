@@ -281,7 +281,7 @@ const DataModule = (() => {
     if(!tbody) return;
 
     if(pageRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="10"><div class="t-empty">No se encontraron registros con estos filtros.</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11"><div class="t-empty">No se encontraron registros con estos filtros.</div></td></tr>`;
     } else {
       tbody.innerHTML = pageRows.map(r => {
         const tipoPill = r.tipo === 'CXP'
@@ -294,6 +294,13 @@ const DataModule = (() => {
         const nombreCell = r._count
           ? `<b>${Utils.escapeHtml(r.consorcio)}</b> <span class="muted" style="font-size:11px">(${r._count} consorcios)</span>`
           : Utils.escapeHtml(r.consorcio);
+        // Las filas agrupadas (UD) representan varios registros a la vez —
+        // no se pueden eliminar una por una desde aquí.
+        const accionesCell = r._count
+          ? '<span class="muted" style="font-size:11px">—</span>'
+          : `<button class="btn btn-ghost btn-icon btn-sm" title="Eliminar esta factura" onclick="DataModule.confirmDeleteRow('${r.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+            </button>`;
         return `<tr>
           <td>${nombreCell}</td>
           <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
@@ -305,6 +312,7 @@ const DataModule = (() => {
           <td class="r num">${Utils.fmtNum(r.monto)}</td>
           <td class="r num">${Utils.fmtNum(r.pago)}</td>
           <td class="r num"><b>${Utils.fmtNum(r.pendiente)}</b></td>
+          <td class="c">${accionesCell}</td>
         </tr>`;
       }).join('');
     }
@@ -435,6 +443,23 @@ const DataModule = (() => {
     if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
   }
 
+  // ------ Eliminar una sola factura (fila individual, no todo el corte) ------
+  function confirmDeleteRow(id){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r) return;
+    UI.requirePin(() => {
+      UI.confirm('Eliminar factura',
+        `¿Eliminar esta factura de ${r.consorcio} (${r.tipo}, corte ${r.corte}, ${Utils.fmtNum(r.monto)})? Esta acción no se puede deshacer.`,
+        () => {
+          Storage.deleteDataRow(id);
+          load();
+          render();
+          UI.toast('Factura eliminada', 'ok');
+          if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+        });
+    });
+  }
+
   function getCortes(){
     return [...new Set(_rows.filter(r => r.tipo==='CXP' && r.estado==='Pendiente').map(r=>r.corte).filter(Boolean))].sort();
   }
@@ -447,8 +472,17 @@ const DataModule = (() => {
     return _rows.filter(r => r.tipo==='CXP' && r.corte===corte && r.estado==='Pendiente');
   }
 
+  // Recalcula pendiente/estado en vivo desde monto-pago (igual que getCXCByConsorcio)
+  // en vez de confiar en el campo "pendiente" guardado, que puede quedar
+  // desactualizado si el pago se aplicó por otra vía y no se sincronizó ese campo.
   function getByConsorcio(consorcio){
-    return _rows.filter(r => r.consorcio===consorcio).sort((a,b)=>(a.corte||'').localeCompare(b.corte||''));
+    return Storage.getDataRows()
+      .filter(r => r.consorcio === consorcio)
+      .map(r => {
+        const pend = _round2((Number(r.monto)||0) - (Number(r.pago)||0));
+        return { ...r, pendiente: pend, estado: _deriveEstado(r.tipo, r.monto, r.pago, pend) };
+      })
+      .sort((a,b) => (a.corte||'').localeCompare(b.corte||''));
   }
 
   function getRows(){ return _rows; }
@@ -532,5 +566,5 @@ const DataModule = (() => {
            applyCobro, revertCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly,
-           showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte };
+           showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte, confirmDeleteRow };
 })();
