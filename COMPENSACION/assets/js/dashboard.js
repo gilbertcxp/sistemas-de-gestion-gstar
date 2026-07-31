@@ -5,12 +5,21 @@ const Dashboard = (() => {
 
   function _rows() { return Storage.getDataRows ? Storage.getDataRows() : []; }
 
+  // Pendiente "efectivo" de una fila (ver DataModule._pendienteEfectivo): el
+  // menor entre el campo guardado y el cálculo en vivo monto-pago, para no
+  // confiar ciegamente en un campo que puede estar desactualizado en
+  // cualquiera de las dos direcciones.
+  function _pend(r){
+    if(typeof DataModule !== 'undefined' && DataModule.getEffectivePendiente) return DataModule.getEffectivePendiente(r);
+    return Number(r.pendiente)||0;
+  }
+
   function renderKPIs(){
     const rows      = _rows();
     const cxc       = rows.filter(r => r.tipo === 'CXC');
     const cxp       = rows.filter(r => r.tipo === 'CXP');
-    const totalCXC  = cxc.filter(r => r.estado !== 'Cobrada').reduce((s, r) => s + (r.pendiente || 0), 0);
-    const totalCXP  = cxp.filter(r => r.estado !== 'Pagada').reduce((s, r) => s + (r.pendiente || 0), 0);
+    const totalCXC  = cxc.reduce((s, r) => s + _pend(r), 0);
+    const totalCXP  = cxp.reduce((s, r) => s + _pend(r), 0);
     const diferencia = totalCXC - totalCXP;
     const difPos    = diferencia >= 0;
 

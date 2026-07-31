@@ -294,7 +294,18 @@ const App = (() => {
     }
     const desde = document.getElementById('periodoDesde').value;
     const hasta  = document.getElementById('periodoHasta').value;
-    const count  = DataModule.importFromWeekly(staged, desde, hasta);
+
+    if(DataModule.corteExists(desde, hasta)){
+      const label = DataModule.corteLabelFor(desde, hasta);
+      UI.confirm('Período ya cargado',
+        `Ya existe data cargada para el corte ${label}. Si continúas, se van a AGREGAR estos registros a los que ya existen (no se reemplazan), lo que puede duplicar montos si es el mismo archivo. ¿Continuar de todas formas?`,
+        () => _doCargarData(staged, desde, hasta));
+      return;
+    }
+    _doCargarData(staged, desde, hasta);
+  }
+  function _doCargarData(staged, desde, hasta){
+    const count = DataModule.importFromWeekly(staged, desde, hasta);
     if(count === 0){
       UI.toast('No se encontraron registros con balance distinto de cero', 'err');
       return;

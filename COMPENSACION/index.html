@@ -890,6 +890,10 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
               .then(r=>{ UI.toast(r.count.toLocaleString()+' registros importados correctamente','ok'); DataModule.render(); })
               .catch(e=>UI.toast(e.message,'err'))
               .finally(()=>{ this.value=''; })">
+          <button class="btn btn-ghost" onclick="DataModule.showDuplicatesModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Detectar Duplicados
+          </button>
           <button class="btn btn-ghost" style="color:#dc2626;border-color:#fecaca" onclick="DataModule.showDeleteCorteModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             Eliminar Corte
@@ -1505,6 +1509,20 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="DataModule.closeDeleteCorteModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="DataModule.confirmDeleteCorte()">Eliminar corte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETECTAR DUPLICADOS ===================== -->
+<div class="modal-overlay" id="modalDuplicados" onclick="if(event.target===this)DataModule.closeDuplicatesModal()">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Posibles Facturas Duplicadas</h3>
+      <button class="btn btn-ghost btn-icon" onclick="DataModule.closeDuplicatesModal()">✕</button>
+    </div>
+    <div class="modal-body" id="duplicadosBody" style="max-height:70vh;overflow-y:auto;"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="DataModule.closeDuplicatesModal()">Cerrar</button>
     </div>
   </div>
 </div>

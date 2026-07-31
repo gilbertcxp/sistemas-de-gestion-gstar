@@ -12,6 +12,21 @@ const DataModule = (() => {
   // ------ helpers ------
   function _round2(n){ return Math.round((Number(n)||0)*100)/100; }
 
+  // Pendiente "efectivo" de una fila: el MENOR entre el campo guardado
+  // (fuente original, p.ej. importada de Excel histórico) y el cálculo en
+  // vivo monto-pago (fuente cuando el pago se aplicó desde este sistema).
+  // Así, una fila solo se muestra como pendiente si AMBAS fuentes coinciden
+  // en que sigue pendiente — nunca "resucita" algo que cualquiera de las
+  // dos ya daba por resuelto (evita el caso opuesto: pago no rastreado en
+  // datos históricos donde "pendiente" ya estaba en 0 de forma legítima).
+  function _pendienteEfectivo(r){
+    const monto = Number(r.monto)||0;
+    const pago  = Number(r.pago)||0;
+    const pendVivo = _round2(monto - pago);
+    const pendGuardado = (r.pendiente != null && r.pendiente !== '') ? _round2(Number(r.pendiente)||0) : pendVivo;
+    return Math.max(0, Math.min(pendVivo, pendGuardado));
+  }
+
   // Estado derivado EXCLUSIVAMENTE de los montos (alimentado por el módulo Pagos).
   //   sin pago            -> Por Cobrar (CXC) / Pendiente (CXP)
   //   pago parcial        -> Parcial
@@ -168,10 +183,10 @@ const DataModule = (() => {
   // ------ Internal load ------
   // El estado se recalcula siempre desde los montos: nunca es editable a mano.
   function load(){
-    _rows = Storage.getDataRows().map(r => ({
-      ...r,
-      estado: _deriveEstado(r.tipo, r.monto, r.pago, r.pendiente)
-    }));
+    _rows = Storage.getDataRows().map(r => {
+      const pendiente = _pendienteEfectivo(r);
+      return { ...r, pendiente, estado: _deriveEstado(r.tipo, r.monto, r.pago, pendiente) };
+    });
   }
 
   // ------ Filters ------
@@ -397,18 +412,19 @@ const DataModule = (() => {
   // Facturas CXC pendientes (Por Cobrar / Parcial) de un consorcio — para Recibo de Pago.
   function getCXCByConsorcio(consorcio){
     return Storage.getDataRows()
-      .filter(r => r.tipo === 'CXC' && r.consorcio === consorcio && _round2((Number(r.monto)||0) - (Number(r.pago)||0)) > 0.001)
+      .filter(r => r.tipo === 'CXC' && r.consorcio === consorcio)
       .map(r => {
-        const pend = _round2((Number(r.monto)||0) - (Number(r.pago)||0));
+        const pend = _pendienteEfectivo(r);
         return { ...r, pendiente: pend, estado: _deriveEstado(r.tipo, r.monto, r.pago, pend) };
       })
+      .filter(r => r.pendiente > 0.001)
       .sort((a,b) => (a.corte||'').localeCompare(b.corte||''));
   }
 
   // Consorcios que tienen al menos una CXC pendiente — para el selector de cliente.
   function getConsorciosConCXC(){
     return [...new Set(Storage.getDataRows()
-      .filter(r => r.tipo === 'CXC' && _round2((Number(r.monto)||0) - (Number(r.pago)||0)) > 0.001)
+      .filter(r => r.tipo === 'CXC' && _pendienteEfectivo(r) > 0.001)
       .map(r => r.consorcio).filter(Boolean))].sort();
   }
 
@@ -456,8 +472,67 @@ const DataModule = (() => {
           render();
           UI.toast('Factura eliminada', 'ok');
           if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+          const dupModal = document.getElementById('modalDuplicados');
+          if(dupModal && dupModal.classList.contains('open')) _renderDuplicatesBody();
         });
     });
+  }
+
+  // ------ Detectar Duplicados (modal) ------
+  function _renderDuplicatesBody(){
+    const body = document.getElementById('duplicadosBody');
+    if(!body) return;
+    const groups = findDuplicates();
+    if(groups.length === 0){
+      body.innerHTML = `<div class="t-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><polyline points="20 6 9 17 4 12"/></svg>
+        <div>No se encontraron facturas duplicadas (mismo consorcio, corte, tipo y monto repetido).</div>
+      </div>`;
+      return;
+    }
+    body.innerHTML = `
+      <p style="font-size:13px;color:#64748b;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;">
+        ⚠️ Se encontraron ${groups.length} grupo(s) con más de un registro idéntico (mismo consorcio, corte, tipo y monto). Revisa cada grupo y elimina las filas sobrantes con el ícono de basura — deja solo una.
+      </p>
+      <div class="stack" style="gap:16px;">
+        ${groups.map(g => {
+          const r0 = g[0];
+          return `<div class="card" style="box-shadow:none;">
+            <div class="card-head" style="padding:10px 14px;">
+              <div>
+                <b>${Utils.escapeHtml(r0.consorcio)}</b> · ${r0.tipo} · ${Utils.escapeHtml(r0.corte)}
+                <span class="pill red" style="margin-left:8px;">${g.length} copias</span>
+              </div>
+              <div class="r num"><b>${Utils.fmtNum(r0.monto)}</b> c/u</div>
+            </div>
+            <div class="table-wrap">
+              <table class="t">
+                <thead><tr><th>Fecha</th><th class="r">Pago</th><th class="r">Pendiente</th><th>Estado</th><th class="c">Acción</th></tr></thead>
+                <tbody>
+                  ${g.map(r => `<tr>
+                    <td>${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
+                    <td class="r num">${Utils.fmtNum(r.pago)}</td>
+                    <td class="r num">${Utils.fmtNum(r.pendiente)}</td>
+                    <td>${_estadoPill(r.estado)}</td>
+                    <td class="c">
+                      <button class="btn btn-ghost btn-icon btn-sm" title="Eliminar esta copia" onclick="DataModule.confirmDeleteRow('${r.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+                      </button>
+                    </td>
+                  </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+  function showDuplicatesModal(){
+    _renderDuplicatesBody();
+    document.getElementById('modalDuplicados')?.classList.add('open');
+  }
+  function closeDuplicatesModal(){
+    document.getElementById('modalDuplicados')?.classList.remove('open');
   }
 
   function getCortes(){
@@ -472,14 +547,14 @@ const DataModule = (() => {
     return _rows.filter(r => r.tipo==='CXP' && r.corte===corte && r.estado==='Pendiente');
   }
 
-  // Recalcula pendiente/estado en vivo desde monto-pago (igual que getCXCByConsorcio)
-  // en vez de confiar en el campo "pendiente" guardado, que puede quedar
-  // desactualizado si el pago se aplicó por otra vía y no se sincronizó ese campo.
+  // Usa el pendiente "efectivo" (ver _pendienteEfectivo) en vez de confiar
+  // ciegamente en el campo guardado, que puede quedar desactualizado si el
+  // pago se aplicó por otra vía y no se sincronizó ese campo.
   function getByConsorcio(consorcio){
     return Storage.getDataRows()
       .filter(r => r.consorcio === consorcio)
       .map(r => {
-        const pend = _round2((Number(r.monto)||0) - (Number(r.pago)||0));
+        const pend = _pendienteEfectivo(r);
         return { ...r, pendiente: pend, estado: _deriveEstado(r.tipo, r.monto, r.pago, pend) };
       })
       .sort((a,b) => (a.corte||'').localeCompare(b.corte||''));
@@ -487,14 +562,39 @@ const DataModule = (() => {
 
   function getRows(){ return _rows; }
 
+  // Etiqueta de corte que generará importFromWeekly para este período —
+  // se expone aparte para poder chequear duplicados antes de importar.
+  function corteLabelFor(desde, hasta){
+    return desde && hasta
+      ? `${Utils.fmtDate(desde)} – ${Utils.fmtDate(hasta)}`
+      : desde ? Utils.fmtDate(desde) : 'Sin fecha';
+  }
+
+  // ¿Ya hay data cargada para este período? (mismo corte exacto)
+  function corteExists(desde, hasta){
+    const label = corteLabelFor(desde, hasta);
+    return Storage.getDataRows().some(r => r.corte === label);
+  }
+
+  // ------ Detectar posibles duplicados ------
+  // Agrupa por consorcio+corte+tipo+monto: si hay más de una fila con la
+  // misma combinación, casi seguro es la misma factura cargada dos veces
+  // (p.ej. el mismo Excel semanal subido por error más de una vez).
+  function findDuplicates(){
+    const map = {};
+    Storage.getDataRows().forEach(r => {
+      const key = [r.consorcio, r.corte, r.tipo, _round2(r.monto)].join('|');
+      (map[key] = map[key] || []).push(r);
+    });
+    return Object.values(map).filter(group => group.length > 1);
+  }
+
   // ------ Public: import from weekly Cargar-Excel ------
   // staged = Invoices.getStaged(), desde/hasta = ISO date strings from the UI inputs
   function importFromWeekly(staged, desde, hasta){
     if(!staged || staged.length === 0) return 0;
 
-    const corteLabel = desde && hasta
-      ? `${Utils.fmtDate(desde)} – ${Utils.fmtDate(hasta)}`
-      : desde ? Utils.fmtDate(desde) : 'Sin fecha';
+    const corteLabel = corteLabelFor(desde, hasta);
 
     let mes = 0, año = 0, mesLetra = '';
     if(desde){
@@ -565,6 +665,7 @@ const DataModule = (() => {
   return { render, importFile, load, goPage, setFilter,
            applyCobro, revertCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
-           importFromWeekly,
-           showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte, confirmDeleteRow };
+           importFromWeekly, corteExists, corteLabelFor, findDuplicates,
+           showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte, confirmDeleteRow,
+           showDuplicatesModal, closeDuplicatesModal, getEffectivePendiente: _pendienteEfectivo };
 })();
