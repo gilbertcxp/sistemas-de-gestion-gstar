@@ -6,6 +6,7 @@
 const Reposicion = (() => {
 
   const DENOMS = [1,5,10,25,50,100,200,500,1000,2000];
+  const FONDO_FIJO = 20000; // fondo fijo de Caja Chica, no editable por ahora
 
   let state = null;
   let _dirty = false;
@@ -14,12 +15,11 @@ const Reposicion = (() => {
   function _padNo(n){ return String(n).padStart(5,'0'); }
 
   function _defaultState(){
-    const s = Storage.getSettings();
     return {
       fechaSolicitud: Utils.todayISO(),
       fechaDesde: Utils.todayISO(),
       fechaHasta: Utils.todayISO(),
-      fondo: Number(s.balanceInicial) || 20000,
+      fondo: FONDO_FIJO,
       repAnterior: 0,
       nextNo: 1,
       rows: [],
@@ -62,6 +62,7 @@ const Reposicion = (() => {
   function render(){
     if(!_dirty || !state) _loadState();
     _touchDates();
+    state.fondo = FONDO_FIJO; // fijo por ahora, no editable
     _wireOnce();
     startClock();
     _applyHeaderToDOM();
@@ -73,7 +74,6 @@ const Reposicion = (() => {
   function _wireOnce(){
     if(_wired) return;
     _wired = true;
-    document.getElementById('ccFondo')?.addEventListener('input', () => { syncHeaderFromDOM(); _dirty = true; renderRows(); });
     document.getElementById('ccRepAnterior')?.addEventListener('input', () => {
       document.getElementById('ccRepAnteriorMirror').value = document.getElementById('ccRepAnterior').value;
       syncHeaderFromDOM(); _dirty = true; renderRows();
