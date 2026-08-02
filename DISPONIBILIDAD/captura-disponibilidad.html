@@ -715,6 +715,20 @@ function openMapModal(){
 }
 function closeMapModal(){ document.getElementById('mapModal').classList.remove('open'); _uploadStaging = null; }
 
+// Clave de deduplicación: algunos bancos reutilizan el mismo "N° de
+// Transacción" como código genérico para varios movimientos distintos del
+// mismo tipo (ej. intereses de fin de mes, lotes de nómina) — por eso el
+// número solo no basta. Se combina con fecha + monto, que sí distingue
+// movimientos reales aunque compartan número. Se recalcula siempre a partir
+// de los campos guardados de cada fila (no se confía en un valor cacheado),
+// así no importa si una fila vieja se guardó con la lógica anterior.
+function _dedupeKeyFor(r){
+  const debito = Number(r.debito)||0, credito = Number(r.credito)||0;
+  return r.numTrans
+    ? ['nt', r.numTrans, r.fecha, debito.toFixed(2), credito.toFixed(2)].join('|')
+    : [r.fecha, r.referencia||'', debito.toFixed(2), credito.toFixed(2), r.descripcion||''].join('|');
+}
+
 async function confirmMapModal(){
   if(!_uploadStaging) return;
   const g = id => document.getElementById(id).value;
@@ -722,7 +736,7 @@ async function confirmMapModal(){
   if(!map.fecha || (!map.debito && !map.credito)){ toast('Asigna al menos Fecha y una columna de Débito o Crédito', true); return; }
 
   const acc = _uploadStaging.account;
-  const existingKeys = new Set((CAP.movimientos[acc]||[]).map(r => r._dedupeKey));
+  const existingKeys = new Set((CAP.movimientos[acc]||[]).map(_dedupeKeyFor));
   let added = 0, skipped = 0, seqBase = (CAP.movimientos[acc]||[]).length;
 
   _uploadStaging.raw.forEach((row,i) => {
@@ -733,12 +747,7 @@ async function confirmMapModal(){
     const descripcion = map.desc ? String(row[map.desc]||'').trim() : '';
     const numTrans = map.numTrans ? String(row[map.numTrans]||'').trim() : '';
     if(!fecha || (debito===0 && credito===0)) return;
-    // El N° de Transacción es único por movimiento — se usa como identificador
-    // principal cuando está disponible, ya que la Referencia puede repetirse
-    // entre varios movimientos distintos del mismo día (ej. lotes de pagos DGII).
-    const dedupeKey = numTrans
-      ? 'nt:'+numTrans
-      : [fecha, referencia, debito.toFixed(2), credito.toFixed(2), descripcion].join('|');
+    const dedupeKey = _dedupeKeyFor({ fecha, referencia, debito, credito, descripcion, numTrans });
     if(existingKeys.has(dedupeKey)){ skipped++; return; }
     existingKeys.add(dedupeKey);
     CAP.movimientos[acc].push({ id: uid('mv'), fecha, descripcion, referencia, numTrans, debito, credito, _dedupeKey: dedupeKey, _seq: seqBase + i });
