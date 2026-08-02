@@ -487,12 +487,9 @@
           <div class="section">
             <div class="card">
               <div class="section-title">Fondo de caja</div>
-              <div class="grid grid-4">
+              <div class="grid grid-3">
                 <label class="field">Fondo de caja (RD$)
                   <input id="ccFondo" type="number" step="0.01" readonly>
-                </label>
-                <label class="field">Reposición anterior (RD$)
-                  <input id="ccRepAnterior" type="number" step="0.01">
                 </label>
                 <label class="field">Facturas y desembolsos
                   <input id="ccFacturasView" readonly value="0.00">
@@ -536,7 +533,7 @@
                 </div>
                 <div class="summary-cell">
                   <div class="s-label">Reposición anterior</div>
-                  <div class="s-value">RD$ <input id="ccRepAnteriorMirror" type="number" step="0.01"></div>
+                  <div class="s-value" id="ccSumRepAnterior">RD$ 0.00</div>
                 </div>
                 <div class="summary-cell total">
                   <div class="s-label">Total por reponer</div>

@@ -74,14 +74,6 @@ const Reposicion = (() => {
   function _wireOnce(){
     if(_wired) return;
     _wired = true;
-    document.getElementById('ccRepAnterior')?.addEventListener('input', () => {
-      document.getElementById('ccRepAnteriorMirror').value = document.getElementById('ccRepAnterior').value;
-      syncHeaderFromDOM(); _dirty = true; renderRows();
-    });
-    document.getElementById('ccRepAnteriorMirror')?.addEventListener('input', () => {
-      document.getElementById('ccRepAnterior').value = document.getElementById('ccRepAnteriorMirror').value;
-      syncHeaderFromDOM(); _dirty = true; renderRows();
-    });
     document.getElementById('ccCheque')?.addEventListener('input', () => { syncHeaderFromDOM(); _dirty = true; renderDiff(); });
     document.getElementById('ccNota')?.addEventListener('input', () => { syncHeaderFromDOM(); _dirty = true; });
   }
@@ -102,15 +94,12 @@ const Reposicion = (() => {
 
   function syncHeaderFromDOM(){
     state.fondo = Number(document.getElementById('ccFondo').value) || 0;
-    state.repAnterior = Number(document.getElementById('ccRepAnterior').value) || 0;
     state.cheque = Number(document.getElementById('ccCheque').value) || 0;
     state.nota = document.getElementById('ccNota').value;
   }
 
   function _applyHeaderToDOM(){
     document.getElementById('ccFondo').value = state.fondo;
-    document.getElementById('ccRepAnterior').value = state.repAnterior;
-    document.getElementById('ccRepAnteriorMirror').value = state.repAnterior;
     document.getElementById('ccCheque').value = state.cheque || 0;
     document.getElementById('ccNota').value = state.nota || '';
   }
@@ -169,7 +158,8 @@ const Reposicion = (() => {
     document.getElementById('ccDisponibleView').value = disponible.toFixed(2);
     document.getElementById('ccSumDisponible').textContent = Utils.fmtMoney(disponible);
 
-    const repAnt = Number(document.getElementById('ccRepAnterior').value) || 0;
+    const repAnt = Number(state.repAnterior) || 0;
+    document.getElementById('ccSumRepAnterior').textContent = Utils.fmtMoney(repAnt);
     document.getElementById('ccSumPorReponer').textContent = Utils.fmtMoney(totalFacturas - repAnt);
 
     renderDiff();
