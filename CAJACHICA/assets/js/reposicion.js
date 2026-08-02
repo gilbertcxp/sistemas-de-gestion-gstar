@@ -50,9 +50,18 @@ const Reposicion = (() => {
     if(state.rows.length === 0) _addRowSilent();
   }
 
+  // Sin controles de fecha en pantalla: el período siempre corre desde el
+  // cierre anterior (fechaDesde) hasta el momento actual (fechaHasta = hoy).
+  function _touchDates(){
+    state.fechaHasta = Utils.todayISO();
+    state.fechaSolicitud = Utils.todayISO();
+    if(!state.fechaDesde) state.fechaDesde = Utils.todayISO();
+  }
+
   /* ---------------- Render ---------------- */
   function render(){
     if(!_dirty || !state) _loadState();
+    _touchDates();
     _wireOnce();
     startClock();
     _applyHeaderToDOM();
@@ -64,9 +73,6 @@ const Reposicion = (() => {
   function _wireOnce(){
     if(_wired) return;
     _wired = true;
-    ['ccFechaSolicitud','ccFechaDesde','ccFechaHasta'].forEach(id => {
-      document.getElementById(id)?.addEventListener('change', () => { syncHeaderFromDOM(); _dirty = true; });
-    });
     document.getElementById('ccFondo')?.addEventListener('input', () => { syncHeaderFromDOM(); _dirty = true; renderRows(); });
     document.getElementById('ccRepAnterior')?.addEventListener('input', () => {
       document.getElementById('ccRepAnteriorMirror').value = document.getElementById('ccRepAnterior').value;
@@ -95,9 +101,6 @@ const Reposicion = (() => {
   }
 
   function syncHeaderFromDOM(){
-    state.fechaSolicitud = document.getElementById('ccFechaSolicitud').value;
-    state.fechaDesde = document.getElementById('ccFechaDesde').value;
-    state.fechaHasta = document.getElementById('ccFechaHasta').value;
     state.fondo = Number(document.getElementById('ccFondo').value) || 0;
     state.repAnterior = Number(document.getElementById('ccRepAnterior').value) || 0;
     state.cheque = Number(document.getElementById('ccCheque').value) || 0;
@@ -105,9 +108,6 @@ const Reposicion = (() => {
   }
 
   function _applyHeaderToDOM(){
-    document.getElementById('ccFechaSolicitud').value = state.fechaSolicitud || Utils.todayISO();
-    document.getElementById('ccFechaDesde').value = state.fechaDesde || Utils.todayISO();
-    document.getElementById('ccFechaHasta').value = state.fechaHasta || Utils.todayISO();
     document.getElementById('ccFondo').value = state.fondo;
     document.getElementById('ccRepAnterior').value = state.repAnterior;
     document.getElementById('ccRepAnteriorMirror').value = state.repAnterior;
@@ -216,6 +216,7 @@ const Reposicion = (() => {
   /* ---------------- Guardar / Nueva reposición ---------------- */
   function guardar(){
     syncHeaderFromDOM();
+    _touchDates();
     Storage.savePeriodoActual(state);
     _dirty = false;
     UI.toast('Reposición guardada', 'ok');
@@ -223,6 +224,7 @@ const Reposicion = (() => {
 
   function iniciarNuevaReposicion(){
     syncHeaderFromDOM();
+    _touchDates();
     const disponible = Number(document.getElementById('ccDisponibleView').value) || 0;
     const totalFacturas = Number(document.getElementById('ccFacturasView').value) || 0;
 
