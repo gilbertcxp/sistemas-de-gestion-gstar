@@ -62,15 +62,9 @@ document.getElementById('btnConfirmOk')?.addEventListener('click', UI.runConfirm
    ============================================================ */
 const App = (() => {
 
-  const TIPOS   = ['Ingreso','Gasto','Reposición','Ajuste'];
-  const ESTADOS = ['Activo','Pendiente','Aprobado','Anulado'];
-  const ESTADOS_QUE_CUENTAN = ['Activo','Aprobado']; // afectan el balance
+  const ESTADOS_QUE_CUENTAN = ['Activo','Aprobado']; // afectan el balance (histórico, usado por Dashboard/Reportes)
 
   let _filters = { desde:'', hasta:'', anio:'', mes:'', responsable:'', estado:'', tipo:'' };
-  let _page = 1;
-  const PAGE_SIZE = 25;
-  let _pendingComprobanteMv = null; // {name,type,dataUrl} en edición del modal Movimiento
-  let _pendingComprobanteRp = null; // ídem modal Reposición
 
   function currentUserLabel(){
     try{
@@ -83,9 +77,7 @@ const App = (() => {
   async function init(){
     Storage.init();
     wireNav();
-    wireFileInputs();
     setDefaultDates();
-    populateConceptoSelect();
     renderAll();
 
     if(window.Sync){
@@ -106,8 +98,7 @@ const App = (() => {
     document.getElementById('view-' + name)?.classList.add('active');
     document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
     UI.closeSidebar();
-    if(name === 'movimientos') renderMovimientos();
-    if(name === 'reposiciones') renderReposiciones();
+    if(name === 'movimientos' && window.Reposicion) Reposicion.render();
     if(name === 'conceptos') renderConceptos();
     if(name === 'reportes' && window.Reportes) Reportes.render();
     if(name === 'config') renderConfig();
@@ -116,12 +107,9 @@ const App = (() => {
 
   function renderAll(){
     recomputeBalances();
-    populateConceptoSelect();
-    populateFilterOptions();
     renderDashboard();
     const active = document.querySelector('.view.active')?.id;
-    if(active === 'view-movimientos') renderMovimientos();
-    if(active === 'view-reposiciones') renderReposiciones();
+    if(active === 'view-movimientos' && window.Reposicion) Reposicion.render();
     if(active === 'view-conceptos') renderConceptos();
     if(active === 'view-reportes' && window.Reportes) Reportes.render();
     if(active === 'view-config') renderConfig();
@@ -130,12 +118,7 @@ const App = (() => {
   function setDefaultDates(){
     const hoy = Utils.todayISO();
     const desde = Utils.addDays(hoy, -30);
-    const fd = document.getElementById('fDesde'), fh = document.getElementById('fHasta');
-    if(fd && !fd.value) fd.value = desde;
-    if(fh && !fh.value) fh.value = hoy;
     _filters.desde = desde; _filters.hasta = hoy;
-    const mv = document.getElementById('mvFecha'); if(mv) mv.value = hoy;
-    const rp = document.getElementById('rpFecha'); if(rp) rp.value = hoy;
   }
 
   /* ---------------- Balance (nunca se calcula manualmente) ---------------- */
@@ -225,152 +208,10 @@ const App = (() => {
     if(window.Charts) Charts.renderAll(periodo);
   }
 
-  /* ---------------- Movimientos: filtros ---------------- */
-  function populateFilterOptions(){
-    const list = Storage.getMovimientos();
-    const anios = [...new Set(list.map(m => (m.fecha||'').slice(0,4)).filter(Boolean))].sort().reverse();
-    const selAnio = document.getElementById('fAnio');
-    if(selAnio){
-      const cur = selAnio.value;
-      selAnio.innerHTML = '<option value="">Todos</option>' + anios.map(a=>`<option value="${a}">${a}</option>`).join('');
-      selAnio.value = cur;
-    }
-    const resp = [...new Set(list.map(m => m.responsable).filter(Boolean))].sort();
-    const selResp = document.getElementById('fResponsable');
-    if(selResp){
-      const cur = selResp.value;
-      selResp.innerHTML = '<option value="">Todos</option>' + resp.map(r=>`<option value="${Utils.escapeHtml(r)}">${Utils.escapeHtml(r)}</option>`).join('');
-      selResp.value = cur;
-    }
-  }
-
-  function aplicarFiltros(){
-    _filters = {
-      desde: document.getElementById('fDesde').value,
-      hasta: document.getElementById('fHasta').value,
-      anio: document.getElementById('fAnio').value,
-      mes: document.getElementById('fMes').value,
-      responsable: document.getElementById('fResponsable').value,
-      estado: document.getElementById('fEstado').value,
-      tipo: document.getElementById('fTipo').value
-    };
-    _page = 1;
-    renderMovimientos();
-    renderDashboard();
-  }
-  function limpiarFiltros(){
-    document.getElementById('fDesde').value = '';
-    document.getElementById('fHasta').value = '';
-    document.getElementById('fAnio').value = '';
-    document.getElementById('fMes').value = '';
-    document.getElementById('fResponsable').value = '';
-    document.getElementById('fEstado').value = '';
-    document.getElementById('fTipo').value = '';
-    _filters = { desde:'', hasta:'', anio:'', mes:'', responsable:'', estado:'', tipo:'' };
-    _page = 1;
-    renderMovimientos();
-    renderDashboard();
-  }
-
-  function _getFiltered(){
-    const f = _filters;
-    return Storage.getMovimientos().filter(m => {
-      if(f.desde && m.fecha < f.desde) return false;
-      if(f.hasta && m.fecha > f.hasta) return false;
-      if(f.anio && (m.fecha||'').slice(0,4) !== f.anio) return false;
-      if(f.mes && (m.fecha||'').slice(5,7) !== f.mes) return false;
-      if(f.responsable && m.responsable !== f.responsable) return false;
-      if(f.estado && m.estado !== f.estado) return false;
-      if(f.tipo && m.tipo !== f.tipo) return false;
-      return true;
-    }).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'') || (b.creadoEn||'').localeCompare(a.creadoEn||''));
-  }
-
   const ESTADO_PILL = { Activo:'ok', Pendiente:'warn', Aprobado:'blue', Anulado:'gray' };
   const TIPO_PILL    = { Ingreso:'ok', Gasto:'red', 'Reposición':'blue', Ajuste:'indigo' };
 
-  function renderMovimientos(){
-    const filtered = _getFiltered();
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if(_page > totalPages) _page = totalPages;
-    const start = (_page-1) * PAGE_SIZE;
-    const pageRows = filtered.slice(start, start + PAGE_SIZE);
-
-    const tbody = document.getElementById('tblMovimientosBody');
-    if(pageRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="14"><div class="t-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
-        <div>No se encontraron movimientos con estos filtros.</div>
-      </div></td></tr>`;
-    } else {
-      tbody.innerHTML = pageRows.map(m => `
-        <tr>
-          <td style="white-space:nowrap">${Utils.fmtDate(m.fecha)}</td>
-          <td class="mono">${m.numero}</td>
-          <td><span class="pill ${TIPO_PILL[m.tipo]||'gray'}">${m.tipo}</span></td>
-          <td>${Utils.escapeHtml(m.concepto||'—')}</td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${Utils.escapeHtml(m.descripcion)}">${Utils.escapeHtml(m.descripcion||'—')}</td>
-          <td>${Utils.escapeHtml(m.beneficiario||'—')}</td>
-          <td>${Utils.escapeHtml(m.responsable||'—')}</td>
-          <td>${Utils.escapeHtml(m.formaPago||'—')}</td>
-          <td class="r num">${Utils.fmtMoney(m.monto)}</td>
-          <td class="r num"><b>${Utils.fmtMoney(m.balance)}</b></td>
-          <td class="c"><span class="pill ${ESTADO_PILL[m.estado]||'gray'}">${m.estado}</span></td>
-          <td>${Utils.escapeHtml(m.creadoPor||'—')}</td>
-          <td style="white-space:nowrap">${m.creadoEn ? new Date(m.creadoEn).toLocaleString('es-DO') : '—'}</td>
-          <td class="c">
-            <div class="flex gap6" style="justify-content:center;">
-              <button class="btn btn-ghost btn-icon btn-sm" title="Ver detalle" onclick="App.verDetalle('${m.id}')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-              ${m.estado === 'Pendiente' ? `<button class="btn btn-ghost btn-icon btn-sm" title="Aprobar" onclick="App.aprobarMovimiento('${m.id}')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
-              </button>` : ''}
-              ${m.estado !== 'Anulado' ? `<button class="btn btn-ghost btn-icon btn-sm" title="Anular" onclick="App.confirmarAnular('${m.id}')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
-              </button>` : ''}
-            </div>
-          </td>
-        </tr>`).join('');
-    }
-
-    const pEl = document.getElementById('movPagination');
-    if(filtered.length === 0){ pEl.innerHTML = ''; }
-    else{
-      pEl.innerHTML = `
-        <span class="muted">${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} de ${filtered.length.toLocaleString()} movimientos</span>
-        <button class="btn btn-ghost btn-sm" ${_page<=1?'disabled':''} onclick="App.goPage(${_page-1})">‹ Anterior</button>
-        <button class="btn btn-ghost btn-sm" ${_page>=totalPages?'disabled':''} onclick="App.goPage(${_page+1})">Siguiente ›</button>`;
-    }
-  }
-  function goPage(p){ _page = p; renderMovimientos(); }
-
-  /* ---------------- Concepto <select> ---------------- */
-  function populateConceptoSelect(){
-    const sel = document.getElementById('mvConcepto');
-    if(!sel) return;
-    const cur = sel.value;
-    const activos = Storage.getConceptos().filter(c => c.activo);
-    sel.innerHTML = activos.map(c => `<option value="${Utils.escapeHtml(c.nombre)}">${Utils.escapeHtml(c.nombre)}</option>`).join('');
-    if(activos.some(c => c.nombre === cur)) sel.value = cur;
-  }
-
-  /* ---------------- Adjuntos ---------------- */
-  const TIPOS_ARCHIVO = { 'application/pdf':'PDF', 'image/jpeg':'JPG', 'image/png':'PNG' };
-  function _readFile(file){
-    return new Promise((resolve, reject) => {
-      if(!file) return resolve(null);
-      const ext = file.name.split('.').pop().toLowerCase();
-      if(['pdf','jpg','jpeg','png'].indexOf(ext) === -1){
-        reject(new Error('Formato no permitido. Usa PDF, JPG, JPEG o PNG.'));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
-      reader.onload = () => resolve({ name:file.name, type:file.type||('application/'+ext), dataUrl:reader.result });
-      reader.readAsDataURL(file);
-    });
-  }
+  /* ---------------- Adjuntos (histórico, usado por verDetalle) ---------------- */
   function _attachPreviewHTML(att){
     if(!att) return '';
     return `<div class="attach-preview">
@@ -379,111 +220,12 @@ const App = (() => {
       <a href="${att.dataUrl}" download="${Utils.escapeHtml(att.name)}" class="btn btn-ghost btn-sm">Descargar</a>
     </div>`;
   }
-  function wireFileInputs(){
-    const mvInput = document.getElementById('mvComprobante');
-    mvInput?.addEventListener('change', async () => {
-      try{
-        _pendingComprobanteMv = await _readFile(mvInput.files[0]);
-        document.getElementById('mvComprobantePreview').style.display = _pendingComprobanteMv ? 'block' : 'none';
-        document.getElementById('mvComprobantePreview').innerHTML = _attachPreviewHTML(_pendingComprobanteMv);
-      }catch(e){ UI.toast(e.message, 'err'); mvInput.value=''; }
-    });
-    const rpInput = document.getElementById('rpComprobante');
-    rpInput?.addEventListener('change', async () => {
-      try{
-        _pendingComprobanteRp = await _readFile(rpInput.files[0]);
-        document.getElementById('rpComprobantePreview').style.display = _pendingComprobanteRp ? 'block' : 'none';
-        document.getElementById('rpComprobantePreview').innerHTML = _attachPreviewHTML(_pendingComprobanteRp);
-      }catch(e){ UI.toast(e.message, 'err'); rpInput.value=''; }
-    });
-  }
 
-  /* ---------------- Modal: Nuevo Gasto ---------------- */
-  // El formulario de "Nuevo Movimiento" registra solo Gastos. Ingresos y
-  // Ajustes no tienen flujo de creación propio; Reposición se registra
-  // aparte, desde su propio modal (con banco/cuenta/comprobante).
+  // El botón "Nuevo Gasto" del Dashboard lleva directo a la pantalla de
+  // Reposición de Caja Chica y agrega una fila de desembolso lista para editar.
   function abrirModalMovimiento(){
-    document.getElementById('mvFecha').value = Utils.todayISO();
-    document.getElementById('mvDescripcion').value = '';
-    document.getElementById('mvBeneficiario').value = '';
-    document.getElementById('mvMonto').value = '';
-    document.getElementById('mvFormaPago').value = 'Efectivo';
-    document.getElementById('mvResponsable').value = Storage.getSettings().responsablePrincipal || '';
-    document.getElementById('mvObservaciones').value = '';
-    document.getElementById('mvComprobante').value = '';
-    document.getElementById('mvComprobantePreview').style.display = 'none';
-    _pendingComprobanteMv = null;
-    populateConceptoSelect();
-    UI.openModal('modalMovimiento');
-    setTimeout(() => document.getElementById('mvDescripcion')?.focus(), 120);
-  }
-
-  function _doGuardarMovimiento(){
-    const fecha    = document.getElementById('mvFecha').value || Utils.todayISO();
-    const concepto = document.getElementById('mvConcepto').value;
-    const descripcion = document.getElementById('mvDescripcion').value.trim();
-    const beneficiario = document.getElementById('mvBeneficiario').value.trim();
-    const monto = parseFloat(document.getElementById('mvMonto').value) || 0;
-    const formaPago = document.getElementById('mvFormaPago').value;
-    const responsable = document.getElementById('mvResponsable').value.trim();
-    const observaciones = document.getElementById('mvObservaciones').value.trim();
-    const settings = Storage.getSettings();
-
-    const now = new Date().toISOString();
-    const user = currentUserLabel();
-    const mov = {
-      id: Utils.uid('mv'),
-      numero: Storage.getNextNumero(),
-      fecha, tipo:'Gasto', ajusteSigno:null,
-      concepto, descripcion, beneficiario, responsable, formaPago,
-      monto, balance: 0,
-      estado: settings.estadoInicial || 'Activo',
-      adjunto: _pendingComprobanteMv,
-      observaciones,
-      creadoPor: user, creadoEn: now,
-      modificadoPor: user, modificadoEn: now
-    };
-    Storage.addMovimiento(mov);
-    recomputeBalances();
-    UI.closeModal('modalMovimiento');
-    UI.toast(`Movimiento ${mov.numero} guardado`, 'ok');
-    renderAll();
-  }
-
-  function guardarMovimiento(){
-    const monto = parseFloat(document.getElementById('mvMonto').value) || 0;
-    const descripcion = document.getElementById('mvDescripcion').value.trim();
-    if(!descripcion){ UI.toast('La descripción es requerida', 'err'); return; }
-    if(monto <= 0){ UI.toast('El monto debe ser mayor a 0', 'err'); return; }
-
-    const balanceActual = getBalanceActual();
-    if(monto > balanceActual){
-      UI.requirePin(() => {
-        UI.toast('Gasto autorizado por encima del balance disponible', 'warn');
-        _doGuardarMovimiento();
-      });
-      return;
-    }
-    _doGuardarMovimiento();
-  }
-
-  function aprobarMovimiento(id){
-    Storage.updateMovimiento(id, { estado:'Aprobado', modificadoPor: currentUserLabel(), modificadoEn: new Date().toISOString() });
-    recomputeBalances();
-    UI.toast('Movimiento aprobado', 'ok');
-    renderAll();
-  }
-  function confirmarAnular(id){
-    const mov = Storage.getMovimiento(id);
-    if(!mov) return;
-    UI.requirePin(() => {
-      UI.confirm('Anular movimiento', `¿Anular el movimiento ${mov.numero} (${Utils.fmtMoney(mov.monto)})? Esta acción no elimina el registro, solo lo marca como Anulado y deja de afectar el balance.`, () => {
-        Storage.updateMovimiento(id, { estado:'Anulado', modificadoPor: currentUserLabel(), modificadoEn: new Date().toISOString() });
-        recomputeBalances();
-        UI.toast(`Movimiento ${mov.numero} anulado`, 'ok');
-        renderAll();
-      });
-    });
+    switchView('movimientos');
+    if(window.Reposicion) Reposicion.addRow();
   }
 
   function verDetalle(id){
@@ -517,74 +259,6 @@ const App = (() => {
         <div><label class="f-label">Última modificación</label><p>${Utils.escapeHtml(m.modificadoPor||'—')} · ${m.modificadoEn ? new Date(m.modificadoEn).toLocaleString('es-DO') : '—'}</p></div>
       </div>`;
     UI.openModal('modalDetalle');
-  }
-
-  /* ---------------- Reposiciones ---------------- */
-  function abrirModalReposicion(){
-    document.getElementById('rpFecha').value = Utils.todayISO();
-    document.getElementById('rpMonto').value = '';
-    document.getElementById('rpBanco').value = Storage.getSettings().cuentaBancariaReposicion ? '' : '';
-    document.getElementById('rpCuenta').value = Storage.getSettings().cuentaBancariaReposicion || '';
-    document.getElementById('rpObservaciones').value = '';
-    document.getElementById('rpComprobante').value = '';
-    document.getElementById('rpComprobantePreview').style.display = 'none';
-    _pendingComprobanteRp = null;
-    UI.openModal('modalReposicion');
-  }
-  function guardarReposicion(){
-    const fecha = document.getElementById('rpFecha').value || Utils.todayISO();
-    const monto = parseFloat(document.getElementById('rpMonto').value) || 0;
-    const banco = document.getElementById('rpBanco').value.trim();
-    const cuenta = document.getElementById('rpCuenta').value.trim();
-    const observaciones = document.getElementById('rpObservaciones').value.trim();
-    if(monto <= 0){ UI.toast('El monto debe ser mayor a 0', 'err'); return; }
-    if(!banco){ UI.toast('El banco es requerido', 'err'); return; }
-
-    const now = new Date().toISOString();
-    const user = currentUserLabel();
-    const mov = {
-      id: Utils.uid('mv'),
-      numero: Storage.getNextNumero(),
-      fecha, tipo:'Reposición', ajusteSigno:null,
-      concepto:'Reposición de Fondo', descripcion:`Reposición de fondo — ${banco} ${cuenta}`.trim(),
-      beneficiario: banco, responsable: user, formaPago:'Transferencia',
-      monto, balance:0,
-      estado: Storage.getSettings().estadoInicial || 'Activo',
-      adjunto: _pendingComprobanteRp,
-      observaciones,
-      creadoPor: user, creadoEn: now, modificadoPor: user, modificadoEn: now
-    };
-    Storage.addMovimiento(mov);
-    Storage.addReposicion({
-      id: Utils.uid('rp'), movimientoId: mov.id,
-      fecha, monto, banco, cuenta, comprobante: _pendingComprobanteRp,
-      usuario: user, observaciones
-    });
-    recomputeBalances();
-    UI.closeModal('modalReposicion');
-    UI.toast(`Reposición registrada — ${mov.numero}`, 'ok');
-    renderAll();
-  }
-  function renderReposiciones(){
-    const list = Storage.getReposiciones().slice().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
-    const tbody = document.getElementById('tblReposicionesBody');
-    if(list.length === 0){
-      tbody.innerHTML = `<tr><td colspan="7"><div class="t-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="32" height="32"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
-        <div>Aún no hay reposiciones registradas.</div>
-      </div></td></tr>`;
-      return;
-    }
-    tbody.innerHTML = list.map(r => `
-      <tr>
-        <td>${Utils.fmtDate(r.fecha)}</td>
-        <td class="r num"><b>${Utils.fmtMoney(r.monto)}</b></td>
-        <td>${Utils.escapeHtml(r.banco||'—')}</td>
-        <td>${Utils.escapeHtml(r.cuenta||'—')}</td>
-        <td class="c">${r.comprobante ? `<a href="${r.comprobante.dataUrl}" download="${Utils.escapeHtml(r.comprobante.name)}" class="btn btn-ghost btn-sm">Ver</a>` : '<span class="muted">—</span>'}</td>
-        <td>${Utils.escapeHtml(r.usuario||'—')}</td>
-        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${Utils.escapeHtml(r.observaciones)}">${Utils.escapeHtml(r.observaciones||'—')}</td>
-      </tr>`).join('');
   }
 
   /* ---------------- Catálogo de Conceptos ---------------- */
@@ -625,7 +299,6 @@ const App = (() => {
       UI.closeModal('modalConcepto');
       UI.toast('Concepto guardado', 'ok');
       renderConceptos();
-      populateConceptoSelect();
     };
     UI.requirePin(doSave);
   }
@@ -635,7 +308,6 @@ const App = (() => {
         Storage.deleteConcepto(id);
         UI.toast('Concepto eliminado', 'ok');
         renderConceptos();
-        populateConceptoSelect();
       });
     });
   }
@@ -699,6 +371,7 @@ const App = (() => {
         Storage.resetAll();
         UI.toast('Todos los datos fueron borrados', 'ok');
         renderAll();
+        if(window.Reposicion) Reposicion.render();
       });
     });
   }
@@ -709,10 +382,8 @@ const App = (() => {
   }
 
   return {
-    init, switchView, aplicarFiltros, limpiarFiltros, goPage,
-    abrirModalMovimiento, guardarMovimiento,
-    aprobarMovimiento, confirmarAnular, verDetalle,
-    abrirModalReposicion, guardarReposicion,
+    init, switchView,
+    abrirModalMovimiento, verDetalle,
     abrirModalConcepto, guardarConcepto, confirmarEliminarConcepto,
     guardarConfigFondo, guardarConfigPin, descargarBackup, restaurarBackup, confirmarBorrarTodo, publicarTodo,
     getBalanceActual, recomputeBalances,
