@@ -955,7 +955,11 @@ async function loadCxcRealFromSupabase(){
     let consorcios = 0, ud = 0, midasDom = 0;
     allRows.forEach(r => {
       const key = normCxcName(r.name);
-      if(key === MIDAS_DOM_CLIENT){ midasDom += r.total; return; }
+      // El nombre real puede venir con el código de cliente ("c0007-grupo ud")
+      // o con la variante de la lista blanca de CXC ("grupo ud (grupo sd)") —
+      // se acepta cualquier forma que contenga "grupo ud".
+      const keyStripped = key.replace(/^c\d{3,}-\s*/,'');
+      if(keyStripped === MIDAS_DOM_CLIENT || keyStripped.startsWith(MIDAS_DOM_CLIENT+' ')){ midasDom += r.total; return; }
       const grupo = clasifMap[key];
       if(grupo === 'CONSORCIOS') consorcios += r.total;
       else if(grupo === 'UD') ud += r.total;
