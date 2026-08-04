@@ -351,6 +351,7 @@ table.rep tfoot td:first-child{text-align:left}
   <div class="view-switch no-print">
     <button class="vs-btn active" data-view="resumen" onclick="switchView('resumen')"><i class="bi bi-grid-1x2-fill"></i> Resumen Ejecutivo</button>
     <button class="vs-btn" data-view="detalle" onclick="switchView('detalle')"><i class="bi bi-table"></i> Detallada</button>
+    <button class="vs-btn" data-view="cxc" onclick="switchView('cxc')"><i class="bi bi-receipt"></i> CXC</button>
   </div>
 
   <!-- ============ VISTA: RESUMEN EJECUTIVO (nueva) ============ -->
@@ -438,6 +439,61 @@ table.rep tfoot td:first-child{text-align:left}
   </div>
 
   </div><!-- /viewDetalle -->
+
+  <!-- ============ VISTA: CXC ============ -->
+  <div id="viewCXC" style="display:none">
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:22px;">
+      <div style="flex:1 1 420px;max-width:480px;border-radius:20px;overflow:hidden;background:var(--bg-card);box-shadow:var(--shadow-lg);">
+        <div style="background:linear-gradient(135deg,#0b1739,#101a4a);padding:20px 22px 24px 22px;display:flex;align-items:center;gap:14px;">
+          <div style="width:52px;height:52px;border-radius:14px;background:#ffffff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:6px;box-sizing:border-box;">
+            <img src="../logo-gstar.png" alt="GSTAR" style="width:100%;height:100%;object-fit:contain;">
+          </div>
+          <div style="color:#ffffff;font-size:17px;font-weight:700;">CUENTAS POR COBRAR GSTAR</div>
+        </div>
+        <div style="padding:22px 24px 8px 24px;display:flex;flex-direction:column;gap:20px;" id="cxcRows"></div>
+        <div style="height:18px;"></div>
+        <div style="background:linear-gradient(135deg,#0f8a52,#0c6b40);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#eafff2;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">TOTAL DISPONIBLE</span>
+          <span style="color:#ffffff;font-size:19px;font-weight:700;" class="mono" id="cxcTotal">RD$ 0.00</span>
+        </div>
+      </div>
+
+      <div style="flex:1 1 420px;max-width:480px;border-radius:20px;overflow:hidden;background:var(--bg-card);box-shadow:var(--shadow-lg);">
+        <div style="background:linear-gradient(135deg,#0b1739,#101a4a);padding:20px 22px 24px 22px;display:flex;align-items:center;gap:14px;">
+          <div style="width:52px;height:52px;border-radius:14px;background:#ffffff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:6px;box-sizing:border-box;">
+            <img src="../logo-gstar.png" alt="GSTAR" style="width:100%;height:100%;object-fit:contain;">
+          </div>
+          <div style="color:#ffffff;font-size:17px;font-weight:700;">INGRESOS POR SEMANA</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tbody>
+            <tr>
+              <td colspan="2" style="border:1px solid var(--line);background:var(--bg-soft);font-weight:800;padding:9px 14px;text-align:center;">COBRADO SEMANA ANTERIOR</td>
+              <td style="border:1px solid var(--line);background:var(--bg-soft);font-weight:800;padding:9px 14px;text-align:center;">TOTAL</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="border:1px solid var(--line);font-weight:700;padding:9px 14px;" id="cobAnteriorRangoOut">—</td>
+              <td class="mono" style="border:1px solid var(--line);padding:9px 14px;text-align:right;font-weight:700;" id="cobAnteriorMontoOut">$ 0.00</td>
+            </tr>
+            <tr><td colspan="3" style="height:14px;border:none;"></td></tr>
+            <tr>
+              <td colspan="2" style="border:1px solid var(--line);background:var(--bg-soft);font-weight:800;padding:9px 14px;text-align:center;">COBRADO SEMANA ACTUAL</td>
+              <td style="border:1px solid var(--line);background:var(--bg-soft);font-weight:800;padding:9px 14px;text-align:center;">TOTAL</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="border:1px solid var(--line);font-weight:700;padding:9px 14px;" id="cobActualRangoOut">—</td>
+              <td class="mono" style="border:1px solid var(--line);padding:9px 14px;text-align:right;font-weight:700;" id="cobActualMontoOut">$ 0.00</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="height:18px;"></div>
+        <div style="background:linear-gradient(135deg,#0f8a52,#0c6b40);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#eafff2;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">TOTAL INGRESOS</span>
+          <span style="color:#ffffff;font-size:19px;font-weight:700;" class="mono" id="cxcIngresosTotal">$ 0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"><i class="bi bi-check-circle-fill"></i> <span id="toastMsg">Listo</span></div>
@@ -461,7 +517,9 @@ const DATA = {
     // Se completa en tiempo real desde Supabase (ver loadCertificadosFromSupabase) —
     // alimentado por DISPONIBILIDAD/captura-disponibilidad.html
     rows:[]
-  }
+  },
+  cobros:{ anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} },
+  cxcReal:{ consorcios:0, ud:0, midasDom:0 }
 };
 
 /* ===== SHARED STORAGE — publica datos para CXP Solicitud de Pago =====
@@ -739,10 +797,44 @@ function renderResumen(totBancos,totCert){
   document.getElementById('rTotal').textContent  = fnum(totBancos+totCert);
 }
 
-/* ===== conmutador de vista (Resumen Ejecutivo / Detallada) ===== */
+/* ====================================================================
+   VISTA CXC — misma cuenta operativa, etiquetas contables. Reutiliza
+   los mismos montos que ya calcula bancoUpd() para Cuenta Operativa,
+   solo cambia el texto que se muestra por cada renglón.
+==================================================================== */
+function renderCXC(){
+  const cxc = DATA.cxcReal || { consorcios:0, ud:0, midasDom:0 };
+  const rows = [
+    ['Cuenta por Cobrar a Consorcios', cxc.consorcios, 'neutral'],
+    ['Empresa Relacionada (UD Group)', -cxc.ud],
+    ['Empresa Relacionada (Midas Dom.)', cxc.midasDom]
+  ];
+  document.getElementById('cxcRows').innerHTML = rows.map(([label,val,mode])=>{
+    let cls,txt;
+    if(val===0||val==null){ cls='zero'; txt='—'; }
+    else if(val<0){ cls='neg'; txt='('+fnum(val)+')'; }
+    else { cls = (mode==='neutral')?'val':'pos'; txt=fnum(val); }
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <span style="color:var(--ink-2);font-size:13.5px;white-space:nowrap;">${label}</span>
+      <span class="mono ${cls}" style="font-size:15px;font-weight:600;white-space:nowrap;">${txt}</span>
+    </div>`;
+  }).join('');
+  const cxcTotal = cxc.consorcios - cxc.ud + cxc.midasDom;
+  document.getElementById('cxcTotal').textContent = 'RD$ '+fnum(cxcTotal);
+
+  const cob = DATA.cobros || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
+  document.getElementById('cobAnteriorRangoOut').textContent = cob.anterior.rango || '—';
+  document.getElementById('cobAnteriorMontoOut').textContent = '$ '+fnum(cob.anterior.monto||0);
+  document.getElementById('cobActualRangoOut').textContent   = cob.actual.rango || '—';
+  document.getElementById('cobActualMontoOut').textContent   = '$ '+fnum(cob.actual.monto||0);
+  document.getElementById('cxcIngresosTotal').textContent    = '$ '+fnum((cob.anterior.monto||0)+(cob.actual.monto||0));
+}
+
+/* ===== conmutador de vista (Resumen Ejecutivo / Detallada / CXC) ===== */
 function switchView(v){
   document.getElementById('viewResumen').style.display = (v==='resumen')?'':'none';
   document.getElementById('viewDetalle').style.display = (v==='detalle')?'':'none';
+  document.getElementById('viewCXC').style.display     = (v==='cxc')?'':'none';
   document.querySelectorAll('.vs-btn').forEach(btn=>btn.classList.toggle('active', btn.dataset.view===v));
 }
 
@@ -828,6 +920,52 @@ async function loadCertificadosFromSupabase(){
 }
 
 /* ====================================================================
+   CARGA DE COBROS CXC DESDE SUPABASE
+   Alimentado por DISPONIBILIDAD/captura-disponibilidad.html (pestaña
+   "Cobros CXC") — tarjeta de Cobrado Semana Anterior/Actual en CXC.
+==================================================================== */
+async function loadCobrosFromSupabase(){
+  try{
+    DATA.cobros = (await kvGet('disponibilidad_cobros_semanales')) || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
+  }catch(e){ console.error('loadCobrosFromSupabase:', e); }
+}
+
+/* ====================================================================
+   CXC REAL — suma el saldo pendiente real por cliente (publicado por
+   CXC/index.html en la clave 'cxc_data') agrupado según la clasificación
+   cargada en Captura de Disponibilidad Bancaria (pestaña "Clasificación
+   CXC"): Consorcios y Empresa Relacionada (UD Group).
+==================================================================== */
+const normCxcName = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
+
+// Cliente C0007 — Empresa Relacionada (Midas Dom.). Se muestra aparte y se
+// excluye de la suma general de UD Group para no contarlo dos veces.
+const MIDAS_DOM_CLIENT = normCxcName('Grupo Ud');
+
+async function loadCxcRealFromSupabase(){
+  try{
+    const cxcData = await kvGet('cxc_data');
+    const clasif  = await kvGet('disponibilidad_cxc_clasificacion');
+    const allRows = (cxcData && cxcData.allRows) || [];
+    const clasifRows = (clasif && clasif.rows) || [];
+
+    const clasifMap = {};
+    clasifRows.forEach(r => { clasifMap[normCxcName(r.cliente)] = r.clasificacion; });
+
+    let consorcios = 0, ud = 0, midasDom = 0;
+    allRows.forEach(r => {
+      const key = normCxcName(r.name);
+      if(key === MIDAS_DOM_CLIENT){ midasDom += r.total; return; }
+      const grupo = clasifMap[key];
+      if(grupo === 'CONSORCIOS') consorcios += r.total;
+      else if(grupo === 'UD') ud += r.total;
+    });
+
+    DATA.cxcReal = { consorcios, ud, midasDom };
+  }catch(e){ console.error('loadCxcRealFromSupabase:', e); }
+}
+
+/* ====================================================================
    ORQUESTACIÓN
 ==================================================================== */
 function buildReport(){
@@ -835,6 +973,7 @@ function buildReport(){
   const tc = renderCert();
   renderGrand(tb,tc);
   renderResumen(tb,tc);
+  renderCXC();
   document.getElementById('reportDate').textContent = DATA.reportDateLabel;
 }
 
@@ -848,7 +987,7 @@ function stampTime(){
 async function refreshReport(){
   const ico = document.getElementById('refreshIco');
   ico.classList.add('spin');
-  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase()]);
+  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase(), loadCobrosFromSupabase(), loadCxcRealFromSupabase()]);
   buildReport(); stampTime();
   setTimeout(()=>{ ico.classList.remove('spin'); toast('Reporte actualizado'); }, 650);
 }
@@ -983,7 +1122,7 @@ function exportPDF(){
 syncTheme();
 detectUser();
 (async function init(){
-  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase()]);
+  await Promise.all([loadBancosFromSupabase(), loadCertificadosFromSupabase(), loadCobrosFromSupabase(), loadCxcRealFromSupabase()]);
   buildReport();
   stampTime();
 })();

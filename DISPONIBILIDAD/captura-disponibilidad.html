@@ -219,6 +219,8 @@ table.t tbody tr:hover{background:var(--blue-lt)}
     <button class="tab-btn" data-tab="cheques" onclick="switchTab('cheques')"><i class="bi bi-pencil-square"></i> Cheques y Transferencias</button>
     <button class="tab-btn" data-tab="transferencias" onclick="switchTab('transferencias')"><i class="bi bi-arrow-left-right"></i> Transferencias entre Cuentas</button>
     <button class="tab-btn" data-tab="certificados" onclick="switchTab('certificados')"><i class="bi bi-patch-check-fill"></i> Certificados</button>
+    <button class="tab-btn" data-tab="cobros" onclick="switchTab('cobros')"><i class="bi bi-cash-coin"></i> Cobros CXC</button>
+    <button class="tab-btn" data-tab="clasifcxc" onclick="switchTab('clasifcxc')"><i class="bi bi-diagram-3-fill"></i> Clasificación CXC</button>
     <button class="tab-btn" data-tab="resumen" onclick="switchTab('resumen')"><i class="bi bi-grid-1x2-fill"></i> Resumen</button>
   </div>
 
@@ -370,6 +372,58 @@ table.t tbody tr:hover{background:var(--blue-lt)}
     </div>
   </div>
 
+  <!-- ============ TAB: COBROS CXC ============ -->
+  <div class="tab-panel" id="tab-cobros">
+    <div class="hint"><i class="bi bi-info-circle"></i> Estos montos alimentan la tarjeta "Cobrado Semana Anterior / Actual" de la pestaña CXC del Dashboard. Actualízalos cada semana.</div>
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-cash-coin"></i></div><div><div class="ttl">Cobrado Semana Anterior</div><div class="sub">Rango de fechas y monto total cobrado</div></div></div>
+      <div class="card-bd">
+        <div class="frow">
+          <div class="ffield" style="min-width:260px"><label>Rango (ej. Del 29 Jun al 05 Julio 2026)</label><input type="text" class="fi" id="cobAnteriorRango" placeholder="Del ... al ..."></div>
+          <div class="ffield"><label>Total Cobrado (RD$)</label><input type="number" step="0.01" class="fi" id="cobAnteriorMonto" placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="ico"><i class="bi bi-cash-coin"></i></div><div><div class="ttl">Cobrado Semana Actual</div><div class="sub">Fecha de corte y monto total cobrado</div></div></div>
+      <div class="card-bd">
+        <div class="frow">
+          <div class="ffield" style="min-width:260px"><label>Rango (ej. Al 10 Julio 2026)</label><input type="text" class="fi" id="cobActualRango" placeholder="Al ..."></div>
+          <div class="ffield"><label>Total Cobrado (RD$)</label><input type="number" step="0.01" class="fi" id="cobActualMonto" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="ffield" style="flex:0"><button class="btn btn-p" onclick="saveCobrosSemanales()"><i class="bi bi-check2"></i> Guardar</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: CLASIFICACIÓN CXC ============ -->
+  <div class="tab-panel" id="tab-clasifcxc">
+    <div class="hint"><i class="bi bi-info-circle"></i> Sube el Excel de clasificación de clientes (Nombre Cliente / Clasificación: UD o CONSORCIOS). Con esto, la tarjeta CXC del Dashboard suma automáticamente el saldo pendiente real de cada cliente (tomado del reporte de Antigüedad de Saldo de CXC) según su clasificación.</div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-file-earmark-excel-fill"></i></div>
+        <div><div class="ttl">Cargar Clasificación de Clientes</div><div class="sub" id="clasifUploadSub">.xlsx con columnas Nombre Cliente / Clasificación</div></div>
+      </div>
+      <div class="card-bd">
+        <div class="upz" id="clasifUpz">
+          <input type="file" accept=".xlsx,.xls" id="clasifFile" onchange="handleClasifFile(this)">
+          <i class="bi bi-cloud-arrow-up" id="clasifUpzIco"></i>
+          <div class="t1" id="clasifUpzT1">Arrastra tu archivo aquí</div>
+          <div class="t2" id="clasifUpzT2">o clic para seleccionar</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico"><i class="bi bi-list-ul"></i></div>
+        <div><div class="ttl">Clientes Clasificados</div><div class="sub" id="clasifHistSub">0 clientes</div></div>
+      </div>
+      <div class="tbl-wrap"><table class="t" id="clasifTable"></table></div>
+    </div>
+  </div>
+
   <!-- ============ TAB: RESUMEN ============ -->
   <div class="tab-panel" id="tab-resumen">
     <div class="hint"><i class="bi bi-info-circle"></i> Estos son los valores que verá el Dashboard de Disponibilidad Bancaria para cada cuenta.</div>
@@ -433,6 +487,8 @@ const CAP = {
   certificados:         [],
   certificadosCatalogo: [],
   pagosSemana:    0,
+  cobrosSemanales: { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} },
+  clasifCxc: { rows:[], fileName:'' },  // [{cliente, clasificacion}]
   isAdmin:        false
 };
 
@@ -546,6 +602,8 @@ async function reloadAll(){
     CAP.transferencias = (await kvGet('disponibilidad_transferencias_entre_cuentas')) || [];
     CAP.certificados         = (await kvGet('disponibilidad_certificados')) || [];
     CAP.certificadosCatalogo = (await kvGet('disponibilidad_certificados_catalogo')) || [];
+    CAP.cobrosSemanales = (await kvGet('disponibilidad_cobros_semanales')) || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
+    CAP.clasifCxc = (await kvGet('disponibilidad_cxc_clasificacion')) || { rows:[], fileName:'' };
 
     // Pagos de la Semana ← CXP, Solicitud de Pago Pendiente (Monto a Pagar)
     const solicitudes = (await kvGet('cxp_solicitudes')) || [];
@@ -1211,6 +1269,92 @@ function renderCertTab(){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   COBROS CXC — alimenta la tarjeta "Cobrado Semana Anterior/Actual"
+   de la pestaña CXC del Dashboard
+══════════════════════════════════════════════════════════════ */
+function renderCobrosTab(){
+  const c = CAP.cobrosSemanales || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
+  document.getElementById('cobAnteriorRango').value = c.anterior.rango || '';
+  document.getElementById('cobAnteriorMonto').value = c.anterior.monto || '';
+  document.getElementById('cobActualRango').value   = c.actual.rango || '';
+  document.getElementById('cobActualMonto').value   = c.actual.monto || '';
+}
+
+async function saveCobrosSemanales(){
+  const anteriorRango = document.getElementById('cobAnteriorRango').value.trim();
+  const anteriorMonto = parseFloat(document.getElementById('cobAnteriorMonto').value) || 0;
+  const actualRango   = document.getElementById('cobActualRango').value.trim();
+  const actualMonto   = parseFloat(document.getElementById('cobActualMonto').value) || 0;
+  showSp();
+  try{
+    CAP.cobrosSemanales = {
+      anterior: { rango:anteriorRango, monto:anteriorMonto },
+      actual:   { rango:actualRango,   monto:actualMonto },
+      updatedAt: new Date().toISOString(), updatedBy: currentUserLabel()
+    };
+    await kvSet('disponibilidad_cobros_semanales', CAP.cobrosSemanales);
+    toast('Cobros CXC guardados');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CLASIFICACIÓN CXC — mapea cada cliente (Antigüedad de Saldo de
+   CXC) a un grupo (UD / CONSORCIOS) para que la tarjeta CXC del
+   Dashboard sume el saldo pendiente real por grupo.
+══════════════════════════════════════════════════════════════ */
+function renderClasifTab(){
+  const rows = CAP.clasifCxc.rows || [];
+  document.getElementById('clasifUploadSub').textContent = CAP.clasifCxc.fileName
+    ? CAP.clasifCxc.fileName + ' — vuelve a subir un archivo para reemplazar la lista'
+    : '.xlsx con columnas Nombre Cliente / Clasificación';
+  document.getElementById('clasifHistSub').textContent = rows.length + ' cliente(s) clasificado(s)';
+  const tbl = document.getElementById('clasifTable');
+  if(!rows.length){
+    tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Aún no se ha cargado la clasificación de clientes</div></div></td></tr></tbody>`;
+    return;
+  }
+  tbl.innerHTML = `<thead><tr><th class="l">Cliente</th><th class="l">Clasificación</th></tr></thead>
+    <tbody>${rows.map(r=>`
+      <tr><td class="l">${esc(r.cliente)}</td><td class="l"><span class="pill ${r.clasificacion==='CONSORCIOS'?'pill-cp':'pill-op'}">${esc(r.clasificacion)}</span></td></tr>`).join('')}</tbody>`;
+}
+
+// Quita el prefijo "C0006-" que trae el reporte para clientes con código
+// individual — el resto del sistema (Antigüedad de Saldo de CXC) los
+// identifica solo por el nombre.
+function _stripClientCode(s){
+  return String(s||'').replace(/^C\d{3,}-\s*/,'').trim();
+}
+
+function handleClasifFile(input){
+  const file = input.files[0]; if(!file) return;
+  showSp();
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try{
+      const wb = XLSX.read(e.target.result, { type:'array' });
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
+      const rows = [];
+      for(const row of data){
+        const cliente = _stripClientCode(row[0]);
+        const clasificacion = String(row[1]||'').trim().toUpperCase();
+        if(!cliente || !clasificacion) continue;
+        if(/^nombre cliente$/i.test(cliente) || /^total general$/i.test(cliente)) continue;
+        rows.push({ cliente, clasificacion });
+      }
+      if(!rows.length){ hideSp(); toast('No se encontraron filas válidas en el archivo', true); input.value=''; return; }
+      CAP.clasifCxc = { rows, fileName: file.name, updatedAt: new Date().toISOString(), updatedBy: currentUserLabel() };
+      await kvSet('disponibilidad_cxc_clasificacion', CAP.clasifCxc);
+      renderClasifTab();
+      toast(`${rows.length} cliente(s) clasificado(s) — guardado`);
+    }catch(err){ toast('Error al leer el archivo: '+err.message, true); console.error(err); }
+    hideSp();
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ══════════════════════════════════════════════════════════════
    RESUMEN — valores que consumirá el Dashboard
 ══════════════════════════════════════════════════════════════ */
 function getResumenCuenta(acc){
@@ -1256,6 +1400,7 @@ function renderAll(){
   renderChTab();
   renderTeTab();
   renderCertTab();
+  renderCobrosTab();
   renderResumen();
 }
 
