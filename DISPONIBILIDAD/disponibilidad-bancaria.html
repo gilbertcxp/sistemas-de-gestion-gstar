@@ -806,7 +806,7 @@ function renderCXC(){
   const cxc = DATA.cxcReal || { consorcios:0, ud:0, midasDom:0 };
   const rows = [
     ['Cuenta por Cobrar a Consorcios', cxc.consorcios, 'neutral'],
-    ['Empresa Relacionada (UD Group)', -cxc.ud],
+    ['Empresa Relacionada (UD Group)', cxc.ud],
     ['Empresa Relacionada (Midas Dom.)', cxc.midasDom]
   ];
   document.getElementById('cxcRows').innerHTML = rows.map(([label,val,mode])=>{
@@ -819,7 +819,7 @@ function renderCXC(){
       <span class="mono ${cls}" style="font-size:15px;font-weight:600;white-space:nowrap;">${txt}</span>
     </div>`;
   }).join('');
-  const cxcTotal = cxc.consorcios - cxc.ud + cxc.midasDom;
+  const cxcTotal = cxc.consorcios + cxc.ud + cxc.midasDom;
   document.getElementById('cxcTotal').textContent = 'RD$ '+fnum(cxcTotal);
 
   const cob = DATA.cobros || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
