@@ -295,6 +295,7 @@ table.t tbody tr:hover{background:var(--blue-lt)}
           <div class="ffield"><label>Cuenta Origen</label><select class="fi" id="teOrigen"><option value="operativa">Cuenta Operativa</option><option value="compensacion">Cuenta de Compensación</option></select></div>
           <div class="ffield"><label>Cuenta Destino</label><select class="fi" id="teDestino"><option value="compensacion">Cuenta de Compensación</option><option value="operativa">Cuenta Operativa</option></select></div>
           <div class="ffield"><label>Monto</label><input type="number" step="0.01" class="fi" id="teMonto" placeholder="0.00"></div>
+          <div class="ffield"><label>Tipo</label><select class="fi" id="teTipo"><option value="Compensación">Compensación</option><option value="Otros">Otros</option></select></div>
         </div>
         <div class="frow">
           <div class="ffield" style="min-width:260px"><label>Observación</label><input type="text" class="fi" id="teObs" placeholder="Opcional"></div>
@@ -973,15 +974,17 @@ function renderTeTab(){
   document.getElementById('teHistSub').textContent = rows.length+' registro(s)';
   const tbl = document.getElementById('teTable');
   if(!rows.length){ tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i><div class="m">Sin transferencias entre cuentas registradas</div></div></td></tr></tbody>`; return; }
-  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Origen</th><th class="l">Destino</th><th>Monto</th><th class="l">Observación</th><th class="l">Estado</th><th></th></tr></thead>
+  tbl.innerHTML = `<thead><tr><th class="l">Fecha</th><th class="l">Origen</th><th class="l">Destino</th><th>Monto</th><th class="l">Tipo</th><th class="l">Observación</th><th class="l">Estado</th><th></th></tr></thead>
     <tbody>${rows.map(r=>{
       const estado = r.estado || 'Pendiente';
+      const tipo = r.tipo || 'Compensación';
       const aplicadaInfo = estado==='Aplicada' ? `<div class="m" style="font-size:10.5px;margin-top:2px">${esc(r.aplicadaPor||'')} · ${r.aplicadaEn ? new Date(r.aplicadaEn).toLocaleString('es-DO') : ''}</div>` : '';
       return `<tr>
       <td class="l">${esc(r.fecha)}</td>
       <td class="l"><span class="pill ${r.origen==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.origen]}</span></td>
       <td class="l"><span class="pill ${r.destino==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.destino]}</span></td>
       <td class="mono" style="font-weight:700">${fnum(r.monto)}</td>
+      <td class="l"><span class="pill ${tipo==='Compensación'?'pill-cp':'pill-pend'}">${esc(tipo)}</span></td>
       <td class="l">${esc(r.observacion)||'—'}</td>
       <td class="l"><span class="pill ${estado==='Aplicada'?'pill-ok':'pill-pend'}">${estado}</span>${aplicadaInfo}</td>
       <td>
@@ -998,12 +1001,13 @@ async function addTransferenciaEntreCuentas(){
   const origen = document.getElementById('teOrigen').value;
   const destino = document.getElementById('teDestino').value;
   const monto = parseFloat(document.getElementById('teMonto').value);
+  const tipo = document.getElementById('teTipo').value;
   const obs = document.getElementById('teObs').value.trim();
   if(origen===destino){ toast('El origen y el destino deben ser cuentas distintas', true); return; }
   if(!monto || monto<=0){ toast('El monto debe ser mayor a 0', true); return; }
   showSp();
   try{
-    CAP.transferencias.push({ id:uid('te'), fecha, origen, destino, monto, observacion:obs, estado:'Pendiente', registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
+    CAP.transferencias.push({ id:uid('te'), fecha, origen, destino, monto, tipo, observacion:obs, estado:'Pendiente', registradoPor:currentUserLabel(), registradoEn:new Date().toISOString() });
     await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
     ['teMonto','teObs'].forEach(id=>document.getElementById(id).value='');
     renderAll();
@@ -1406,7 +1410,7 @@ function handleClasifFile(input){
 function getResumenCuenta(acc){
   const balance = getBalanceActual(acc);
   const transito = -CAP.cheques.filter(c=>c.cuenta===acc && c.estado==='Pendiente').reduce((s,c)=>s+c.monto,0);
-  const transfer = CAP.transferencias.filter(t=>(t.estado||'Pendiente')==='Pendiente').reduce((s,t)=>{
+  const transfer = CAP.transferencias.filter(t=>(t.estado||'Pendiente')==='Pendiente' && (t.tipo||'Compensación')==='Compensación').reduce((s,t)=>{
     if(t.destino===acc) return s + t.monto;
     if(t.origen===acc)  return s - t.monto;
     return s;
