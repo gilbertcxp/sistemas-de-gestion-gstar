@@ -422,6 +422,14 @@ table.t tbody tr:hover{background:var(--blue-lt)}
       </div>
       <div class="tbl-wrap"><table class="t" id="clasifTable"></table></div>
     </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="ico" style="background:var(--gold-lt);color:var(--gold)"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div><div class="ttl">Clientes Sin Clasificar</div><div class="sub" id="clasifSinHistSub">0 clientes — RD$ 0.00</div></div>
+      </div>
+      <div class="hint" style="margin:0 20px 14px"><i class="bi bi-info-circle"></i> Estos clientes tienen saldo pendiente en el reporte de Antigüedad de Saldo de CXC pero no aparecen en el Excel de clasificación — por eso no suman en la tarjeta CXC del Dashboard. Agrégalos al Excel y vuelve a subirlo.</div>
+      <div class="tbl-wrap"><table class="t" id="clasifSinTable"></table></div>
+    </div>
   </div>
 
   <!-- ============ TAB: RESUMEN ============ -->
@@ -489,6 +497,7 @@ const CAP = {
   pagosSemana:    0,
   cobrosSemanales: { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} },
   clasifCxc: { rows:[], fileName:'' },  // [{cliente, clasificacion}]
+  cxcData: { allRows:[] },              // publicado por CXC/index.html
   isAdmin:        false
 };
 
@@ -604,6 +613,7 @@ async function reloadAll(){
     CAP.certificadosCatalogo = (await kvGet('disponibilidad_certificados_catalogo')) || [];
     CAP.cobrosSemanales = (await kvGet('disponibilidad_cobros_semanales')) || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
     CAP.clasifCxc = (await kvGet('disponibilidad_cxc_clasificacion')) || { rows:[], fileName:'' };
+    CAP.cxcData = (await kvGet('cxc_data')) || { allRows:[] };
 
     // Pagos de la Semana ← CXP, Solicitud de Pago Pendiente (Monto a Pagar)
     const solicitudes = (await kvGet('cxp_solicitudes')) || [];
@@ -1319,6 +1329,36 @@ function renderClasifTab(){
       <tr><td class="l">${esc(r.cliente)}</td><td class="l"><span class="pill ${r.clasificacion==='CONSORCIOS'?'pill-cp':'pill-op'}">${esc(r.clasificacion)}</span></td></tr>`).join('')}</tbody>`;
 }
 
+// Mismo criterio de coincidencia que usa DISPONIBILIDAD/disponibilidad-bancaria.html
+// para sumar la tarjeta CXC — se replica aquí para poder mostrar qué clientes del
+// reporte de Antigüedad de Saldo quedan fuera de esa suma por no estar clasificados.
+const _normCxc = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
+const _MIDAS_DOM = _normCxc('Grupo Ud');
+
+function renderClasifSinClasificar(){
+  const tbl = document.getElementById('clasifSinTable');
+  if(!tbl) return;
+  const clasifMap = {};
+  (CAP.clasifCxc.rows||[]).forEach(r => { clasifMap[_normCxc(r.cliente)] = r.clasificacion; });
+
+  const sinClasificar = (CAP.cxcData.allRows||[]).filter(r => {
+    const key = _normCxc(r.name);
+    const keyStripped = key.replace(/^c\d{3,}-\s*/,'');
+    if(keyStripped === _MIDAS_DOM || keyStripped.startsWith(_MIDAS_DOM+' ')) return false;
+    return !clasifMap[key];
+  });
+  const total = sinClasificar.reduce((s,r)=>s+(r.total||0),0);
+
+  document.getElementById('clasifSinHistSub').textContent = sinClasificar.length + ' cliente(s) — RD$ ' + fnum(total);
+  if(!sinClasificar.length){
+    tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-check-circle"></i><div class="m">Todos los clientes con saldo pendiente están clasificados</div></div></td></tr></tbody>`;
+    return;
+  }
+  tbl.innerHTML = `<thead><tr><th class="l">Cliente</th><th>Saldo Pendiente</th></tr></thead>
+    <tbody>${sinClasificar.sort((a,b)=>b.total-a.total).map(r=>`
+      <tr><td class="l">${esc(r.name)}</td><td class="mono" style="font-weight:700">RD$ ${fnum(r.total)}</td></tr>`).join('')}</tbody>`;
+}
+
 // Quita el prefijo "C0006-" que trae el reporte para clientes con código
 // individual — el resto del sistema (Antigüedad de Saldo de CXC) los
 // identifica solo por el nombre.
@@ -1346,6 +1386,7 @@ function handleClasifFile(input){
       CAP.clasifCxc = { rows, fileName: file.name, updatedAt: new Date().toISOString(), updatedBy: currentUserLabel() };
       await kvSet('disponibilidad_cxc_clasificacion', CAP.clasifCxc);
       renderClasifTab();
+      renderClasifSinClasificar();
       toast(`${rows.length} cliente(s) clasificado(s) — guardado`);
     }catch(err){ toast('Error al leer el archivo: '+err.message, true); console.error(err); }
     hideSp();
@@ -1401,6 +1442,8 @@ function renderAll(){
   renderTeTab();
   renderCertTab();
   renderCobrosTab();
+  renderClasifTab();
+  renderClasifSinClasificar();
   renderResumen();
 }
 
