@@ -43,7 +43,8 @@ const SaldoFavor = (() => {
     transferencias
       // Solo cuenta como Transferencia Propia una vez Aplicada en Disponibilidad Bancaria
       // (Transferencias entre Cuentas → Aplicar Transferencia). Mientras esté Pendiente no afecta el saldo.
-      .filter(t => t.origen === 'compensacion' && t.destino === 'operativa' && t.estado === 'Aplicada')
+      // Solo las de tipo "Compensación" suman al saldo a favor; las de tipo "Otros" no.
+      .filter(t => t.origen === 'compensacion' && t.destino === 'operativa' && t.estado === 'Aplicada' && (t.tipo||'Compensación')==='Compensación')
       .forEach(t => {
         const monto = Number(t.monto) || 0;
         if(monto <= 0) return;

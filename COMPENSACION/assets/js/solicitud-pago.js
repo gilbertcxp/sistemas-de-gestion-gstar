@@ -41,7 +41,7 @@ const SolicitudPago = (() => {
         // que involucran la cuenta de Compensación. Positivo = monto pendiente de salir.
         const transferencias = transf || [];
         const transferSigned = transferencias
-          .filter(t => (t.estado||'Pendiente') === 'Pendiente')
+          .filter(t => (t.estado||'Pendiente') === 'Pendiente' && (t.tipo||'Compensación')==='Compensación')
           .reduce((s,t) => {
             const monto = Number(t.monto)||0;
             if(t.destino==='compensacion') return s + monto;
