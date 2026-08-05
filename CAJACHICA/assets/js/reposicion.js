@@ -143,7 +143,7 @@ const Reposicion = (() => {
       tr.innerHTML = `
         <td class="row-no"><input value="${Utils.escapeHtml(row.no)}" onchange="Reposicion.updateRow(${idx},'no',this.value)"></td>
         <td class="row-fecha"><input type="date" value="${row.fecha}" onchange="Reposicion.updateRow(${idx},'fecha',this.value)"></td>
-        <td><input value="${Utils.escapeHtml(row.beneficiario)}" placeholder="Nombre" onchange="Reposicion.updateRow(${idx},'beneficiario',this.value)"></td>
+        <td><input list="dlEmpleados" value="${Utils.escapeHtml(row.beneficiario)}" placeholder="Nombre" onchange="Reposicion.updateRow(${idx},'beneficiario',this.value)"></td>
         <td><input value="${Utils.escapeHtml(row.descripcion)}" placeholder="Descripción del gasto" onchange="Reposicion.updateRow(${idx},'descripcion',this.value)"></td>
         <td class="num row-monto"><input type="number" step="0.01" value="${row.monto}" placeholder="0.00" oninput="Reposicion.updateRow(${idx},'monto',this.value)"></td>
         <td class="balance-cell row-balance ${running < 0 ? 'balance-neg' : 'balance-pos'}">${Utils.fmtMoney(running)}</td>
