@@ -938,9 +938,16 @@ async function loadCobrosFromSupabase(){
 ==================================================================== */
 const normCxcName = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
 
+// Normaliza al nombre "núcleo" del cliente: quita el código de cliente
+// (e.g. "c0006-") y los paréntesis que la whitelist de CXC agrega
+// (e.g. "(Grupo Ovalle)", "(Vendedores Turin)").  Esto permite casar
+// la clasificación (que solo tiene el nombre base) con los nombres del
+// reporte de CXC (que pueden traer sufijos de la whitelist).
+const cxcCoreKey = s => normCxcName(s).replace(/^c\d{3,}-\s*/,'').replace(/\s*\(.*\)\s*$/,'').trim();
+
 // Cliente C0007 — Empresa Relacionada (Midas Dom.). Se muestra aparte y se
 // excluye de la suma general de UD Group para no contarlo dos veces.
-const MIDAS_DOM_CLIENT = normCxcName('Grupo Ud');
+const MIDAS_DOM_CORE = cxcCoreKey('Grupo Ud');
 
 async function loadCxcRealFromSupabase(){
   try{
@@ -949,18 +956,22 @@ async function loadCxcRealFromSupabase(){
     const allRows = (cxcData && cxcData.allRows) || [];
     const clasifRows = (clasif && clasif.rows) || [];
 
+    // Se indexa por nombre completo normalizado Y por coreKey (sin código
+    // ni paréntesis de la whitelist) para cubrir todas las variantes.
     const clasifMap = {};
-    clasifRows.forEach(r => { clasifMap[normCxcName(r.cliente)] = r.clasificacion; });
+    clasifRows.forEach(r => {
+      const full = normCxcName(r.cliente);
+      const core = cxcCoreKey(r.cliente);
+      clasifMap[full] = r.clasificacion;
+      if(!clasifMap[core]) clasifMap[core] = r.clasificacion;
+    });
 
     let consorcios = 0, ud = 0, midasDom = 0;
     allRows.forEach(r => {
-      const key = normCxcName(r.name);
-      // El nombre real puede venir con el código de cliente ("c0007-grupo ud")
-      // o con la variante de la lista blanca de CXC ("grupo ud (grupo sd)") —
-      // se acepta cualquier forma que contenga "grupo ud".
-      const keyStripped = key.replace(/^c\d{3,}-\s*/,'');
-      if(keyStripped === MIDAS_DOM_CLIENT || keyStripped.startsWith(MIDAS_DOM_CLIENT+' ')){ midasDom += r.total; return; }
-      const grupo = clasifMap[key];
+      const key  = normCxcName(r.name);
+      const core = cxcCoreKey(r.name);
+      if(core === MIDAS_DOM_CORE || core.startsWith(MIDAS_DOM_CORE+' ')){ midasDom += r.total; return; }
+      const grupo = clasifMap[key] || clasifMap[core];
       if(grupo === 'CONSORCIOS') consorcios += r.total;
       else if(grupo === 'UD') ud += r.total;
     });

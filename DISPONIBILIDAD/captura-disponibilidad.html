@@ -1333,19 +1333,24 @@ function renderClasifTab(){
 // para sumar la tarjeta CXC — se replica aquí para poder mostrar qué clientes del
 // reporte de Antigüedad de Saldo quedan fuera de esa suma por no estar clasificados.
 const _normCxc = s => (s||'').toLowerCase().trim().replace(/\s+/g,' ');
-const _MIDAS_DOM = _normCxc('Grupo Ud');
+const _cxcCore = s => _normCxc(s).replace(/^c\d{3,}-\s*/,'').replace(/\s*\(.*\)\s*$/,'').trim();
+const _MIDAS_DOM = _cxcCore('Grupo Ud');
 
 function renderClasifSinClasificar(){
   const tbl = document.getElementById('clasifSinTable');
   if(!tbl) return;
   const clasifMap = {};
-  (CAP.clasifCxc.rows||[]).forEach(r => { clasifMap[_normCxc(r.cliente)] = r.clasificacion; });
+  (CAP.clasifCxc.rows||[]).forEach(r => {
+    clasifMap[_normCxc(r.cliente)] = r.clasificacion;
+    const ck = _cxcCore(r.cliente);
+    if(!clasifMap[ck]) clasifMap[ck] = r.clasificacion;
+  });
 
   const sinClasificar = (CAP.cxcData.allRows||[]).filter(r => {
-    const key = _normCxc(r.name);
-    const keyStripped = key.replace(/^c\d{3,}-\s*/,'');
-    if(keyStripped === _MIDAS_DOM || keyStripped.startsWith(_MIDAS_DOM+' ')) return false;
-    return !clasifMap[key];
+    const key  = _normCxc(r.name);
+    const core = _cxcCore(r.name);
+    if(core === _MIDAS_DOM || core.startsWith(_MIDAS_DOM+' ')) return false;
+    return !clasifMap[key] && !clasifMap[core];
   });
   const total = sinClasificar.reduce((s,r)=>s+(r.total||0),0);
 
