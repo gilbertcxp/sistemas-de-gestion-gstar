@@ -212,6 +212,8 @@ const Pagos = (() => {
 
     if(!_solicitudLoaded){
       container.innerHTML = `<div class="t-empty" style="padding:40px;">Ingresa un número de solicitud para ver sus detalles.</div>`;
+      const acEl = document.getElementById('pagosSolicitudAcciones');
+      if(acEl) acEl.innerHTML = '';
       return;
     }
 
@@ -270,12 +272,19 @@ const Pagos = (() => {
         </tr></tfoot>
       </table>
 
-      ${pendingCount > 0 ? `
-        <button class="btn btn-accent" onclick="Pagos.abrirModalPagarSolicitud()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m5 13 4 4L19 7"/></svg>
-          Aplicar Pago (${pendingCount} ítem${pendingCount !== 1 ? 's' : ''} pendiente${pendingCount !== 1 ? 's' : ''})
-        </button>` : ''}
     `;
+
+    // Botón "Aplicar Pago" en el encabezado de la tarjeta — fuera del detalle,
+    // visible de inmediato para que contabilidad lo encuentre sin tener que bajar.
+    const accionesEl = document.getElementById('pagosSolicitudAcciones');
+    if(accionesEl){
+      accionesEl.innerHTML = pendingCount > 0 ? `
+        <button class="btn btn-accent" onclick="Pagos.abrirModalPagarSolicitud()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="m5 13 4 4L19 7"/></svg>
+          Aplicar Pago
+          <span style="font-size:11px;opacity:.8;margin-left:4px;">(${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''})</span>
+        </button>` : '';
+    }
   }
 
   // ------ Confirmar pagos: checklist (igual que Solicitud de Pago de CXP) ------
