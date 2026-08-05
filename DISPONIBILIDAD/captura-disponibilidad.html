@@ -984,7 +984,7 @@ function renderTeTab(){
       <td class="l"><span class="pill ${r.origen==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.origen]}</span></td>
       <td class="l"><span class="pill ${r.destino==='operativa'?'pill-op':'pill-cp'}">${ACCOUNT_LABEL[r.destino]}</span></td>
       <td class="mono" style="font-weight:700">${fnum(r.monto)}</td>
-      <td class="l"><span class="pill ${tipo==='Compensación'?'pill-cp':'pill-pend'}">${esc(tipo)}</span></td>
+      <td class="l"><span class="pill ${tipo==='Compensación'?'pill-cp':'pill-pend'}" style="cursor:pointer" onclick="toggleTransferenciaTipo('${r.id}')" title="Clic para cambiar tipo">${esc(tipo)}</span></td>
       <td class="l">${esc(r.observacion)||'—'}</td>
       <td class="l"><span class="pill ${estado==='Aplicada'?'pill-ok':'pill-pend'}">${estado}</span>${aplicadaInfo}</td>
       <td>
@@ -1043,6 +1043,17 @@ async function deleteTransferencia(id){
     await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
     renderAll();
     toast('Transferencia eliminada');
+  }catch(e){ toast('Error: '+e.message, true); }
+  hideSp();
+}
+async function toggleTransferenciaTipo(id){
+  showSp();
+  try{
+    const r = CAP.transferencias.find(x=>x.id===id); if(!r) return;
+    r.tipo = (r.tipo||'Compensación')==='Compensación' ? 'Otros' : 'Compensación';
+    await kvSet('disponibilidad_transferencias_entre_cuentas', CAP.transferencias);
+    renderAll();
+    toast('Tipo cambiado a: '+r.tipo);
   }catch(e){ toast('Error: '+e.message, true); }
   hideSp();
 }
