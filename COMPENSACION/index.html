@@ -1620,10 +1620,14 @@ const AgingComp = (() => {
     if(v===0) return '-';
     const abs = Math.abs(v);
     const s = abs.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-    return v < 0 ? `(${s})` : s;
+    return v < 0 ? `-${s}` : s;
   }
   function fmtMFull(v){
     return 'RD$ '+v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function signedAmount(row, value){
+    const n = Number(value)||0;
+    return row && row.tipo === 'CXC' ? -Math.abs(n) : n;
   }
   function getBucket(dias){
     const d = Math.max(0, Number(dias)||0);
@@ -1678,8 +1682,8 @@ const AgingComp = (() => {
 
   function _updateStats(){
     const rows    = _filtered;
-    const total   = rows.reduce((s,r)=>s+r.total,0);
-    const vencido = rows.reduce((s,r)=>s+r.buckets[5],0);
+    const total   = rows.reduce((s,r)=>s+signedAmount(r,r.total),0);
+    const vencido = rows.reduce((s,r)=>s+signedAmount(r,r.buckets[5]),0);
     const tipo    = document.getElementById('agFilterTipo')?.value || '';
     const clientes = new Set(rows.map(r => r.name)).size;
     document.getElementById('agStatClientes').textContent = clientes;
@@ -1727,17 +1731,19 @@ const AgingComp = (() => {
     let grand = 0;
     tbody.innerHTML = _filtered.map(row => {
       const cells = row.buckets.map((v,i) => {
-        totals[i] += v;
-        const cls = v===0 ? 'm' : (v<0 ? 'm neg' : 'm v');
-        return `<td class="${cls}">${fmtM(v)}</td>`;
+        const displayVal = signedAmount(row, v);
+        totals[i] += displayVal;
+        const cls = displayVal===0 ? 'm' : (displayVal<0 ? 'm neg' : 'm v');
+        return `<td class="${cls}">${fmtM(displayVal)}</td>`;
       }).join('');
-      grand += row.total;
-      const tCls = 'tot'+(row.total<0?' neg':'');
+      const displayTotal = signedAmount(row, row.total);
+      grand += displayTotal;
+      const tCls = 'tot'+(displayTotal<0?' neg':'');
       const tipoCls = row.tipo === 'CXP' ? 'red' : 'indigo';
       return `<tr>
         <td title="${_esc(row.name)}">${_esc(row.name)}</td>
         <td><span class="pill ${tipoCls}" style="font-size:10.5px"><span class="pill-dot"></span>${row.tipo}</span></td>
-        ${cells}<td class="${tCls}">${fmtM(row.total)}</td>
+        ${cells}<td class="${tCls}">${fmtM(displayTotal)}</td>
       </tr>`;
     }).join('');
 
@@ -1784,9 +1790,17 @@ const AgingComp = (() => {
     const aoa = [
       ['Antigüedad de Saldos CXC/CXP — Compensación'],[],
       HDR,SUB,
-      ..._filtered.map(r=>[r.name,r.tipo,...r.buckets.map(v=>v===0?'-':v),r.total===0?'-':r.total]),
+      ..._filtered.map(r=>[
+        r.name,
+        r.tipo,
+        ...r.buckets.map(v=>{
+          const displayVal = signedAmount(r,v);
+          return displayVal===0?'-':displayVal;
+        }),
+        signedAmount(r,r.total)===0?'-':signedAmount(r,r.total)
+      ]),
       [],
-      ['TOTAL GENERAL','',...[0,1,2,3,4,5].map(i=>_filtered.reduce((s,r)=>s+r.buckets[i],0)),_filtered.reduce((s,r)=>s+r.total,0)]
+      ['TOTAL GENERAL','',...[0,1,2,3,4,5].map(i=>_filtered.reduce((s,r)=>s+signedAmount(r,r.buckets[i]),0)),_filtered.reduce((s,r)=>s+signedAmount(r,r.total),0)]
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [{wch:38},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
