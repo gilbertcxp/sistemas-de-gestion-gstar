@@ -294,17 +294,26 @@
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
 
 @media print{
+  /* Override styles.css print rule that hides everything */
+  body *{ visibility:visible !important; }
+  #print-area{ position:static !important; }
+
   #sidebar, .sidebar-scrim, #sidebarExpandBtn,
-  .menu-btn, .topbar-actions,
+  .menu-btn, .topbar-actions, .topbar,
   .repo-scope .btn-row{display:none !important;}
   .main{margin:0 !important;padding:0 !important;width:100% !important;}
+  #app{display:block !important;}
   .view{display:none !important;}
-  .view#view-movimientos{display:block !important;}
+  .view#view-movimientos{display:block !important;padding:0 !important;}
+  .repo-scope{background:#fff !important;}
   .repo-scope header.brand{border-radius:0;}
   .repo-scope .wrap{max-width:100%;padding:0;}
+  .repo-scope .section{margin:16px 0 0 !important;}
   .repo-scope table{min-width:0 !important;}
   .repo-scope input{border:none !important;padding:2px 4px !important;font-size:12px !important;}
   .repo-scope .del-btn{display:none !important;}
+  .repo-scope .arqueo-grid{grid-template-columns:1fr !important;}
+  .repo-scope .footer-grid{grid-template-columns:1fr 1fr !important;}
 }
 
 /* ---- Responsive: sidebar collapse ---- */
