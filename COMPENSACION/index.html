@@ -1197,7 +1197,7 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           </button>
           <h1>Antigüedad de Saldo</h1>
-          <p class="sub">Análisis de antigüedad de cuentas por cobrar</p>
+          <p class="sub">Análisis de antigüedad de saldos CXC y CXP</p>
         </div>
         <div class="topbar-actions">
           <button class="btn btn-ghost" onclick="AgingComp.exportExcel()">
@@ -1222,7 +1222,7 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
           <div class="ag-stat-ico green">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
-          <div><div class="ag-stat-lbl">Total CXC</div><div class="ag-stat-val sm" id="agStatTotal">—</div></div>
+          <div><div class="ag-stat-lbl" id="agStatTotalLbl">Total saldos</div><div class="ag-stat-val sm" id="agStatTotal">—</div></div>
         </div>
         <div class="ag-stat">
           <div class="ag-stat-ico red">
@@ -1247,6 +1247,11 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
         <select class="ag-sel" id="agFilterCliente" onchange="AgingComp.filter()">
           <option value="">Todos los clientes</option>
         </select>
+        <select class="ag-sel" id="agFilterTipo" onchange="AgingComp.filter()">
+          <option value="">Todo</option>
+          <option value="CXC">CXC</option>
+          <option value="CXP">CXP</option>
+        </select>
         <select class="ag-sel" id="agFilterBucket" onchange="AgingComp.filter()">
           <option value="">Todos los períodos</option>
           <option value="0">0 – 7 días</option>
@@ -1268,6 +1273,7 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
             <thead>
               <tr>
                 <th rowspan="2" style="text-align:left;vertical-align:middle">Nombre Cliente</th>
+                <th rowspan="2" style="vertical-align:middle">Tipo</th>
                 <th>7 DÍAS</th><th>1 MES</th><th>2 MESES</th><th>3 MESES</th>
                 <th>4 MESES</th><th>+120 DÍAS</th>
                 <th style="background:#17306d">TOTAL</th>
@@ -1279,14 +1285,14 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
               </tr>
             </thead>
             <tbody id="agBody">
-              <tr><td colspan="8"><div class="ag-empty">
+              <tr><td colspan="9"><div class="ag-empty">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
                 <span class="ag-empty-msg">No hay datos. Carga un archivo en el apartado <strong>Data</strong>.</span>
               </div></td></tr>
             </tbody>
             <tfoot id="agFoot" style="display:none">
               <tr>
-                <td>TOTAL GENERAL</td>
+                <td colspan="2">TOTAL GENERAL</td>
                 <td id="agFt0">—</td><td id="agFt1">—</td><td id="agFt2">—</td>
                 <td id="agFt3">—</td><td id="agFt4">—</td><td id="agFt5">—</td>
                 <td class="tot-ft" id="agFtTotal">—</td>
@@ -1644,20 +1650,25 @@ const AgingComp = (() => {
     const today = new Date();
     today.setHours(0,0,0,0);
     const dataRows = Storage.getDataRows();
-    const cxcRows  = dataRows.filter(r => r.tipo === 'CXC' && (Number(r.pendiente)||0) > 0.001);
+    const saldoRows  = dataRows.filter(r =>
+      (r.tipo === 'CXC' || r.tipo === 'CXP') &&
+      (Number(r.pendiente)||0) > 0.001
+    );
 
     const map = {};
-    for(const r of cxcRows){
+    for(const r of saldoRows){
       const client = r.consorcio;
+      const tipo = r.tipo;
+      const key = `${tipo}|${client}`;
       const fechaFactura = _parseFechaLocal(r.fecha);
       const dias = fechaFactura ? Math.round((today - fechaFactura) / 86400000) : 0;
-      if(!map[client]) map[client] = [0,0,0,0,0,0];
-      map[client][getBucket(dias)] += Number(r.pendiente)||0;
+      if(!map[key]) map[key] = { name: client, tipo, buckets: [0,0,0,0,0,0] };
+      map[key].buckets[getBucket(dias)] += Number(r.pendiente)||0;
     }
 
-    _allRows = Object.entries(map)
-      .map(([name,buckets]) => ({name,buckets,total:buckets.reduce((s,v)=>s+v,0)}))
-      .sort((a,b) => a.name.localeCompare(b.name,'es'));
+    _allRows = Object.values(map)
+      .map(r => ({...r,total:r.buckets.reduce((s,v)=>s+v,0)}))
+      .sort((a,b) => a.name.localeCompare(b.name,'es') || a.tipo.localeCompare(b.tipo,'es'));
     _filtered = [..._allRows];
 
     _updateStats();
@@ -1666,9 +1677,13 @@ const AgingComp = (() => {
   }
 
   function _updateStats(){
-    const total   = _allRows.reduce((s,r)=>s+r.total,0);
-    const vencido = _allRows.reduce((s,r)=>s+r.buckets[5],0);
-    document.getElementById('agStatClientes').textContent = _allRows.length;
+    const rows    = _filtered;
+    const total   = rows.reduce((s,r)=>s+r.total,0);
+    const vencido = rows.reduce((s,r)=>s+r.buckets[5],0);
+    const tipo    = document.getElementById('agFilterTipo')?.value || '';
+    const clientes = new Set(rows.map(r => r.name)).size;
+    document.getElementById('agStatClientes').textContent = clientes;
+    document.getElementById('agStatTotalLbl').textContent = tipo ? `Total ${tipo}` : 'Total saldos';
     document.getElementById('agStatTotal').textContent    = fmtMFull(total);
     document.getElementById('agStatVencido').textContent  = fmtMFull(vencido);
     document.getElementById('agStatFecha').textContent    =
@@ -1678,7 +1693,9 @@ const AgingComp = (() => {
   function _populateFilters(){
     const sel = document.getElementById('agFilterCliente');
     sel.innerHTML = '<option value="">Todos los clientes</option>'+
-      _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
+      [...new Set(_allRows.map(r=>r.name))]
+        .sort((a,b)=>a.localeCompare(b,'es'))
+        .map(name=>`<option value="${_esc(name)}">${_esc(name)}</option>`).join('');
   }
 
   function _render(){
@@ -1687,9 +1704,9 @@ const AgingComp = (() => {
     const footBar = document.getElementById('agFootBar');
 
     if(_allRows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="9"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
-        <span class="ag-empty-msg">No hay datos CXC. Carga un archivo en el apartado <strong>Data</strong>.</span>
+        <span class="ag-empty-msg">No hay datos CXC/CXP. Carga un archivo en el apartado <strong>Data</strong>.</span>
       </div></td></tr>`;
       tfoot.style.display = 'none';
       footBar.style.display = 'none';
@@ -1697,7 +1714,7 @@ const AgingComp = (() => {
     }
 
     if(_filtered.length === 0){
-      tbody.innerHTML = `<tr><td colspan="8"><div class="ag-empty">
+      tbody.innerHTML = `<tr><td colspan="9"><div class="ag-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <span class="ag-empty-msg">Sin resultados para los filtros aplicados</span>
       </div></td></tr>`;
@@ -1716,7 +1733,12 @@ const AgingComp = (() => {
       }).join('');
       grand += row.total;
       const tCls = 'tot'+(row.total<0?' neg':'');
-      return `<tr><td title="${_esc(row.name)}">${_esc(row.name)}</td>${cells}<td class="${tCls}">${fmtM(row.total)}</td></tr>`;
+      const tipoCls = row.tipo === 'CXP' ? 'red' : 'indigo';
+      return `<tr>
+        <td title="${_esc(row.name)}">${_esc(row.name)}</td>
+        <td><span class="pill ${tipoCls}" style="font-size:10.5px"><span class="pill-dot"></span>${row.tipo}</span></td>
+        ${cells}<td class="${tCls}">${fmtM(row.total)}</td>
+      </tr>`;
     }).join('');
 
     totals.forEach((v,i) => { const el=document.getElementById('agFt'+i); if(el) el.textContent=fmtM(v); });
@@ -1724,7 +1746,7 @@ const AgingComp = (() => {
     tfoot.style.display = '';
     footBar.style.display = '';
     document.getElementById('agFootInfo').textContent =
-      `${_filtered.length} cliente${_filtered.length!==1?'s':''} mostrados · ${_allRows.length} total`;
+      `${_filtered.length} saldo${_filtered.length!==1?'s':''} mostrados · ${_allRows.length} total`;
     document.getElementById('agFootDate').textContent =
       'Calculado: '+new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'});
   }
@@ -1732,37 +1754,42 @@ const AgingComp = (() => {
   function filter(){
     const q  = norm(document.getElementById('agSearch').value);
     const cl = document.getElementById('agFilterCliente').value;
+    const tp = document.getElementById('agFilterTipo').value;
     const bk = document.getElementById('agFilterBucket').value;
     _filtered = _allRows.filter(r => {
       if(q  && !norm(r.name).includes(q)) return false;
       if(cl && r.name !== cl)             return false;
+      if(tp && r.tipo !== tp)             return false;
       if(bk !== '' && r.buckets[+bk]===0) return false;
       return true;
     });
+    _updateStats();
     _render();
   }
 
   function clearFilters(){
     document.getElementById('agSearch').value = '';
     document.getElementById('agFilterCliente').value = '';
+    document.getElementById('agFilterTipo').value = '';
     document.getElementById('agFilterBucket').value = '';
     _filtered = [..._allRows];
+    _updateStats();
     _render();
   }
 
   function exportExcel(){
     if(!_allRows.length){ if(typeof UI!=='undefined') UI.toast('No hay datos para exportar','error'); return; }
-    const HDR = ['Nombre Cliente','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
-    const SUB = ['','0-7','8-30','31-60','61-90','91-120','+120',''];
+    const HDR = ['Nombre Cliente','Tipo','7 DIAS','1 MES','2 MESES','3 MESES','4 MESES','+120 DIAS','TOTALES'];
+    const SUB = ['','','0-7','8-30','31-60','61-90','91-120','+120',''];
     const aoa = [
-      ['Antigüedad de Cuentas por Cobrar — Compensación'],[],
+      ['Antigüedad de Saldos CXC/CXP — Compensación'],[],
       HDR,SUB,
-      ..._filtered.map(r=>[r.name,...r.buckets.map(v=>v===0?'-':v),r.total===0?'-':r.total]),
+      ..._filtered.map(r=>[r.name,r.tipo,...r.buckets.map(v=>v===0?'-':v),r.total===0?'-':r.total]),
       [],
-      ['TOTAL GENERAL',...[0,1,2,3,4,5,6].map(i=>_filtered.reduce((s,r)=>s+r.buckets[i],0)),_filtered.reduce((s,r)=>s+r.total,0)]
+      ['TOTAL GENERAL','',...[0,1,2,3,4,5].map(i=>_filtered.reduce((s,r)=>s+r.buckets[i],0)),_filtered.reduce((s,r)=>s+r.total,0)]
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:38},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
+    ws['!cols'] = [{wch:38},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Antigüedad');
     XLSX.writeFile(wb,`Antiguedad_Comp_${new Date().toISOString().slice(0,10)}.xlsx`);
