@@ -44,6 +44,38 @@ const SolicitudPago = (() => {
     return Storage.getSolicitudes().find(s => s.estado === 'Pendiente') || null;
   }
 
+  function _round2(n){
+    return Math.round((Number(n)||0) * 100) / 100;
+  }
+
+  function _pendienteCompensacion(r){
+    const monto = Number(r.monto)||0;
+    const pago  = Number(r.pago)||0;
+    const pendVivo = _round2(monto - pago);
+    const pendGuardado = (r.pendiente != null && r.pendiente !== '') ? _round2(Number(r.pendiente)||0) : pendVivo;
+    return Math.max(0, Math.min(pendVivo, pendGuardado));
+  }
+
+  function _getMontoCxpCompensacion(){
+    try{
+      const rows = JSON.parse(localStorage.getItem('fc_data_rows') || '[]');
+      if(!Array.isArray(rows)) return null;
+      return _round2(rows
+        .filter(r => r && r.tipo === 'CXP')
+        .reduce((s,r) => s + _pendienteCompensacion(r), 0));
+    }catch(e){
+      console.warn('SolicitudPago._getMontoCxpCompensacion', e);
+      return null;
+    }
+  }
+
+  function _applyMontoCxpCompensacion(bankData){
+    if(!bankData || _locked) return bankData;
+    const montoCxp = _getMontoCxpCompensacion();
+    if(montoCxp !== null) bankData.provisiones = montoCxp;
+    return bankData;
+  }
+
   // ------ Public: cargar la solicitud Pendiente al entrar desde la barra lateral ------
   function loadActive(){
     const active = _getActive();
@@ -435,7 +467,7 @@ const SolicitudPago = (() => {
       </div>`;
     }
 
-    const { bank, montoDisponible, montoAPagar, disponibilidadActualizada } = _calcTotals(_sol.bank);
+    const { bank, montoDisponible, montoAPagar, disponibilidadActualizada } = _calcTotals(_applyMontoCxpCompensacion(_sol.bank || Storage.getBank()));
     const cuenta = bank.cuentaLabel || 'Balance en banco';
 
     const bbRow = (label, val, extra='') =>
@@ -572,7 +604,7 @@ const SolicitudPago = (() => {
   // ------ Render principal ------
   function render(){
     // Inputs del banco
-    const bankData = _sol ? _sol.bank : Storage.getBank();
+    const bankData = _applyMontoCxpCompensacion(_sol ? (_sol.bank || Storage.getBank()) : Storage.getBank());
     // Sincronizar balance/transito/transfer desde Disponibilidad Bancaria
     try{
       const raw = localStorage.getItem('gstar_disp_banco');

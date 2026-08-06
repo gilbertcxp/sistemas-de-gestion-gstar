@@ -81,6 +81,9 @@ const App = (() => {
 
   async function syncRerender(key){
     if(key === 'cxp_aging_data'){ await DataModule.syncFijosFromAging(); }
+    if(key === 'fc_data_rows' && window.Sync && Sync.pullCompensacionRows){
+      await Sync.pullCompensacionRows();
+    }
     const active = document.querySelector('.view.active');
     if(!active || !active.id.startsWith('view-')) return;
     DataModule.load();
@@ -237,6 +240,7 @@ const App = (() => {
     if(window.Sync){
       try{ await Sync.pull(); }catch(e){ console.warn('Sync.pull falló, se usa data local', e); }
       try{ await DataModule.syncFijosFromAging(); }catch(e){ console.warn('Sync de Pagos Fijos falló, se usa data local', e); }
+      try{ await Sync.pullCompensacionRows(); }catch(e){ console.warn('Sync de Compensación falló, se usa data local', e); }
     }
     wire();
     DataModule.render();

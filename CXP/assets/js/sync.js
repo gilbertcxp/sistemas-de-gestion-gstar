@@ -59,13 +59,29 @@ const Sync = (() => {
   // Trae la Antigüedad de Saldo publicada (CXP/antiguedad-cxp.html), fuente
   // de los Pagos Fijos. No es una SHARED_KEY de este módulo: solo se lee.
   async function pullAgingData(){
+    return _pullExternalKey('cxp_aging_data');
+  }
+
+  // Lectura puntual de una key de OTRO módulo (no es SHARED_KEY local, solo se lee)
+  async function _pullExternalKey(key){
     const db = _db();
     if(!db) return null;
     try{
-      const { data, error } = await db.from(TABLE).select('value').eq('key','cxp_aging_data').single();
+      const { data, error } = await db.from(TABLE).select('value').eq('key', key).single();
       if(error || !data) return null;
       return data.value || null;
-    }catch(e){ console.warn('Sync.pullAgingData', e); return null; }
+    }catch(e){ console.warn('Sync._pullExternalKey', key, e); return null; }
+  }
+
+  // Data publicada por Compensación. CXP solo la lee para alimentar la línea
+  // de provisiones en la Solicitud de Pago.
+  async function pullCompensacionRows(){
+    const rows = await _pullExternalKey('fc_data_rows');
+    if(Array.isArray(rows)){
+      try{ localStorage.setItem('fc_data_rows', JSON.stringify(rows)); }catch(e){}
+      return rows;
+    }
+    return null;
   }
 
   // Empuje con debounce por clave (se llama desde Storage._set)
@@ -100,6 +116,12 @@ const Sync = (() => {
             if(typeof onChange === 'function') onChange(row.key);
             return;
           }
+          // Data de Compensación: se guarda local solo para cálculo de provisiones.
+          if(row.key === 'fc_data_rows'){
+            try{ localStorage.setItem('fc_data_rows', JSON.stringify(row.value || [])); }catch(e){}
+            if(typeof onChange === 'function') onChange(row.key);
+            return;
+          }
           if(Storage.getSharedKeys().indexOf(row.key) === -1) return;
           if(row.updated_by && row.updated_by === _email()) return; // ignora eco propio
           Storage.applyRemote(row.key, row.value);
@@ -111,6 +133,6 @@ const Sync = (() => {
 
   function isReady(){ return _ready; }
 
-  return { pull, push, publishAll, subscribeRealtime, isReady, pullAgingData };
+  return { pull, push, publishAll, subscribeRealtime, isReady, pullAgingData, pullCompensacionRows };
 })();
 window.Sync = Sync;
