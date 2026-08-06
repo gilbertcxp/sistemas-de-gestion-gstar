@@ -275,7 +275,43 @@ const Reposicion = (() => {
       </div>`).join('');
   }
 
-  function imprimir(){ window.print(); }
+  function _printValueFor(field){
+    const raw = field.value || '';
+    if(field.type === 'date') return Utils.fmtDate(raw);
+    if(field.closest('td.num') && !raw.trim()) return ' ';
+    if(field.closest('td.num') || ['ccFondo','ccFacturasView','ccDisponibleView','ccCheque'].includes(field.id)){
+      return Utils.fmtMoney(raw);
+    }
+    return raw.trim() || ' ';
+  }
+
+  function syncPrintValues(){
+    document.querySelectorAll('.repo-scope input, .repo-scope textarea').forEach(field => {
+      let printValue = field.nextElementSibling;
+      if(!printValue || !printValue.classList.contains('cc-print-value')){
+        printValue = document.createElement('span');
+        printValue.className = 'cc-print-value';
+        field.insertAdjacentElement('afterend', printValue);
+      }
+      printValue.textContent = _printValueFor(field);
+    });
+  }
+
+  function preparePrint(){
+    if(state){
+      syncHeaderFromDOM();
+      renderRows();
+      renderDenoms();
+    }
+    syncPrintValues();
+  }
+
+  function imprimir(){
+    preparePrint();
+    setTimeout(() => window.print(), 0);
+  }
+
+  window.addEventListener('beforeprint', preparePrint);
 
   return {
     render, addRow, deleteRow, updateRow, updateDenom,

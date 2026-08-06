@@ -292,28 +292,155 @@
 .repo-scope .history-item .h-meta{color:var(--rp-muted);}
 .repo-scope .history-item .h-amount{font-weight:700;color:var(--rp-navy-2);}
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
+.repo-scope .cc-print-value{display:none;}
 
 @media print{
-  /* Override styles.css print rule that hides everything */
-  body *{ visibility:visible !important; }
-  #print-area{ position:static !important; }
-
+  @page{ size:letter landscape; margin:8mm; }
+  html, body{height:auto !important;background:#fff !important;}
+  body{
+    margin:0 !important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  body *{visibility:hidden !important;}
+  #view-movimientos, #view-movimientos *{visibility:visible !important;}
   #sidebar, .sidebar-scrim, #sidebarExpandBtn,
-  .menu-btn, .topbar-actions, .topbar,
-  .repo-scope .btn-row{display:none !important;}
-  .main{margin:0 !important;padding:0 !important;width:100% !important;}
-  #app{display:block !important;}
+  #view-movimientos > .menu-btn,
+  .repo-scope .btn-row,
+  .repo-scope .print-hide{display:none !important;}
+  #app, .main{display:block !important;margin:0 !important;padding:0 !important;width:100% !important;min-height:0 !important;}
   .view{display:none !important;}
-  .view#view-movimientos{display:block !important;padding:0 !important;}
-  .repo-scope{background:#fff !important;}
-  .repo-scope header.brand{border-radius:0;}
-  .repo-scope .wrap{max-width:100%;padding:0;}
-  .repo-scope .section{margin:16px 0 0 !important;}
-  .repo-scope table{min-width:0 !important;}
-  .repo-scope input{border:none !important;padding:2px 4px !important;font-size:12px !important;}
-  .repo-scope .del-btn{display:none !important;}
-  .repo-scope .arqueo-grid{grid-template-columns:1fr !important;}
-  .repo-scope .footer-grid{grid-template-columns:1fr 1fr !important;}
+  .view#view-movimientos{
+    display:block !important;
+    position:absolute !important;
+    left:0 !important;
+    top:0 !important;
+    width:100% !important;
+    padding:0 !important;
+  }
+  .repo-scope{
+    background:#fff !important;
+    border-radius:0 !important;
+    color:#111 !important;
+    overflow:visible !important;
+    padding:0 !important;
+    font-size:10px !important;
+  }
+  .repo-scope .wrap{max-width:100% !important;padding:0 !important;}
+  .repo-scope header.brand{
+    border-radius:0 !important;
+    padding:10px 14px !important;
+    box-shadow:none !important;
+    gap:10px !important;
+  }
+  .repo-scope header.brand::after{left:14px !important;right:14px !important;height:2px !important;}
+  .repo-scope .star{width:30px !important;height:30px !important;}
+  .repo-scope .brand-left{gap:10px !important;}
+  .repo-scope .brand-name{font-size:19px !important;letter-spacing:.2px !important;}
+  .repo-scope .brand-sub{font-size:9px !important;letter-spacing:1.7px !important;margin-top:3px !important;}
+  .repo-scope .brand-right{gap:10px !important;}
+  .repo-scope .rnc-tag{padding-right:10px !important;}
+  .repo-scope .rnc-tag .lbl{font-size:8px !important;}
+  .repo-scope .rnc-tag .val{font-size:11px !important;}
+  .repo-scope .live-clock{font-size:9px !important;min-width:88px !important;}
+  .repo-scope .section{margin:8px 0 0 !important;}
+  .repo-scope .card{
+    border:1px solid #cfd4df !important;
+    border-radius:5px !important;
+    box-shadow:none !important;
+    padding:8px 10px !important;
+    break-inside:auto !important;
+    page-break-inside:auto !important;
+  }
+  .repo-scope .section-title{
+    font-size:10px !important;
+    letter-spacing:.8px !important;
+    margin:0 0 6px !important;
+    gap:5px !important;
+  }
+  .repo-scope .section-title::before{width:3px !important;height:11px !important;}
+  .repo-scope .grid{gap:8px !important;}
+  .repo-scope .grid-3, .repo-scope .grid-4{grid-template-columns:repeat(3,1fr) !important;}
+  .repo-scope label.field{
+    gap:3px !important;
+    font-size:8.5px !important;
+    letter-spacing:.35px !important;
+    margin:0 !important;
+  }
+  .repo-scope input, .repo-scope textarea{display:none !important;}
+  .repo-scope .cc-print-value{
+    display:block !important;
+    min-height:14px !important;
+    border-bottom:1px solid #d6d9e0 !important;
+    color:#111 !important;
+    font-size:10px !important;
+    font-weight:600 !important;
+    line-height:1.28 !important;
+    white-space:normal !important;
+    overflow-wrap:anywhere !important;
+  }
+  .repo-scope .table-scroll{
+    overflow:visible !important;
+    border-radius:4px !important;
+    border:1px solid #cfd4df !important;
+  }
+  .repo-scope table{
+    width:100% !important;
+    min-width:0 !important;
+    table-layout:fixed !important;
+    border-collapse:collapse !important;
+  }
+  .repo-scope thead{display:table-header-group !important;}
+  .repo-scope tfoot{display:table-footer-group !important;}
+  .repo-scope tr{break-inside:avoid !important;page-break-inside:avoid !important;}
+  .repo-scope thead th{
+    padding:5px 6px !important;
+    font-size:8px !important;
+    letter-spacing:.45px !important;
+  }
+  .repo-scope tbody td, .repo-scope tfoot td{
+    padding:4px 6px !important;
+    font-size:9px !important;
+    vertical-align:top !important;
+  }
+  .repo-scope table:not(.denoms-table) th:nth-child(1),
+  .repo-scope table:not(.denoms-table) td:nth-child(1){width:8% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(2),
+  .repo-scope table:not(.denoms-table) td:nth-child(2){width:10% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(3),
+  .repo-scope table:not(.denoms-table) td:nth-child(3){width:23% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(4),
+  .repo-scope table:not(.denoms-table) td:nth-child(4){width:30% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(5),
+  .repo-scope table:not(.denoms-table) td:nth-child(5){width:13% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(6),
+  .repo-scope table:not(.denoms-table) td:nth-child(6){width:16% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(7),
+  .repo-scope table:not(.denoms-table) td:nth-child(7){display:none !important;}
+  .repo-scope .row-no, .repo-scope .row-fecha, .repo-scope .row-ben,
+  .repo-scope .row-desc, .repo-scope .row-monto, .repo-scope .row-balance{
+    min-width:0 !important;
+    width:auto !important;
+  }
+  .repo-scope .balance-cell{text-align:right !important;padding-right:6px !important;}
+  .repo-scope .summary-strip{
+    grid-template-columns:repeat(4,1fr) !important;
+    margin-top:8px !important;
+    border-radius:4px !important;
+  }
+  .repo-scope .summary-cell{padding:7px 8px !important;}
+  .repo-scope .summary-cell .s-label{font-size:7.5px !important;letter-spacing:.45px !important;}
+  .repo-scope .summary-cell .s-value{font-size:13px !important;margin-top:2px !important;}
+  .repo-scope .arqueo-grid{grid-template-columns:1fr .85fr !important;gap:10px !important;}
+  .repo-scope .denoms-table td{padding:3px 6px !important;}
+  .repo-scope .diff-panel{gap:6px !important;}
+  .repo-scope .diff-box{padding:9px !important;border-radius:5px !important;}
+  .repo-scope .diff-box .d-label{font-size:8px !important;letter-spacing:.45px !important;}
+  .repo-scope .diff-box .d-value{font-size:15px !important;margin-top:3px !important;}
+  .repo-scope .cheque-row{padding:4px 0 !important;}
+  .repo-scope .cheque-row label{font-size:9px !important;}
+  .repo-scope .footer-grid{grid-template-columns:1fr 1fr !important;gap:18px !important;}
+  .repo-scope .sign-line{margin-top:22px !important;font-size:9px !important;padding-top:4px !important;}
 }
 
 /* ---- Responsive: sidebar collapse ---- */
@@ -617,7 +744,7 @@
             </div>
           </div>
 
-          <div class="section">
+          <div class="section print-hide">
             <div class="btn-row">
               <button class="btn btn-primary" onclick="Reposicion.guardar()">💾 Guardar</button>
               <button class="btn btn-red" onclick="Reposicion.iniciarNuevaReposicion()">↻ Iniciar nueva reposición</button>
@@ -626,7 +753,7 @@
           </div>
 
           <!-- HISTORY -->
-          <div class="section">
+          <div class="section print-hide">
             <div class="card">
               <div class="section-title">Historial de reposiciones</div>
               <div class="history-list" id="ccHistoryList"></div>
