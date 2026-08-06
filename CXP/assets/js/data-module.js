@@ -17,6 +17,58 @@ const DataModule = (() => {
     _selected = new Set(Storage.getSeleccion().filter(id => _rows.some(r => r.id === id)));
   }
 
+  function _round2(n){
+    return Math.round((Number(n)||0) * 100) / 100;
+  }
+
+  function _hash32(str){
+    let h = 0;
+    for(let i = 0; i < str.length; i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+    return h.toString(36);
+  }
+
+  function _pendienteCompensacion(r){
+    const monto = Number(r.monto)||0;
+    const pago  = Number(r.pago)||0;
+    const pendVivo = _round2(monto - pago);
+    const pendGuardado = (r.pendiente != null && r.pendiente !== '') ? _round2(Number(r.pendiente)||0) : pendVivo;
+    return Math.max(0, Math.min(pendVivo, pendGuardado));
+  }
+
+  function _compensacionRowId(r){
+    const key = ['COMP-CXP', r.id || '', r.consorcio || '', r.corte || '', r.numero || '', r.fecha || '', r.monto || ''].join('|');
+    return 'comp_cxp_' + _hash32(key);
+  }
+
+  function _buildCxpFromCompensacion(rows){
+    if(!Array.isArray(rows)) return [];
+    return rows
+      .filter(r => r && r.tipo === 'CXP')
+      .map(r => {
+        const saldo = _pendienteCompensacion(r);
+        if(saldo <= 0.001) return null;
+        const corte = String(r.corte || '').trim();
+        return {
+          id:               _compensacionRowId(r),
+          tipoPago:         'Compensación',
+          empresa:          'Gstar Services',
+          proveedor:        r.consorcio || 'Compensación',
+          numeroFactura:    r.numero || corte || r.id || '',
+          fecha:            r.fecha || Utils.todayISO(),
+          fechaVencimiento: r.fecha || Utils.todayISO(),
+          detalle:          corte ? `Compensación - ${corte}` : 'Compensación',
+          moneda:           'RD$',
+          montoTotal:       saldo,
+          montoPagado:      Number(r.pago)||0,
+          saldoPendiente:   saldo,
+          estado:           'Pendiente',
+          observaciones:    'Sincronizado desde Compensación',
+          dataRowId:        r.id || ''
+        };
+      })
+      .filter(Boolean);
+  }
+
   // ------ computed helpers ------
   function _diasVencimiento(r){
     if(!r.fechaVencimiento) return null;
@@ -57,6 +109,29 @@ const DataModule = (() => {
     Storage.saveRows([...fijosFinal, ...provisionales]);
     load();
     return { ok:true, total: fijosFinal.length };
+  }
+
+  function syncCompensacionFromRows(compRows){
+    const nuevosComp = _buildCxpFromCompensacion(compRows);
+    const existing = Storage.getRows();
+    const prevById = new Map(existing.filter(r => r.tipoPago === 'Compensación').map(r => [r.id, r]));
+    const others = existing.filter(r => r.tipoPago !== 'Compensación');
+    const compFinal = nuevosComp.map(r => {
+      const prev = prevById.get(r.id);
+      if(!prev) return r;
+      return { ...r, estado: prev.estado, _editedFields: prev._editedFields || [] };
+    });
+
+    Storage.saveRows([...others, ...compFinal]);
+    load();
+    return { ok:true, total: compFinal.length };
+  }
+
+  async function syncCompensacion(){
+    if(!window.Sync || !Sync.pullCompensacionRows) return { ok:false, reason:'no-sync' };
+    const rows = await Sync.pullCompensacionRows();
+    if(!Array.isArray(rows)) return { ok:false, reason:'no-data' };
+    return syncCompensacionFromRows(rows);
   }
 
   // ------ Edición inline: Suplidor, Concepto, Monto y Fechas (cualquier fila) ------
@@ -264,6 +339,7 @@ const DataModule = (() => {
         const vencida = _isVencida(r);
         const estadoCls = r.estado === 'Pagada' ? 'ok' : r.estado === 'Pagar' ? 'blue' : (vencida ? 'red' : 'warn');
         const tipoPago = r.tipoPago || 'Provisional';
+        const tipoCls = tipoPago === 'Fijo' ? 'blue' : tipoPago === 'Compensación' ? 'indigo' : 'warn';
         return `<tr>
           <td class="c"><input type="checkbox" class="chk" ${_selected.has(r.id)?'checked':''} onchange="DataModule.toggleSelect('${r.id}')"></td>
           <td><input type="text" class="input cxp-inline-input" value="${Utils.escapeHtml(r.proveedor)}"
@@ -289,7 +365,7 @@ const DataModule = (() => {
               <option value="Pagada" ${r.estado==='Pagada'?'selected':''}>Pagada</option>
             </select>
           </td>
-          <td class="c"><span class="pill ${tipoPago==='Fijo'?'blue':'warn'}">${tipoPago}</span></td>
+          <td class="c"><span class="pill ${tipoCls}">${tipoPago}</span></td>
           <td class="c">
             <button class="btn btn-ghost btn-icon btn-sm" title="Eliminar" onclick="DataModule.deleteRow('${r.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -395,7 +471,7 @@ const DataModule = (() => {
   }
 
   return {
-    render, load, syncFijosFromAging, importProvisionalFile, setFilter, setSort, goPage,
+    render, load, syncFijosFromAging, syncCompensacion, syncCompensacionFromRows, importProvisionalFile, setFilter, setSort, goPage,
     toggleSelect, selectAllVisible, clearSelection, getSelectedRows, getSelectedCount,
     updateEstado, updateField, deleteRow, abrirModalAgregarProvision, submitAgregarProvision
   };
