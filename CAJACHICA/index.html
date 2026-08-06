@@ -294,8 +294,17 @@
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
 
 @media print{
+  #sidebar, .sidebar-scrim, #sidebarExpandBtn,
+  .menu-btn, .topbar-actions,
   .repo-scope .btn-row{display:none !important;}
+  .main{margin:0 !important;padding:0 !important;width:100% !important;}
+  .view{display:none !important;}
+  .view#view-movimientos{display:block !important;}
   .repo-scope header.brand{border-radius:0;}
+  .repo-scope .wrap{max-width:100%;padding:0;}
+  .repo-scope table{min-width:0 !important;}
+  .repo-scope input{border:none !important;padding:2px 4px !important;font-size:12px !important;}
+  .repo-scope .del-btn{display:none !important;}
 }
 
 /* ---- Responsive: sidebar collapse ---- */
