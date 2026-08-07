@@ -267,7 +267,6 @@
           <span class="fg-lbl"><i class="bi bi-building"></i> Empresa / Consorcio</span>
           <select id="bgCompany" onchange="onBGCompanyChange()"></select>
         </div>
-        <button class="btn btn-blue" onclick="renderBalanceGeneral()"><i class="bi bi-play-fill"></i> Generar</button>
         <div class="data-info" id="bgDataInfo"></div>
       </div>
 
@@ -393,6 +392,7 @@ const STORE_KEY = 'gstar_er_v2';
 const DB_KEY    = 'estado_resultados_data';
 const STORE_BG_KEY = 'gstar_bg_v1';
 const DB_BG_KEY    = 'balance_general_data';
+const BG_ALL_MONTHS = '__all__';
 
 function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(_allData)); }catch(e){} }
 function loadStore(){
@@ -879,7 +879,51 @@ function onDrop(e){
 }
 
 async function processFiles(files){
-  for(const file of files){ await processFile(file); }
+  const results = [];
+  for(const file of files){
+    const result = await processFile(file);
+    if(result) results.push(result);
+  }
+  if(!results.length) return;
+
+  const bgResults = results.filter(r => r.type === 'bg');
+  const erResults = results.filter(r => r.type === 'er');
+  if(bgResults.length){
+    const last = bgResults[bgResults.length-1].data;
+    _lastUploadType = 'bg';
+    _bgYear = last.year;
+    _bgMonth = last.month;
+    _bgCompany = last.company;
+    saveBGStore();
+    populateBGSelectors();
+    updateUploadZone(bgResults.length > 1 ? `${bgResults.length} balances cargados` : bgResults[0].fileName);
+    renderBalanceGeneral();
+    nav('bg');
+    showToast(bgResults.length > 1
+      ? `Balances Generales cargados: ${bgResults.length} meses`
+      : `Balance General cargado: ${MONTH_FULL[last.month.split('-')[1]]} ${last.year}`);
+    return;
+  }
+
+  if(erResults.length){
+    const last = erResults[erResults.length-1].data;
+    _lastUploadType = 'er';
+    _year = last.year;
+    _monthFrom = '';
+    _monthTo = '';
+    _dateFrom = '';
+    _dateTo = '';
+    saveStore();
+    populateYearSelector();
+    populateMonthRangeSelectors();
+    populateDateRangeInputs();
+    updateUploadZone(erResults.length > 1 ? `${erResults.length} archivos cargados` : erResults[0].fileName);
+    render();
+    nav('er');
+    showToast(erResults.length > 1
+      ? `Archivos cargados: ${erResults.length}`
+      : `Archivo cargado: ${last.months.length} meses del ${last.year}`);
+  }
 }
 
 function processFile(file){
@@ -894,16 +938,7 @@ function processFile(file){
         _bgData[bg.year] = _bgData[bg.year] || {};
         _bgData[bg.year][bg.month] = _bgData[bg.year][bg.month] || {};
         _bgData[bg.year][bg.month][bg.company] = bg;
-        saveBGStore();
-        _lastUploadType = 'bg';
-        _bgYear = bg.year;
-        _bgMonth = bg.month;
-        _bgCompany = bg.company;
-        populateBGSelectors();
-        updateUploadZone(file.name);
-        renderBalanceGeneral();
-        nav('bg');
-        showToast(`Balance General cargado: ${MONTH_FULL[bg.month.split('-')[1]]} ${bg.year}`);
+        resolve({ type:'bg', data:bg, fileName:file.name });
       }else{
         const er = parsed.data;
         _allData[er.year] = {
@@ -911,25 +946,12 @@ function processFile(file){
           structure: er.structure,
           meta: { fileName: file.name, importedAt: new Date().toLocaleString('es-DO') }
         };
-        saveStore();
-        _lastUploadType = 'er';
-        _year = er.year;
-        _monthFrom = '';
-        _monthTo = '';
-        _dateFrom = '';
-        _dateTo = '';
-        populateYearSelector();
-        populateMonthRangeSelectors();
-        populateDateRangeInputs();
-        updateUploadZone(file.name);
-        render();
-        nav('er');
-        showToast(`Archivo cargado: ${er.months.length} meses del ${er.year}`);
+        resolve({ type:'er', data:er, fileName:file.name });
       }
     }catch(err){
       showToast('Error al leer el archivo: ' + err.message);
+      resolve();
     }
-    resolve();
   };
   reader.onerror = () => { showToast('No se pudo leer el archivo'); resolve(); };
   reader.readAsArrayBuffer(file);
@@ -953,17 +975,22 @@ function updateUploadZone(fileName){
 
 async function publicarData(){
   const publishingBG = _lastUploadType === 'bg' || _currentPage === 'bg';
-  const data = publishingBG ? (_bgData[_bgYear]?.[_bgMonth]?.[_bgCompany]) : _allData[_year];
+  const data = publishingBG ? _bgData : _allData[_year];
   if(!data){ showToast('No hay datos para publicar'); return; }
   const btn = document.getElementById('btnPublicar');
   if(btn){ btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publicando...'; }
   try{
-    data.meta.published = true;
-    data.meta.publishedAt = new Date().toLocaleString('es-DO');
     if(publishingBG){
+      const bg = _currentBG();
+      if(bg){
+        bg.meta.published = true;
+        bg.meta.publishedAt = new Date().toLocaleString('es-DO');
+      }
       saveBGStore();
       await _saveBGToDB();
     }else{
+      data.meta.published = true;
+      data.meta.publishedAt = new Date().toLocaleString('es-DO');
       saveStore();
       await _saveERToDB();
     }
@@ -1067,8 +1094,30 @@ function toggleGroup(groupId){
 ══════════════════════════════════════════════════════ */
 function _bgYears(){ return Object.keys(_bgData).sort().reverse(); }
 function _bgMonths(year){ return Object.keys(_bgData[year]||{}).sort(); }
-function _bgCompanies(year, month){ return Object.keys(_bgData[year]?.[month]||{}).sort(); }
-function _currentBG(){ return _bgData[_bgYear]?.[_bgMonth]?.[_bgCompany] || null; }
+function _bgCompanies(year, month){
+  if(month === BG_ALL_MONTHS){
+    const names = new Set();
+    _bgMonths(year).forEach(m => Object.keys(_bgData[year]?.[m]||{}).forEach(c => names.add(c)));
+    return [...names].sort();
+  }
+  return Object.keys(_bgData[year]?.[month]||{}).sort();
+}
+function _bgSelectedReports(){
+  if(!_bgYear || !_bgCompany) return [];
+  const months = _bgMonth === BG_ALL_MONTHS ? _bgMonths(_bgYear) : [_bgMonth];
+  return months
+    .map(month => ({ month, report:_bgData[_bgYear]?.[month]?.[_bgCompany] }))
+    .filter(x => x.report);
+}
+function _currentBG(){
+  const selected = _bgSelectedReports();
+  return selected.length ? selected[selected.length-1].report : null;
+}
+function _bgRowKey(row){
+  if(!row) return '';
+  if(row.kind === 'account') return `account|${row.cuenta}`;
+  return `${row.kind}|${row.section||''}|${row.cuenta||''}|${row.descripcion||''}`;
+}
 
 function populateBGSelectors(){
   const ySel = document.getElementById('bgYear');
@@ -1079,16 +1128,19 @@ function populateBGSelectors(){
   ySel.innerHTML = years.map(y=>`<option value="${y}" ${String(y)===String(_bgYear)?'selected':''}>${y}</option>`).join('');
 
   const months = _bgMonths(_bgYear);
-  if(!_bgMonth || !months.includes(_bgMonth)) _bgMonth = months[months.length-1] || '';
-  mSel.innerHTML = months.map(m=>`<option value="${m}" ${m===_bgMonth?'selected':''}>${MONTH_FULL[m.split('-')[1]]}</option>`).join('');
+  if(!_bgMonth || (_bgMonth !== BG_ALL_MONTHS && !months.includes(_bgMonth))) _bgMonth = months[months.length-1] || '';
+  mSel.innerHTML = [
+    months.length > 1 ? `<option value="${BG_ALL_MONTHS}" ${_bgMonth===BG_ALL_MONTHS?'selected':''}>Todo</option>` : '',
+    ...months.map(m=>`<option value="${m}" ${m===_bgMonth?'selected':''}>${MONTH_FULL[m.split('-')[1]]}</option>`)
+  ].join('');
 
   const companies = _bgCompanies(_bgYear, _bgMonth);
   if(!_bgCompany || !companies.includes(_bgCompany)) _bgCompany = companies[0] || '';
   cSel.innerHTML = companies.map(c=>`<option value="${c.replace(/"/g,'&quot;')}" ${c===_bgCompany?'selected':''}>${c}</option>`).join('');
 }
-function onBGYearChange(){ _bgYear = document.getElementById('bgYear').value; _bgMonth = ''; _bgCompany = ''; populateBGSelectors(); }
-function onBGMonthChange(){ _bgMonth = document.getElementById('bgMonth').value; _bgCompany = ''; populateBGSelectors(); }
-function onBGCompanyChange(){ _bgCompany = document.getElementById('bgCompany').value; }
+function onBGYearChange(){ _bgYear = document.getElementById('bgYear').value; _bgMonth = ''; _bgCompany = ''; populateBGSelectors(); renderBalanceGeneral(); }
+function onBGMonthChange(){ _bgMonth = document.getElementById('bgMonth').value; _bgCompany = ''; populateBGSelectors(); renderBalanceGeneral(); }
+function onBGCompanyChange(){ _bgCompany = document.getElementById('bgCompany').value; renderBalanceGeneral(); }
 
 function showBGEmpty(){
   document.getElementById('bgEmptyState').style.display = '';
@@ -1098,11 +1150,14 @@ function showBGEmpty(){
 
 function renderBalanceGeneral(){
   populateBGSelectors();
-  const bg = _currentBG();
-  if(!bg){ showBGEmpty(); return; }
-  const monthName = MONTH_FULL[bg.month.split('-')[1]] || bg.month;
-  document.getElementById('bgPeriod').textContent = `${monthName} ${bg.year}`;
-  document.getElementById('bgDataInfo').textContent = `${bg.company} · ${monthName} ${bg.year}`;
+  const reports = _bgSelectedReports();
+  if(!reports.length){ showBGEmpty(); return; }
+  const bg = reports[reports.length-1].report;
+  const monthLabel = _bgMonth === BG_ALL_MONTHS
+    ? `Todos los meses cargados ${_bgYear}`
+    : `${MONTH_FULL[bg.month.split('-')[1]] || bg.month} ${bg.year}`;
+  document.getElementById('bgPeriod').textContent = monthLabel;
+  document.getElementById('bgDataInfo').textContent = `${bg.company} · ${monthLabel}`;
 
   const diff = Number(bg.totals.diferencia)||0;
   const ok = Math.abs(diff) < 0.01;
@@ -1112,22 +1167,36 @@ function renderBalanceGeneral(){
     <div class="bg-kpi"><div class="lbl">Total Patrimonio</div><div class="val">${fmtPlain(bg.totals.patrimonio)}</div></div>
     <div class="bg-kpi ${ok?'ok':'bad'}"><div class="lbl">${ok?'Balance cuadrado':'Descuadre contable'}</div><div class="val">${fmtPlain(diff)}</div></div>`;
 
+  const monthHeaders = reports.map(({month}) => {
+    const name = (MONTH_FULL[month.split('-')[1]] || month).toLowerCase();
+    return `<th>Balance del Mes ${name}</th>`;
+  }).join('');
   document.getElementById('bgHead').innerHTML = `<tr>
     <th class="acc-col">Cuenta</th>
     <th style="text-align:left">Descripción</th>
-    <th>Balance del Mes</th>
+    ${monthHeaders}
     <th>Notas</th>
   </tr>`;
 
-  document.getElementById('bgBody').innerHTML = bg.rows.map(r => {
-    if(r.kind === 'tipo') return `<tr class="r-tipo"><td class="desc-cell" colspan="4">${r.descripcion}</td></tr>`;
-    if(r.kind === 'control') return `<tr class="r-control"><td class="desc-cell">${r.cuenta||''}</td><td colspan="3">${r.descripcion}</td></tr>`;
-    if(r.kind === 'control-total') return `<tr class="r-ctapadre"><td class="desc-cell"></td><td>${r.descripcion}</td><td class="num">${fmt(r.balance)}</td><td></td></tr>`;
-    if(r.kind === 'tipo-total') return `<tr class="r-tipo-total"><td class="desc-cell"></td><td>${r.descripcion}</td><td class="num">${fmtPlain(r.balance)}</td><td></td></tr>`;
+  const reportMaps = reports.map(({report}) => {
+    const map = new Map();
+    report.rows.forEach(row => map.set(_bgRowKey(row), row));
+    return map;
+  });
+  const colSpan = reports.length + 3;
+  document.getElementById('bgBody').innerHTML = reports[0].report.rows.map(r => {
+    const cells = reportMaps.map(map => {
+      const row = map.get(_bgRowKey(r));
+      return `<td class="num">${fmt(row?.balance || 0)}</td>`;
+    }).join('');
+    if(r.kind === 'tipo') return `<tr class="r-tipo"><td class="desc-cell" colspan="${colSpan}">${r.descripcion}</td></tr>`;
+    if(r.kind === 'control') return `<tr class="r-control"><td class="desc-cell">${r.cuenta||''}</td><td colspan="${reports.length+2}">${r.descripcion}</td></tr>`;
+    if(r.kind === 'control-total') return `<tr class="r-ctapadre"><td class="desc-cell"></td><td>${r.descripcion}</td>${cells}<td></td></tr>`;
+    if(r.kind === 'tipo-total') return `<tr class="r-tipo-total"><td class="desc-cell"></td><td>${r.descripcion}</td>${cells}<td></td></tr>`;
     return `<tr class="r-item">
       <td class="desc-cell">${r.cuenta||''}</td>
       <td style="padding-left:${r.nivel>=3?'24':'12'}px">${r.descripcion||''}</td>
-      <td class="num">${fmt(r.balance)}</td>
+      ${cells}
       <td class="note">${r.notas||''}</td>
     </tr>`;
   }).join('');
@@ -1200,31 +1269,39 @@ function exportCSV(){
 }
 
 function exportBGCSV(){
-  const bg = _currentBG();
-  if(!bg){ showToast('No hay Balance General para exportar'); return; }
+  const reports = _bgSelectedReports();
+  if(!reports.length){ showToast('No hay Balance General para exportar'); return; }
+  const bg = reports[reports.length-1].report;
+  const reportMaps = reports.map(({report}) => {
+    const map = new Map();
+    report.rows.forEach(row => map.set(_bgRowKey(row), row));
+    return map;
+  });
+  const monthHeaders = reports.map(({month}) => `Balance del Mes ${MONTH_FULL[month.split('-')[1]] || month}`);
   const csvRows = [
     ['Balance General — Gstar Services S.A'],
     ['RNC 131751016'],
     ['Período: ' + document.getElementById('bgPeriod').textContent],
     ['Empresa / Consorcio: ' + bg.company],
     [''],
-    ['Cuenta','Descripción','Balance del Mes','Notas']
+    ['Cuenta','Descripción',...monthHeaders,'Notas']
   ];
-  bg.rows.forEach(r => {
-    if(r.kind === 'tipo' || r.kind === 'control') csvRows.push([r.cuenta||'', r.descripcion||'', '', '']);
-    else csvRows.push([r.cuenta||'', r.descripcion||'', r.balance||0, r.notas||'']);
+  reports[0].report.rows.forEach(r => {
+    const values = reportMaps.map(map => map.get(_bgRowKey(r))?.balance || 0);
+    if(r.kind === 'tipo' || r.kind === 'control') csvRows.push([r.cuenta||'', r.descripcion||'', ...reports.map(() => ''), '']);
+    else csvRows.push([r.cuenta||'', r.descripcion||'', ...values, r.notas||'']);
   });
   csvRows.push([]);
-  csvRows.push(['','TOTAL ACTIVOS',bg.totals.activo,'']);
-  csvRows.push(['','TOTAL PASIVOS',bg.totals.pasivo,'']);
-  csvRows.push(['','TOTAL PATRIMONIO',bg.totals.patrimonio,'']);
-  csvRows.push(['','DIFERENCIA',bg.totals.diferencia,'']);
+  csvRows.push(['','TOTAL ACTIVOS',...reports.map(({report}) => report.totals.activo),'']);
+  csvRows.push(['','TOTAL PASIVOS',...reports.map(({report}) => report.totals.pasivo),'']);
+  csvRows.push(['','TOTAL PATRIMONIO',...reports.map(({report}) => report.totals.patrimonio),'']);
+  csvRows.push(['','DIFERENCIA',...reports.map(({report}) => report.totals.diferencia),'']);
   const bom = '﻿';
   const csv = csvRows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `BalanceGeneral_${bg.month}.csv`;
+  a.download = _bgMonth === BG_ALL_MONTHS ? `BalanceGeneral_${_bgYear}_Todo.csv` : `BalanceGeneral_${bg.month}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('Balance General descargado');
