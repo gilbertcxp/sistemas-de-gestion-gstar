@@ -252,6 +252,14 @@
           <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Hasta</span>
           <select id="fMonthTo" onchange="onMonthRangeChange()"></select>
         </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar-range"></i> Fecha desde</span>
+          <input type="date" id="fDateFrom" onchange="onDateRangeChange()">
+        </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar-range"></i> Fecha hasta</span>
+          <input type="date" id="fDateTo" onchange="onDateRangeChange()">
+        </div>
         <div class="fsep"></div>
         <div class="fg">
           <span class="fg-lbl"><i class="bi bi-search"></i> Buscar</span>
@@ -310,6 +318,8 @@ let _year          = null;
 let _searchQ       = '';
 let _monthFrom     = '';   // '' = desde el primer mes disponible
 let _monthTo       = '';   // '' = hasta el último mes disponible
+let _dateFrom      = '';   // YYYY-MM-DD
+let _dateTo        = '';   // YYYY-MM-DD
 let _expandedGroups = new Set(); // ids de CtaPadre expandidos (colapsados por defecto)
 
 const STORE_KEY = 'gstar_er_v2';
@@ -455,6 +465,22 @@ function sumAccounts(accounts, monthCols){
   return totals;
 }
 
+function _monthStart(key){
+  const [y,m] = String(key||'').split('-').map(Number);
+  if(!y || !m) return null;
+  return new Date(y, m - 1, 1);
+}
+function _monthEnd(key){
+  const [y,m] = String(key||'').split('-').map(Number);
+  if(!y || !m) return null;
+  return new Date(y, m, 0);
+}
+function _parseISODateLocal(iso){
+  const m = String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3]);
+}
+
 function getSelectedMonths(data){
   if(!data || !Array.isArray(data.months)) return [];
   const months = data.months;
@@ -473,7 +499,30 @@ function getSelectedMonths(data){
     _monthFrom = keys[fromIdx] || '';
     _monthTo = keys[toIdx] || '';
   }
-  return months.slice(fromIdx, toIdx + 1);
+  let selected = months.slice(fromIdx, toIdx + 1);
+
+  let dateFrom = _parseISODateLocal(_dateFrom);
+  let dateTo = _parseISODateLocal(_dateTo);
+  if(dateFrom && dateTo && dateFrom > dateTo){
+    const tmp = dateFrom;
+    dateFrom = dateTo;
+    dateTo = tmp;
+    const tmpRaw = _dateFrom;
+    _dateFrom = _dateTo;
+    _dateTo = tmpRaw;
+  }
+  if(dateFrom || dateTo){
+    selected = selected.filter(m => {
+      const mStart = _monthStart(m.key);
+      const mEnd = _monthEnd(m.key);
+      if(!mStart || !mEnd) return false;
+      if(dateFrom && mEnd < dateFrom) return false;
+      if(dateTo && mStart > dateTo) return false;
+      return true;
+    });
+  }
+
+  return selected;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -630,8 +679,11 @@ function processFile(file){
       _year = parsed.year;
       _monthFrom = '';
       _monthTo = '';
+      _dateFrom = '';
+      _dateTo = '';
       populateYearSelector();
       populateMonthRangeSelectors();
+      populateDateRangeInputs();
       updateUploadZone(file.name);
       render();
       nav('er');
@@ -700,8 +752,11 @@ function onYearChange(){
   _year = document.getElementById('fYear').value;
   _monthFrom = '';
   _monthTo = '';
+  _dateFrom = '';
+  _dateTo = '';
   updateUploadZone();
   populateMonthRangeSelectors();
+  populateDateRangeInputs();
   render();
 }
 function populateMonthRangeSelectors(){
@@ -734,6 +789,19 @@ function onMonthRangeChange(){
   _monthTo = document.getElementById('fMonthTo').value;
   render();
   populateMonthRangeSelectors();
+  populateDateRangeInputs();
+}
+function populateDateRangeInputs(){
+  const fromEl = document.getElementById('fDateFrom');
+  const toEl = document.getElementById('fDateTo');
+  if(fromEl) fromEl.value = _dateFrom || '';
+  if(toEl) toEl.value = _dateTo || '';
+}
+function onDateRangeChange(){
+  _dateFrom = document.getElementById('fDateFrom').value;
+  _dateTo = document.getElementById('fDateTo').value;
+  render();
+  populateDateRangeInputs();
 }
 function onSearch(){
   _searchQ = document.getElementById('fSearch').value.trim();
@@ -843,6 +911,7 @@ function toggleReportesSidebar(){
     _year = years[0];
     populateYearSelector();
     populateMonthRangeSelectors();
+    populateDateRangeInputs();
     updateUploadZone();
     render();
     nav('er');
