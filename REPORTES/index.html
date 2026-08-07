@@ -245,8 +245,12 @@
           <select id="fYear" onchange="onYearChange()"></select>
         </div>
         <div class="fg">
-          <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Mes</span>
-          <select id="fMonth" onchange="onMonthChange()"></select>
+          <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Desde</span>
+          <select id="fMonthFrom" onchange="onMonthRangeChange()"></select>
+        </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Hasta</span>
+          <select id="fMonthTo" onchange="onMonthRangeChange()"></select>
         </div>
         <div class="fsep"></div>
         <div class="fg">
@@ -304,7 +308,8 @@ const MONTH_FULL = {
 let _allData       = {};   // keyed by year → { months, structure, meta }
 let _year          = null;
 let _searchQ       = '';
-let _monthFilter   = '';   // '' = todos los meses, o 'YYYY-MM' para un mes específico
+let _monthFrom     = '';   // '' = desde el primer mes disponible
+let _monthTo       = '';   // '' = hasta el último mes disponible
 let _expandedGroups = new Set(); // ids de CtaPadre expandidos (colapsados por defecto)
 
 const STORE_KEY = 'gstar_er_v2';
@@ -450,6 +455,27 @@ function sumAccounts(accounts, monthCols){
   return totals;
 }
 
+function getSelectedMonths(data){
+  if(!data || !Array.isArray(data.months)) return [];
+  const months = data.months;
+  const keys = months.map(m => m.key);
+  if(_monthFrom && !keys.includes(_monthFrom)) _monthFrom = '';
+  if(_monthTo && !keys.includes(_monthTo)) _monthTo = '';
+
+  let fromIdx = _monthFrom ? keys.indexOf(_monthFrom) : 0;
+  let toIdx = _monthTo ? keys.indexOf(_monthTo) : months.length - 1;
+  if(fromIdx < 0) fromIdx = 0;
+  if(toIdx < 0) toIdx = months.length - 1;
+  if(fromIdx > toIdx){
+    const tmp = fromIdx;
+    fromIdx = toIdx;
+    toIdx = tmp;
+    _monthFrom = keys[fromIdx] || '';
+    _monthTo = keys[toIdx] || '';
+  }
+  return months.slice(fromIdx, toIdx + 1);
+}
+
 /* ══════════════════════════════════════════════════════
    RENDER
 ══════════════════════════════════════════════════════ */
@@ -457,9 +483,8 @@ function render(){
   const data = _allData[_year];
   if(!data){ showEmpty(); return; }
 
-  const allMonths = data.months;
   const structure = data.structure;
-  const months = _monthFilter ? allMonths.filter(m => m.key === _monthFilter) : allMonths;
+  const months = getSelectedMonths(data);
   const q = _searchQ.toLowerCase();
 
   // Update period label
@@ -603,9 +628,10 @@ function processFile(file){
       };
       saveStore();
       _year = parsed.year;
-      _monthFilter = '';
+      _monthFrom = '';
+      _monthTo = '';
       populateYearSelector();
-      populateMonthSelector();
+      populateMonthRangeSelectors();
       updateUploadZone(file.name);
       render();
       nav('er');
@@ -672,28 +698,42 @@ function populateYearSelector(){
 }
 function onYearChange(){
   _year = document.getElementById('fYear').value;
-  _monthFilter = '';
+  _monthFrom = '';
+  _monthTo = '';
   updateUploadZone();
-  populateMonthSelector();
+  populateMonthRangeSelectors();
   render();
 }
-function populateMonthSelector(){
-  const sel = document.getElementById('fMonth');
+function populateMonthRangeSelectors(){
+  const fromSel = document.getElementById('fMonthFrom');
+  const toSel = document.getElementById('fMonthTo');
   const data = _allData[_year];
-  sel.innerHTML = '<option value="">Todos</option>';
+  fromSel.innerHTML = '<option value="">Desde inicio</option>';
+  toSel.innerHTML = '<option value="">Hasta final</option>';
   if(!data) return;
-  if(_monthFilter && !data.months.some(m => m.key === _monthFilter)) _monthFilter = '';
+  const keys = data.months.map(m => m.key);
+  if(_monthFrom && !keys.includes(_monthFrom)) _monthFrom = '';
+  if(_monthTo && !keys.includes(_monthTo)) _monthTo = '';
   data.months.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m.key;
-    opt.textContent = MONTH_FULL[m.key.split('-')[1]];
-    if(m.key === _monthFilter) opt.selected = true;
-    sel.appendChild(opt);
+    const label = MONTH_FULL[m.key.split('-')[1]];
+    const fromOpt = document.createElement('option');
+    fromOpt.value = m.key;
+    fromOpt.textContent = label;
+    if(m.key === _monthFrom) fromOpt.selected = true;
+    fromSel.appendChild(fromOpt);
+
+    const toOpt = document.createElement('option');
+    toOpt.value = m.key;
+    toOpt.textContent = label;
+    if(m.key === _monthTo) toOpt.selected = true;
+    toSel.appendChild(toOpt);
   });
 }
-function onMonthChange(){
-  _monthFilter = document.getElementById('fMonth').value;
+function onMonthRangeChange(){
+  _monthFrom = document.getElementById('fMonthFrom').value;
+  _monthTo = document.getElementById('fMonthTo').value;
   render();
+  populateMonthRangeSelectors();
 }
 function onSearch(){
   _searchQ = document.getElementById('fSearch').value.trim();
@@ -714,7 +754,7 @@ function exportCSV(){
   const data = _allData[_year];
   if(!data){ showToast('No hay datos para exportar'); return; }
   const { structure } = data;
-  const months = _monthFilter ? data.months.filter(m => m.key === _monthFilter) : data.months;
+  const months = getSelectedMonths(data);
   const csvRows = [
     ['Estado de Resultados — Gstar Services S.A'],
     ['RNC 131751016'],
@@ -802,7 +842,7 @@ function toggleReportesSidebar(){
   if(years.length > 0){
     _year = years[0];
     populateYearSelector();
-    populateMonthSelector();
+    populateMonthRangeSelectors();
     updateUploadZone();
     render();
     nav('er');
