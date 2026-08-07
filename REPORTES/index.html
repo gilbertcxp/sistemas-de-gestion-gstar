@@ -98,6 +98,14 @@
     .rhead-sub{font-size:12px;color:var(--muted);margin-top:2px}
     .rhead-period{font-size:12.5px;font-weight:700;color:var(--blue);margin-top:5px}
     .rtbar{background:var(--blue-dk);color:#fff;text-align:center;font-weight:700;font-size:13.5px;letter-spacing:.5px;padding:9px;flex-shrink:0}
+    .bg-kpis{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:10px;padding:12px 18px;background:#f8fafc;border-bottom:1px solid var(--line)}
+    .bg-kpi{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+    .bg-kpi .lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.4px}
+    .bg-kpi .val{font-size:15px;font-weight:800;color:#0f172a;margin-top:4px;font-variant-numeric:tabular-nums}
+    .bg-kpi.ok{border-color:#bbf7d0;background:#f0fdf4}.bg-kpi.bad{border-color:#fecaca;background:#fef2f2}.bg-kpi.bad .val{color:var(--red)}
+    .bg-table td.note{color:var(--muted);font-size:11px}
+    .bg-table .r-control td{background:#e8eef8;color:#1f3864;font-weight:800}
+    .bg-table .r-control td.desc-cell{background:#e8eef8;color:#1f3864}
 
     /* Table wrap */
     .table-wrap{overflow:auto;flex:1}
@@ -175,6 +183,8 @@
     }
 
     @media(max-width:768px){.sidebar{display:none}}
+    body.embedded-er #nav-bg{display:none!important}
+    body.embedded-bg #nav-er{display:none!important}
   </style>
 </head>
 <body>
@@ -191,6 +201,9 @@
     </button>
     <button class="sb-item" id="nav-er" onclick="nav('er')">
       <i class="bi bi-file-earmark-bar-graph"></i> Estado de Resultados
+    </button>
+    <button class="sb-item" id="nav-bg" onclick="nav('bg')">
+      <i class="bi bi-journal-text"></i> Balance General
     </button>
   </nav>
   <div class="sb-footer">© 2026 Gstar Services · Reportes</div>
@@ -215,7 +228,10 @@
       </button>
       <div class="sep" id="sepExport" style="display:none"></div>
       <button class="btn btn-ghost" id="btnExcelExport" style="display:none" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      <button class="btn btn-ghost" id="btnPdfExport" style="display:none" onclick="exportPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
       <button class="btn btn-ghost" id="btnPrint" style="display:none" onclick="exportPrint()"><i class="bi bi-printer"></i> Imprimir</button>
+      <button class="btn btn-ghost" id="btnFullscreen" style="display:none" onclick="toggleFullscreenReport()"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
+      <button class="btn btn-ghost" id="btnRefresh" style="display:none" onclick="refreshReport()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
     </div>
   </header>
 
@@ -224,15 +240,60 @@
     <!-- PAGE: CARGAR ARCHIVOS -->
     <div class="pg" id="page-upload">
       <div class="up-hero">
-        <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Estado de Resultados</div>
-        <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para visualizar el reporte completo.</div>
+        <div class="up-hero-title"><i class="bi bi-bar-chart-line-fill"></i> Reportes Financieros</div>
+        <div class="up-hero-sub">Sube el archivo Excel exportado del sistema contable para Estado de Resultados o Balance General.</div>
       </div>
       <div class="up-zone" id="uploadCard"
            ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelect(event)">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" multiple onchange="onFileSelect(event)">
         <i class="bi bi-file-earmark-excel up-zone-icon" id="upIcon"></i>
         <div class="up-zone-name" id="upName">Arrastra tu archivo aquí</div>
-        <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · frmREstadoIngresos.xlsx</div>
+        <div class="up-zone-hint" id="upHint">o haz clic para seleccionar · Estado de Resultados / Balance General</div>
+      </div>
+    </div>
+
+    <!-- PAGE: BALANCE GENERAL -->
+    <div class="pg" id="page-bg" style="display:none">
+      <div class="fbar" id="bgFbar" style="display:none">
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar3"></i> Año</span>
+          <select id="bgYear" onchange="onBGYearChange()"></select>
+        </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-calendar-month"></i> Mes</span>
+          <select id="bgMonth" onchange="onBGMonthChange()"></select>
+        </div>
+        <div class="fg">
+          <span class="fg-lbl"><i class="bi bi-building"></i> Empresa / Consorcio</span>
+          <select id="bgCompany" onchange="onBGCompanyChange()"></select>
+        </div>
+        <button class="btn btn-blue" onclick="renderBalanceGeneral()"><i class="bi bi-play-fill"></i> Generar</button>
+        <div class="data-info" id="bgDataInfo"></div>
+      </div>
+
+      <div class="rcard" id="bgCard" style="display:none">
+        <div class="rhead">
+          <img src="../CXP/assets/img/logo.png" class="rhead-logo" alt="Gstar" onerror="this.style.display='none'">
+          <div class="rhead-right">
+            <div class="rhead-name">Gstar Services S.A</div>
+            <div class="rhead-sub">RNC 131751016</div>
+            <div class="rhead-period" id="bgPeriod">—</div>
+          </div>
+        </div>
+        <div class="rtbar">BALANCE GENERAL</div>
+        <div class="bg-kpis" id="bgKpis"></div>
+        <div class="table-wrap">
+          <table class="er-table bg-table">
+            <thead id="bgHead"></thead>
+            <tbody id="bgBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="empty-state" id="bgEmptyState">
+        <div class="empty-ico"><i class="bi bi-journal-text"></i></div>
+        <div class="empty-title">Sin Balance General cargado</div>
+        <div class="empty-sub">Ve a <strong>Cargar Archivos</strong> para subir el Excel oficial de <strong>Balance General</strong>.</div>
       </div>
     </div>
 
@@ -321,13 +382,25 @@ let _monthTo       = '';   // '' = hasta el último mes disponible
 let _dateFrom      = '';   // YYYY-MM-DD
 let _dateTo        = '';   // YYYY-MM-DD
 let _expandedGroups = new Set(); // ids de CtaPadre expandidos (colapsados por defecto)
+let _bgData        = {};   // keyed by year -> month -> company -> Balance General
+let _bgYear        = null;
+let _bgMonth       = '';
+let _bgCompany     = '';
+let _currentPage   = 'upload';
+let _lastUploadType = 'er';
 
 const STORE_KEY = 'gstar_er_v2';
 const DB_KEY    = 'estado_resultados_data';
+const STORE_BG_KEY = 'gstar_bg_v1';
+const DB_BG_KEY    = 'balance_general_data';
 
 function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(_allData)); }catch(e){} }
 function loadStore(){
   try{ const r = localStorage.getItem(STORE_KEY); if(r) _allData = JSON.parse(r); }catch(e){}
+}
+function saveBGStore(){ try{ localStorage.setItem(STORE_BG_KEY, JSON.stringify(_bgData)); }catch(e){} }
+function loadBGStore(){
+  try{ const r = localStorage.getItem(STORE_BG_KEY); if(r) _bgData = JSON.parse(r); }catch(e){}
 }
 
 /* ══════════════════════════════════════════════════════
@@ -352,6 +425,17 @@ async function _saveERToDB(){
   });
   if(error) throw new Error(error.message);
 }
+async function _saveBGToDB(){
+  if(!window.db) throw new Error('Sin conexión a base de datos.');
+  const session = window.Auth && Auth.getSession();
+  const { error } = await window.db.from('app_state').upsert({
+    key: DB_BG_KEY,
+    value: _bgData,
+    updated_at: new Date().toISOString(),
+    updated_by: session && session.user ? session.user.id : null
+  });
+  if(error) throw new Error(error.message);
+}
 
 async function _loadERFromDB(){
   try{
@@ -362,6 +446,16 @@ async function _loadERFromDB(){
     _allData = data.value;
     return Object.keys(_allData).length > 0;
   }catch(e){ console.error('_loadERFromDB', e); return false; }
+}
+async function _loadBGFromDB(){
+  try{
+    if(!window.db) return false;
+    const { data, error } = await window.db
+      .from('app_state').select('value').eq('key', DB_BG_KEY).single();
+    if(error || !data || !data.value) return false;
+    _bgData = data.value;
+    return Object.keys(_bgData).length > 0;
+  }catch(e){ console.error('_loadBGFromDB', e); return false; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -424,6 +518,123 @@ function parseExcelBuffer(buffer){
   // ingreso_neto row omitted — calculated automatically from totals
 
   return { year: yearStr, months: monthCols, structure };
+}
+
+function parseReportBuffer(buffer, fileName=''){
+  const wb = XLSX.read(buffer, { type:'array', cellFormula:true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+  if(!rows || rows.length < 2) throw new Error('Formato de archivo no reconocido');
+
+  const header = (rows[0] || []).map(v => String(v||'').trim().toLowerCase());
+  const hasBGHeader = header.includes('cuenta') && header.includes('descripción') && header.includes('detalle');
+  const hasMonthCols = (rows[0] || []).some(v => /^\d{4}-\d{2}$/.test(String(v||'').trim()));
+  if(hasBGHeader || /balancegeneral/i.test(fileName)) return { type:'bg', data:parseBalanceGeneralRows(rows, fileName) };
+  if(hasMonthCols) return { type:'er', data:parseExcelBuffer(buffer) };
+  throw new Error('No pude identificar si el archivo es Estado de Resultados o Balance General.');
+}
+
+function _parsePeriodFromFileName(fileName){
+  const m = String(fileName||'').match(/(\d{2})-(\d{4})/);
+  if(m) return { month:m[1], year:m[2], key:`${m[2]}-${m[1]}` };
+  const now = new Date();
+  const month = String(now.getMonth()+1).padStart(2,'0');
+  const year = String(now.getFullYear());
+  return { month, year, key:`${year}-${month}` };
+}
+
+function _parseBGLabel(raw, prefix){
+  const clean = String(raw||'').replace(prefix,'').trim();
+  const parts = clean.split('-');
+  if(parts.length < 2) return { code:'', label:clean };
+  return { code:parts.shift().trim(), label:parts.join('-').trim() };
+}
+
+function _bgSectionKind(tipoCode){
+  if(String(tipoCode) === '1') return 'activo';
+  if(String(tipoCode) === '2') return 'pasivo';
+  return 'patrimonio';
+}
+
+function parseBalanceGeneralRows(rows, fileName=''){
+  const period = _parsePeriodFromFileName(fileName);
+  const report = {
+    year: period.year,
+    month: period.key,
+    company: 'Gstar Services S.A',
+    rows: [],
+    totals: { activo:0, pasivo:0, patrimonio:0, diferencia:0 },
+    meta: { fileName, importedAt:new Date().toLocaleString('es-DO') }
+  };
+  let currentTipo = null;
+  let currentControl = null;
+  let controlItems = [];
+  let sectionItems = [];
+
+  const pushControlSubtotal = () => {
+    if(!currentControl) return;
+    const total = controlItems.reduce((s,r)=>s+(Number(r.balance)||0),0);
+    report.rows.push({ kind:'control-total', section:currentTipo?.section||'', descripcion:`TOTAL ${currentControl.label}`, balance:total });
+    controlItems = [];
+  };
+  const pushTipoTotal = () => {
+    if(!currentTipo) return;
+    const total = sectionItems.reduce((s,r)=>s+(Number(r.balance)||0),0);
+    report.rows.push({ kind:'tipo-total', section:currentTipo.section, descripcion:`TOTAL ${currentTipo.label}`, balance:total });
+    report.totals[currentTipo.section] = total;
+    sectionItems = [];
+  };
+
+  for(let i=1; i<rows.length; i++){
+    const row = rows[i] || [];
+    const cuenta = row[0];
+    const desc = row[1];
+    const detalle = row[2];
+    const nivel = row[3];
+    const ctaText = String(cuenta||'').trim();
+
+    if(!ctaText && desc == null && detalle == null) continue;
+    if(/^Tipo:/i.test(ctaText)){
+      pushControlSubtotal();
+      pushTipoTotal();
+      const t = _parseBGLabel(ctaText, /^Tipo:\s*/i);
+      const section = _bgSectionKind(t.code);
+      const label = section === 'patrimonio' ? 'PATRIMONIO' : (t.label || ctaText);
+      currentTipo = { code:t.code, label, section };
+      currentControl = null;
+      report.rows.push({ kind:'tipo', section:currentTipo.section, descripcion:currentTipo.label });
+      continue;
+    }
+    if(/^CtaControl:/i.test(ctaText)){
+      pushControlSubtotal();
+      const c = _parseBGLabel(ctaText, /^CtaControl:\s*/i);
+      currentControl = { code:c.code, label:c.label || ctaText };
+      report.rows.push({ kind:'control', section:currentTipo?.section||'', cuenta:currentControl.code, descripcion:currentControl.label });
+      continue;
+    }
+    if(/^=SUBTOTAL/i.test(ctaText)) continue;
+    if(!/^\d+/.test(ctaText)) continue;
+
+    const balance = Number(detalle)||0;
+    if(Math.abs(balance) < 0.005) continue;
+    const item = {
+      kind:'account',
+      section:currentTipo?.section||'',
+      group:currentControl?.label||'',
+      cuenta:ctaText,
+      descripcion:String(desc||'').trim(),
+      balance,
+      notas:'',
+      nivel:Number(nivel)||3
+    };
+    report.rows.push(item);
+    controlItems.push(item);
+    sectionItems.push(item);
+  }
+  pushControlSubtotal();
+  pushTipoTotal();
+  report.totals.diferencia = Math.round((report.totals.activo - (report.totals.pasivo + report.totals.patrimonio))*100)/100;
+  return report;
 }
 
 function extractValores(row, monthCols, acumIdx){
@@ -651,56 +862,88 @@ function showEmpty(){
    FILE UPLOAD
 ══════════════════════════════════════════════════════ */
 function onFileSelect(e){
-  const file = e.target.files[0];
-  if(file) processFile(file);
+  const files = [...(e.target.files || [])];
+  if(files.length) processFiles(files);
   e.target.value = '';
+}
+function triggerReportUpload(){
+  document.getElementById('fileInput')?.click();
 }
 function onDragOver(e){ e.preventDefault(); document.getElementById('uploadCard').classList.add('drag'); }
 function onDragLeave(){ document.getElementById('uploadCard').classList.remove('drag'); }
 function onDrop(e){
   e.preventDefault();
   document.getElementById('uploadCard').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if(file) processFile(file);
+  const files = [...(e.dataTransfer.files || [])];
+  if(files.length) processFiles(files);
+}
+
+async function processFiles(files){
+  for(const file of files){ await processFile(file); }
 }
 
 function processFile(file){
-  if(!file.name.match(/\.xlsx?$/i)){ showToast('Solo se aceptan archivos .xlsx'); return; }
+  return new Promise(resolve => {
+  if(!file.name.match(/\.xlsx?$/i)){ showToast('Solo se aceptan archivos .xlsx'); resolve(); return; }
   const reader = new FileReader();
   reader.onload = function(e){
     try{
-      const parsed = parseExcelBuffer(new Uint8Array(e.target.result));
-      _allData[parsed.year] = {
-        months: parsed.months,
-        structure: parsed.structure,
-        meta: { fileName: file.name, importedAt: new Date().toLocaleString('es-DO') }
-      };
-      saveStore();
-      _year = parsed.year;
-      _monthFrom = '';
-      _monthTo = '';
-      _dateFrom = '';
-      _dateTo = '';
-      populateYearSelector();
-      populateMonthRangeSelectors();
-      populateDateRangeInputs();
-      updateUploadZone(file.name);
-      render();
-      nav('er');
-      showToast(`Archivo cargado: ${parsed.months.length} meses del ${parsed.year}`);
+      const parsed = parseReportBuffer(new Uint8Array(e.target.result), file.name);
+      if(parsed.type === 'bg'){
+        const bg = parsed.data;
+        _bgData[bg.year] = _bgData[bg.year] || {};
+        _bgData[bg.year][bg.month] = _bgData[bg.year][bg.month] || {};
+        _bgData[bg.year][bg.month][bg.company] = bg;
+        saveBGStore();
+        _lastUploadType = 'bg';
+        _bgYear = bg.year;
+        _bgMonth = bg.month;
+        _bgCompany = bg.company;
+        populateBGSelectors();
+        updateUploadZone(file.name);
+        renderBalanceGeneral();
+        nav('bg');
+        showToast(`Balance General cargado: ${MONTH_FULL[bg.month.split('-')[1]]} ${bg.year}`);
+      }else{
+        const er = parsed.data;
+        _allData[er.year] = {
+          months: er.months,
+          structure: er.structure,
+          meta: { fileName: file.name, importedAt: new Date().toLocaleString('es-DO') }
+        };
+        saveStore();
+        _lastUploadType = 'er';
+        _year = er.year;
+        _monthFrom = '';
+        _monthTo = '';
+        _dateFrom = '';
+        _dateTo = '';
+        populateYearSelector();
+        populateMonthRangeSelectors();
+        populateDateRangeInputs();
+        updateUploadZone(file.name);
+        render();
+        nav('er');
+        showToast(`Archivo cargado: ${er.months.length} meses del ${er.year}`);
+      }
     }catch(err){
       showToast('Error al leer el archivo: ' + err.message);
     }
+    resolve();
   };
+  reader.onerror = () => { showToast('No se pudo leer el archivo'); resolve(); };
   reader.readAsArrayBuffer(file);
+  });
 }
 
 function updateUploadZone(fileName){
   const zone = document.getElementById('uploadCard');
   zone.classList.add('done');
   document.getElementById('upIcon').className = 'bi bi-check-circle-fill up-zone-icon';
-  document.getElementById('upName').textContent = fileName || (_allData[_year]?.meta?.fileName || '');
-  document.getElementById('upHint').textContent = 'Cargado: ' + (_allData[_year]?.meta?.importedAt || '') + ' · Clic para reemplazar';
+  const bg = _currentBG();
+  const meta = _lastUploadType === 'bg' && bg ? bg.meta : (_allData[_year]?.meta || {});
+  document.getElementById('upName').textContent = fileName || meta.fileName || '';
+  document.getElementById('upHint').textContent = 'Cargado: ' + (meta.importedAt || '') + ' · Clic para reemplazar';
   const btn = document.getElementById('btnPublicar');
   btn.style.display = _isAdminUser() ? '' : 'none';
   btn.disabled = false;
@@ -709,15 +952,21 @@ function updateUploadZone(fileName){
 }
 
 async function publicarData(){
-  const data = _allData[_year];
+  const publishingBG = _lastUploadType === 'bg' || _currentPage === 'bg';
+  const data = publishingBG ? (_bgData[_bgYear]?.[_bgMonth]?.[_bgCompany]) : _allData[_year];
   if(!data){ showToast('No hay datos para publicar'); return; }
   const btn = document.getElementById('btnPublicar');
   if(btn){ btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publicando...'; }
   try{
     data.meta.published = true;
     data.meta.publishedAt = new Date().toLocaleString('es-DO');
-    saveStore();
-    await _saveERToDB();
+    if(publishingBG){
+      saveBGStore();
+      await _saveBGToDB();
+    }else{
+      saveStore();
+      await _saveERToDB();
+    }
     if(btn){
       btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ¡Publicado!';
       btn.style.background = 'var(--green)';
@@ -728,7 +977,7 @@ async function publicarData(){
         btn.style.background = '';
       }, 3000);
     }
-    showToast('Estado de Resultados publicado — visible para todos los usuarios');
+    showToast(`${publishingBG ? 'Balance General' : 'Estado de Resultados'} publicado — visible para todos los usuarios`);
   }catch(e){
     showToast('Error al publicar: ' + e.message);
     if(btn){ btn.disabled = false; btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> Publicar'; btn.style.background = ''; }
@@ -814,11 +1063,106 @@ function toggleGroup(groupId){
 }
 
 /* ══════════════════════════════════════════════════════
+   BALANCE GENERAL
+══════════════════════════════════════════════════════ */
+function _bgYears(){ return Object.keys(_bgData).sort().reverse(); }
+function _bgMonths(year){ return Object.keys(_bgData[year]||{}).sort(); }
+function _bgCompanies(year, month){ return Object.keys(_bgData[year]?.[month]||{}).sort(); }
+function _currentBG(){ return _bgData[_bgYear]?.[_bgMonth]?.[_bgCompany] || null; }
+
+function populateBGSelectors(){
+  const ySel = document.getElementById('bgYear');
+  const mSel = document.getElementById('bgMonth');
+  const cSel = document.getElementById('bgCompany');
+  const years = _bgYears();
+  if(!_bgYear || !years.includes(String(_bgYear))) _bgYear = years[0] || null;
+  ySel.innerHTML = years.map(y=>`<option value="${y}" ${String(y)===String(_bgYear)?'selected':''}>${y}</option>`).join('');
+
+  const months = _bgMonths(_bgYear);
+  if(!_bgMonth || !months.includes(_bgMonth)) _bgMonth = months[months.length-1] || '';
+  mSel.innerHTML = months.map(m=>`<option value="${m}" ${m===_bgMonth?'selected':''}>${MONTH_FULL[m.split('-')[1]]}</option>`).join('');
+
+  const companies = _bgCompanies(_bgYear, _bgMonth);
+  if(!_bgCompany || !companies.includes(_bgCompany)) _bgCompany = companies[0] || '';
+  cSel.innerHTML = companies.map(c=>`<option value="${c.replace(/"/g,'&quot;')}" ${c===_bgCompany?'selected':''}>${c}</option>`).join('');
+}
+function onBGYearChange(){ _bgYear = document.getElementById('bgYear').value; _bgMonth = ''; _bgCompany = ''; populateBGSelectors(); }
+function onBGMonthChange(){ _bgMonth = document.getElementById('bgMonth').value; _bgCompany = ''; populateBGSelectors(); }
+function onBGCompanyChange(){ _bgCompany = document.getElementById('bgCompany').value; }
+
+function showBGEmpty(){
+  document.getElementById('bgEmptyState').style.display = '';
+  document.getElementById('bgFbar').style.display = 'none';
+  document.getElementById('bgCard').style.display = 'none';
+}
+
+function renderBalanceGeneral(){
+  populateBGSelectors();
+  const bg = _currentBG();
+  if(!bg){ showBGEmpty(); return; }
+  const monthName = MONTH_FULL[bg.month.split('-')[1]] || bg.month;
+  document.getElementById('bgPeriod').textContent = `${monthName} ${bg.year}`;
+  document.getElementById('bgDataInfo').textContent = `${bg.company} · ${monthName} ${bg.year}`;
+
+  const diff = Number(bg.totals.diferencia)||0;
+  const ok = Math.abs(diff) < 0.01;
+  document.getElementById('bgKpis').innerHTML = `
+    <div class="bg-kpi"><div class="lbl">Total Activos</div><div class="val">${fmtPlain(bg.totals.activo)}</div></div>
+    <div class="bg-kpi"><div class="lbl">Total Pasivos</div><div class="val">${fmtPlain(bg.totals.pasivo)}</div></div>
+    <div class="bg-kpi"><div class="lbl">Total Patrimonio</div><div class="val">${fmtPlain(bg.totals.patrimonio)}</div></div>
+    <div class="bg-kpi ${ok?'ok':'bad'}"><div class="lbl">${ok?'Balance cuadrado':'Descuadre contable'}</div><div class="val">${fmtPlain(diff)}</div></div>`;
+
+  document.getElementById('bgHead').innerHTML = `<tr>
+    <th class="acc-col">Cuenta</th>
+    <th style="text-align:left">Descripción</th>
+    <th>Balance del Mes</th>
+    <th>Notas</th>
+  </tr>`;
+
+  document.getElementById('bgBody').innerHTML = bg.rows.map(r => {
+    if(r.kind === 'tipo') return `<tr class="r-tipo"><td class="desc-cell" colspan="4">${r.descripcion}</td></tr>`;
+    if(r.kind === 'control') return `<tr class="r-control"><td class="desc-cell">${r.cuenta||''}</td><td colspan="3">${r.descripcion}</td></tr>`;
+    if(r.kind === 'control-total') return `<tr class="r-ctapadre"><td class="desc-cell"></td><td>${r.descripcion}</td><td class="num">${fmt(r.balance)}</td><td></td></tr>`;
+    if(r.kind === 'tipo-total') return `<tr class="r-tipo-total"><td class="desc-cell"></td><td>${r.descripcion}</td><td class="num">${fmtPlain(r.balance)}</td><td></td></tr>`;
+    return `<tr class="r-item">
+      <td class="desc-cell">${r.cuenta||''}</td>
+      <td style="padding-left:${r.nivel>=3?'24':'12'}px">${r.descripcion||''}</td>
+      <td class="num">${fmt(r.balance)}</td>
+      <td class="note">${r.notas||''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('bgEmptyState').style.display = 'none';
+  document.getElementById('bgFbar').style.display = '';
+  document.getElementById('bgCard').style.display = '';
+  if(!ok) showToast('Existen descuadres contables: Total Activos no coincide con Pasivos + Patrimonio.', 5000);
+}
+
+/* ══════════════════════════════════════════════════════
    EXPORTAR
 ══════════════════════════════════════════════════════ */
 function exportPrint(){ window.print(); }
+function exportPDF(){
+  showToast('Usa "Guardar como PDF" en el diálogo de impresión.');
+  window.print();
+}
+function toggleFullscreenReport(){
+  const el = _currentPage === 'bg' ? document.getElementById('bgCard') : document.getElementById('rcard');
+  if(!document.fullscreenElement){ el?.requestFullscreen?.(); }
+  else { document.exitFullscreen?.(); }
+}
+async function refreshReport(){
+  if(_currentPage === 'bg'){
+    if(await _loadBGFromDB()){ saveBGStore(); populateBGSelectors(); renderBalanceGeneral(); showToast('Balance General actualizado'); }
+    else showToast('No hay Balance General publicado');
+  }else if(_currentPage === 'er'){
+    if(await _loadERFromDB()){ saveStore(); populateYearSelector(); populateMonthRangeSelectors(); render(); showToast('Estado de Resultados actualizado'); }
+    else showToast('No hay Estado de Resultados publicado');
+  }
+}
 
 function exportCSV(){
+  if(_currentPage === 'bg') return exportBGCSV();
   const data = _allData[_year];
   if(!data){ showToast('No hay datos para exportar'); return; }
   const { structure } = data;
@@ -855,6 +1199,37 @@ function exportCSV(){
   showToast('Archivo Excel descargado');
 }
 
+function exportBGCSV(){
+  const bg = _currentBG();
+  if(!bg){ showToast('No hay Balance General para exportar'); return; }
+  const csvRows = [
+    ['Balance General — Gstar Services S.A'],
+    ['RNC 131751016'],
+    ['Período: ' + document.getElementById('bgPeriod').textContent],
+    ['Empresa / Consorcio: ' + bg.company],
+    [''],
+    ['Cuenta','Descripción','Balance del Mes','Notas']
+  ];
+  bg.rows.forEach(r => {
+    if(r.kind === 'tipo' || r.kind === 'control') csvRows.push([r.cuenta||'', r.descripcion||'', '', '']);
+    else csvRows.push([r.cuenta||'', r.descripcion||'', r.balance||0, r.notas||'']);
+  });
+  csvRows.push([]);
+  csvRows.push(['','TOTAL ACTIVOS',bg.totals.activo,'']);
+  csvRows.push(['','TOTAL PASIVOS',bg.totals.pasivo,'']);
+  csvRows.push(['','TOTAL PATRIMONIO',bg.totals.patrimonio,'']);
+  csvRows.push(['','DIFERENCIA',bg.totals.diferencia,'']);
+  const bom = '﻿';
+  const csv = csvRows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `BalanceGeneral_${bg.month}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Balance General descargado');
+}
+
 /* ══════════════════════════════════════════════════════
    TOAST
 ══════════════════════════════════════════════════════ */
@@ -870,19 +1245,27 @@ function showToast(msg, ms=3000){
 ══════════════════════════════════════════════════════ */
 const PAGE_META = {
   upload: { title:'Cargar Archivos',       crumb:'Reportes › Cargar Archivos' },
-  er:     { title:'Estado de Resultados',  crumb:'Reportes › Estado de Resultados' }
+  er:     { title:'Estado de Resultados',  crumb:'Reportes › Estado de Resultados' },
+  bg:     { title:'Balance General',       crumb:'Reportes › Balance General' }
 };
 function nav(page){
+  _currentPage = page;
+  if(location.hash !== '#'+page) history.replaceState(null, '', '#'+page);
   Object.keys(PAGE_META).forEach(p => {
     document.getElementById('page-'+p).style.display  = p === page ? '' : 'none';
     document.getElementById('nav-'+p).classList.toggle('active', p === page);
   });
   document.getElementById('tbTitle').textContent = PAGE_META[page].title;
   document.getElementById('tbCrumb').textContent = PAGE_META[page].crumb;
-  const onEr = page === 'er';
-  document.getElementById('sepExport').style.display    = onEr ? '' : 'none';
-  document.getElementById('btnExcelExport').style.display = onEr ? '' : 'none';
-  document.getElementById('btnPrint').style.display       = onEr ? '' : 'none';
+  const onReport = page === 'er' || page === 'bg';
+  document.getElementById('sepExport').style.display      = onReport ? '' : 'none';
+  document.getElementById('btnExcelExport').style.display = onReport ? '' : 'none';
+  document.getElementById('btnPdfExport').style.display   = onReport ? '' : 'none';
+  document.getElementById('btnPrint').style.display       = onReport ? '' : 'none';
+  document.getElementById('btnFullscreen').style.display  = onReport ? '' : 'none';
+  document.getElementById('btnRefresh').style.display     = onReport ? '' : 'none';
+  if(page === 'bg') renderBalanceGeneral();
+  if(page === 'er') render();
 }
 
 function toggleReportesSidebar(){
@@ -896,6 +1279,11 @@ function toggleReportesSidebar(){
    INIT
 ══════════════════════════════════════════════════════ */
 (async function init(){
+  if(location.hash === '#bg'){
+    document.body.classList.add('embedded-bg');
+  } else if(location.hash === '#er'){
+    document.body.classList.add('embedded-er');
+  }
   const isAdmin = _isAdminUser();
   if(!isAdmin){
     const navUp = document.getElementById('nav-upload');
@@ -903,11 +1291,21 @@ function toggleReportesSidebar(){
   }
 
   loadStore();                            // borrador local (por si el admin no ha publicado aún)
+  loadBGStore();
   const loadedFromDB = await _loadERFromDB();  // datos publicados — visibles para todos
   if(loadedFromDB) saveStore();
+  const loadedBGFromDB = await _loadBGFromDB();
+  if(loadedBGFromDB) saveBGStore();
 
   const years = Object.keys(_allData).sort().reverse();
-  if(years.length > 0){
+  const bgYears = _bgYears();
+  const hashPage = (location.hash || '').replace('#','');
+  if(hashPage === 'bg'){
+    _bgYear = bgYears[0] || null;
+    populateBGSelectors();
+    renderBalanceGeneral();
+    nav('bg');
+  } else if(hashPage === 'er' && years.length > 0){
     _year = years[0];
     populateYearSelector();
     populateMonthRangeSelectors();
@@ -915,9 +1313,23 @@ function toggleReportesSidebar(){
     updateUploadZone();
     render();
     nav('er');
+  } else if(years.length > 0){
+    _year = years[0];
+    populateYearSelector();
+    populateMonthRangeSelectors();
+    populateDateRangeInputs();
+    updateUploadZone();
+    render();
+    nav('er');
+  } else if(bgYears.length > 0){
+    _bgYear = bgYears[0];
+    populateBGSelectors();
+    renderBalanceGeneral();
+    nav('bg');
   } else {
     nav('upload');
     showEmpty();
+    showBGEmpty();
   }
 })();
 </script>

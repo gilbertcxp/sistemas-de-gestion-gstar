@@ -260,6 +260,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </button>
     <div class="submenu" id="sub-reportes">
       <button class="sub-btn" data-page="er"><span class="dot"></span> Estado de Resultados</button>
+      <button class="sub-btn" data-page="bg"><span class="dot"></span> Balance General</button>
     </div>
 
     <!-- Solo visible para Administrador (ver renderSession) -->
@@ -503,8 +504,17 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
   <section class="page" id="page-er">
     <div class="embed-wrap">
       <iframe class="embed-frame" id="frame-er"
-              data-src="REPORTES/index.html"
+              data-src="REPORTES/index.html#er"
               title="Estado de Resultados — Gstar Services"></iframe>
+    </div>
+  </section>
+
+  <!-- ======= REPORTES · BALANCE GENERAL ======= -->
+  <section class="page" id="page-bg">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-bg"
+              data-src="REPORTES/index.html#bg"
+              title="Balance General — Gstar Services"></iframe>
     </div>
   </section>
 
@@ -532,7 +542,8 @@ const APPS = {
   cajachica       : "CAJACHICA/index.html",                     // ✅ integrada
   "cxp-reporte"   : "CXP/index.html",                           // ✅ integrada
   "reportes-erog" : "EROGACIONES/reporte-erogaciones.html",     // ✅ integrada
-  "er"            : "REPORTES/index.html"                       // ✅ integrada
+  "er"            : "REPORTES/index.html#er",                   // ✅ integrada
+  "bg"            : "REPORTES/index.html#bg"                    // ✅ integrada
 };
 
 /* ===================================================================
@@ -552,6 +563,7 @@ const PAGES = {
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
   'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'},
   'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'},
+  'bg':              {title:'Balance General',            crumb:'Reportes › Balance General',                 sub:'reportes'},
   'usuarios':        {title:'Usuarios',                    crumb:'Administración › Usuarios',                  sub:false}
 };
 
@@ -639,6 +651,11 @@ function lazyLoadFrame(page){
   // Reportes · Estado de Resultados
   if(page==='er'){
     const f=document.getElementById('frame-er');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Reportes · Balance General
+  if(page==='bg'){
+    const f=document.getElementById('frame-bg');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Administración · Usuarios
