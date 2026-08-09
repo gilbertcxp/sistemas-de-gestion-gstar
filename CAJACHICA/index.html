@@ -122,17 +122,11 @@
   border-radius:3px;
 }
 .repo-scope .brand-left{display:flex;align-items:center;gap:16px;}
-.repo-scope .star{
-  width:44px;height:44px;flex:none;
-  display:flex;align-items:center;justify-content:center;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+.repo-scope .brand-logo{
+  width:300px;height:64px;flex:none;display:block;object-fit:contain;
+  mix-blend-mode:multiply;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.16));
 }
-.repo-scope .brand-name{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:27px;font-weight:700;letter-spacing:0.5px;
-  line-height:1;
-}
-.repo-scope .brand-name span{color:var(--rp-red);}
 .repo-scope .brand-sub{
   font-size:12px;letter-spacing:2.6px;text-transform:uppercase;
   color:#C7D2E8;margin-top:6px;font-weight:500;
@@ -151,6 +145,7 @@
 .repo-scope .live-clock .lc-date{text-transform:capitalize;}
 .repo-scope .live-clock .lc-time{color:#DCE4F2;font-weight:600;font-family:'Space Grotesk',sans-serif;letter-spacing:0.5px;}
 @media(max-width:640px){
+  .repo-scope .brand-logo{width:min(300px, calc(100vw - 96px));height:54px;}
   .repo-scope .rnc-tag{border-right:none;padding-right:0;}
   .repo-scope .brand-right{width:100%;justify-content:space-between;}
 }
@@ -616,11 +611,8 @@
 
           <header class="brand">
             <div class="brand-left">
-              <svg class="star" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 2 L29.5 17.5 L46 18.5 L33 29 L37.5 45 L24 35.5 L10.5 45 L15 29 L2 18.5 L18.5 17.5 Z" fill="#D62828"/>
-              </svg>
               <div>
-                <div class="brand-name">GSTAR<span>SERVICES</span></div>
+                <img class="brand-logo" src="assets/img/logo.png" alt="Gstar Services">
                 <div class="brand-sub">Reposición de Caja Chica</div>
               </div>
             </div>
