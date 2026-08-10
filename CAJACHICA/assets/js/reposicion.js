@@ -169,7 +169,6 @@ const Reposicion = (() => {
         <td><input list="dlEmpleados" value="${Utils.escapeHtml(row.beneficiario)}" placeholder="Nombre" onchange="Reposicion.updateRow(${idx},'beneficiario',this.value)"></td>
         <td><input value="${Utils.escapeHtml(row.descripcion)}" placeholder="Descripción del gasto" onchange="Reposicion.updateRow(${idx},'descripcion',this.value)"></td>
         <td class="num row-monto"><input type="number" step="0.01" value="${row.monto}" placeholder="0.00" onchange="Reposicion.updateRow(${idx},'monto',this.value)"></td>
-        <td class="row-comprobante"><input value="${Utils.escapeHtml(row.comprobante)}" placeholder="No. comprobante" onchange="Reposicion.updateRow(${idx},'comprobante',this.value)"></td>
         <td><span class="status-pill ${statusClass}">${statusText}</span></td>
         <td class="balance-cell row-balance ${running < 0 ? 'balance-neg' : 'balance-pos'}">${Utils.fmtMoney(running)}</td>
         <td class="center"><button class="del-btn" onclick="Reposicion.deleteRow(${idx})" title="Eliminar fila">✕</button></td>`;
