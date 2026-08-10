@@ -10,7 +10,18 @@
 <script src="../supabase-client.js"></script>
 <!-- Guard de autenticación -->
 <script src="../auth/auth.js"></script>
-<script>if (window.Auth) Auth.requireAuth();</script>
+<script>
+if (window.Auth) {
+  Auth.requireAuth();
+  // Defensa adicional: si el usuario está autenticado pero su acceso está
+  // restringido a otro módulo distinto de Caja Chica (usuarios.modulos_permitidos),
+  // no dejarlo entrar por URL directa — lo mandamos al shell principal, que lo
+  // aterriza en el módulo que sí tiene permitido.
+  if (Auth.isAuthenticated() && !Auth.hasPermission('cajachica')) {
+    location.replace('../index.html');
+  }
+}
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

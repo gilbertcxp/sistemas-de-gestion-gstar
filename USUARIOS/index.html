@@ -149,6 +149,20 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
           </select>
         </div>
         <div class="ffield" id="nuRolOtroWrap" style="display:none"><label>Especificar rol</label><input type="text" class="fi" id="nuRolOtro" placeholder="Ej. Contabilidad"></div>
+      </div>
+      <div class="frow" style="margin-top:12px">
+        <div class="ffield"><label>Acceso</label>
+          <select class="fi" id="nuAcceso">
+            <option value="">Completo (todos los módulos)</option>
+            <option value="cajachica">Solo Caja Chica</option>
+          </select>
+        </div>
+        <div class="ffield" id="nuCajaWrap" style="display:none"><label>Caja Chica asignada</label>
+          <select class="fi" id="nuCaja">
+            <option value="sto_dgo">Sto. Dgo</option>
+            <option value="stgo">Stgo</option>
+          </select>
+        </div>
         <div class="ffield" style="flex:0"><label>&nbsp;</label><button class="btn btn-p" onclick="vincularUsuario()"><i class="bi bi-check2"></i> Vincular</button></div>
       </div>
     </div>
@@ -202,6 +216,9 @@ function rolPillClass(rol){
 document.getElementById('nuRol').addEventListener('change', function(){
   document.getElementById('nuRolOtroWrap').style.display = this.value==='Otro' ? '' : 'none';
 });
+document.getElementById('nuAcceso').addEventListener('change', function(){
+  document.getElementById('nuCajaWrap').style.display = this.value==='cajachica' ? '' : 'none';
+});
 
 async function loadUsuarios(){
   if(!window.db){ toast('Sin conexión a la base de datos', true); return; }
@@ -215,7 +232,7 @@ async function loadUsuarios(){
       tbl.innerHTML = `<tbody><tr><td><div class="empty-s"><i class="bi bi-inbox"></i>Sin usuarios vinculados todavía. Usa el formulario de arriba.</div></td></tr></tbody>`;
       return;
     }
-    tbl.innerHTML = `<thead><tr><th>Nombre</th><th>User UID</th><th>Rol Actual</th><th>Cambiar Rol</th><th></th></tr></thead>
+    tbl.innerHTML = `<thead><tr><th>Nombre</th><th>User UID</th><th>Rol Actual</th><th>Cambiar Rol</th><th></th><th>Acceso</th><th></th></tr></thead>
       <tbody>${USUARIOS.map(u=>`
         <tr data-id="${esc(u.id)}">
           <td style="font-weight:600">${esc(u.nombre)||'—'}</td>
@@ -230,6 +247,19 @@ async function loadUsuarios(){
             </select>
           </td>
           <td><button class="btn btn-p btn-sm" onclick="guardarRol('${esc(u.id)}')"><i class="bi bi-check2"></i> Guardar</button></td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <select class="fi" style="min-width:150px" id="accSel_${esc(u.id)}" onchange="document.getElementById('cajaSel_${esc(u.id)}').style.display=this.value==='cajachica'?'':'none'">
+                <option value="" ${!u.modulos_permitidos?'selected':''}>Completo</option>
+                <option value="cajachica" ${u.modulos_permitidos==='cajachica'?'selected':''}>Solo Caja Chica</option>
+              </select>
+              <select class="fi" style="min-width:110px;display:${u.modulos_permitidos==='cajachica'?'':'none'}" id="cajaSel_${esc(u.id)}">
+                <option value="sto_dgo" ${u.caja_chica_id==='sto_dgo'?'selected':''}>Sto. Dgo</option>
+                <option value="stgo" ${u.caja_chica_id==='stgo'?'selected':''}>Stgo</option>
+              </select>
+            </div>
+          </td>
+          <td><button class="btn btn-p btn-sm" onclick="guardarAcceso('${esc(u.id)}')"><i class="bi bi-check2"></i> Guardar</button></td>
         </tr>`).join('')}</tbody>`;
   }catch(e){
     console.error(e);
@@ -256,20 +286,38 @@ async function vincularUsuario(){
   const email = document.getElementById('nuEmail').value.trim();
   let rol = document.getElementById('nuRol').value;
   if(rol === 'Otro') rol = document.getElementById('nuRolOtro').value.trim();
+  const acceso = document.getElementById('nuAcceso').value; // '' = completo, 'cajachica' = restringido
+  const caja = acceso === 'cajachica' ? document.getElementById('nuCaja').value : null;
   if(!uid || !/^[0-9a-f-]{20,}$/i.test(uid)){ toast('Ingresa un User UID válido (cópialo desde Supabase → Authentication → Users)', true); return; }
   if(!nombre){ toast('El nombre es requerido', true); return; }
   if(!email){ toast('El correo es requerido', true); return; }
   if(!rol){ toast('El rol es requerido', true); return; }
   try{
-    const { error } = await window.db.from('usuarios').upsert({ id: uid, nombre, email, rol }, { onConflict: 'id' });
+    const { error } = await window.db.from('usuarios').upsert(
+      { id: uid, nombre, email, rol, modulos_permitidos: acceso || null, caja_chica_id: caja },
+      { onConflict: 'id' }
+    );
     if(error) throw error;
     document.getElementById('nuUid').value = '';
     document.getElementById('nuNombre').value = '';
     document.getElementById('nuEmail').value = '';
     document.getElementById('nuRolOtro').value = '';
-    toast('Usuario vinculado con rol "'+rol+'"');
+    document.getElementById('nuAcceso').value = '';
+    document.getElementById('nuCajaWrap').style.display = 'none';
+    toast('Usuario vinculado con rol "'+rol+'"'+(acceso?' — acceso restringido a Caja Chica ('+(caja==='stgo'?'Stgo':'Sto. Dgo')+')':''));
     loadUsuarios();
   }catch(e){ toast('Error al vincular: '+e.message, true); }
+}
+
+async function guardarAcceso(id){
+  const acceso = document.getElementById('accSel_'+id).value;
+  const caja = acceso === 'cajachica' ? document.getElementById('cajaSel_'+id).value : null;
+  try{
+    const { error } = await window.db.from('usuarios').update({ modulos_permitidos: acceso || null, caja_chica_id: caja }).eq('id', id);
+    if(error) throw error;
+    toast('Acceso actualizado');
+    loadUsuarios();
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
 }
 
 /* ===== Guard de administrador (adicional al login) ===== */

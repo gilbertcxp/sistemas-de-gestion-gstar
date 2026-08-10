@@ -74,8 +74,27 @@ const App = (() => {
   }
 
   /* ---------------- Bootstrap ---------------- */
+  let _lockedCaja = null; // 'sto_dgo' | 'stgo' | null (null = ve ambas cajas, como antes)
+
+  // Usuarios restringidos (usuarios.caja_chica_id, ver auth.js): fuerzan la
+  // caja asignada y ocultan el botón de la otra, para que un usuario nunca
+  // pueda ver ni tocar los datos de la caja que no le corresponde.
+  function _applyCajaAccessRestriction(){
+    try{
+      const u = window.Auth && Auth.getUser && Auth.getUser();
+      const cajaId = u && u.cajaChicaId;
+      if(!cajaId) return;
+      _lockedCaja = cajaId;
+      Storage.setCaja(cajaId);
+      const otherView = cajaId === 'stgo' ? 'movimientos' : 'movimientos-stgo';
+      const btn = document.querySelector('.nav-item[data-view="' + otherView + '"]');
+      if(btn) btn.style.display = 'none';
+    }catch(e){}
+  }
+
   async function init(){
     Storage.init();
+    _applyCajaAccessRestriction();
     wireNav();
     setDefaultDates();
     renderAll();
@@ -94,6 +113,10 @@ const App = (() => {
   }
 
   function switchView(name){
+    // Si el usuario está bloqueado a una caja específica, ignorar cualquier
+    // intento (programático o de UI) de cambiar a la vista de la otra caja.
+    if(_lockedCaja === 'stgo' && name === 'movimientos') name = 'movimientos-stgo';
+    if(_lockedCaja === 'sto_dgo' && name === 'movimientos-stgo') name = 'movimientos';
     const viewName = name === 'movimientos-stgo' ? 'movimientos' : name;
     if(name === 'movimientos-stgo') Storage.setCaja('stgo');
     else if(name === 'movimientos') Storage.setCaja('sto_dgo');

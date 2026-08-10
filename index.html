@@ -219,7 +219,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <i class="bi bi-grid-1x2-fill nav-ico"></i> Dashboard
     </button>
 
-    <div class="nav-group-label">Operación Financiera</div>
+    <div class="nav-group-label" id="navGroupOperacion">Operación Financiera</div>
 
     <!-- BANCO (con submenú) -->
     <button class="nav-btn open" id="bancoToggle" onclick="toggleSub('banco')">
@@ -568,7 +568,15 @@ const PAGES = {
 };
 
 /* ===================== NAVEGACIÓN ===================== */
+// Defensa adicional: si el usuario tiene acceso restringido a ciertos módulos
+// (ver renderSession/auth.js), no permitir navegar a uno no permitido aunque
+// se invoque navigate() directamente — cae al primer módulo permitido.
 function navigate(page){
+  if(window.Auth && Auth.isAuthenticated() && !Auth.hasPermission(page)){
+    const u = Auth.getUser();
+    const perms = (u && u.role && u.role.permissions) || [];
+    page = perms[0] || 'home';
+  }
   const meta = PAGES[page] || PAGES['home'];
 
   // Páginas
@@ -744,6 +752,20 @@ function initials(name){
   // Captura de Disponibilidad: solo visible para Administrador o Cargador de Archivos
   if(roleLc.indexOf('administrador') !== -1 || roleLc.indexOf('cargador') !== -1){
     document.getElementById('navCapturaDisp').style.display = '';
+  }
+
+  // Acceso restringido por módulo (usuarios.modulos_permitidos, ver auth.js):
+  // oculta todo lo que no esté permitido y aterriza directo en el primer
+  // módulo al que el usuario sí tiene acceso, en vez del Dashboard general.
+  var perms = (u.role && u.role.permissions) || ['*'];
+  var restricted = perms.indexOf('*') === -1;
+  if(restricted){
+    document.querySelectorAll('[data-page]').forEach(function(el){
+      if(perms.indexOf(el.getAttribute('data-page')) === -1) el.style.display = 'none';
+    });
+    ['bancoToggle','sub-banco','cxpToggle','sub-cxp','reportesToggle','sub-reportes','navGroupAdmin','navGroupOperacion']
+      .forEach(function(id){ var el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    if(perms.length) navigate(perms[0]);
   }
 })();
 

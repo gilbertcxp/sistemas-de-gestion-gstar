@@ -66,6 +66,13 @@
             .then(function (profileResult) {
               var profile = profileResult.data;
               var posicion = (profile && profile.rol) ? profile.rol : 'Usuario';
+              // modulos_permitidos (columna opcional en `usuarios`): lista separada por
+              // comas de módulos a los que este usuario tiene acceso (ej. "cajachica").
+              // Vacío/NULL = acceso completo (comportamiento por defecto, sin cambios
+              // para todas las cuentas existentes).
+              var modulosRaw = profile && profile.modulos_permitidos;
+              var modulos = modulosRaw ? String(modulosRaw).split(',').map(function (s) { return s.trim(); }).filter(Boolean) : null;
+              var permissions = (modulos && modulos.length) ? modulos : ['*'];
               var session = {
                 token: sbSession.access_token,
                 issuedAt: Date.now(),
@@ -76,7 +83,11 @@
                   name: (profile && profile.nombre) ? profile.nombre : sbUser.email,
                   email: sbUser.email,
                   roleId: 'administrador',
-                  role: { id: 'administrador', label: posicion, permissions: ['*'] }
+                  role: { id: 'administrador', label: posicion, permissions: permissions },
+                  // caja_chica_id (columna opcional en `usuarios`): si el usuario está
+                  // restringido a un módulo de Caja Chica específico, indica cuál
+                  // ('sto_dgo' | 'stgo'). NULL = ve ambas cajas (comportamiento actual).
+                  cajaChicaId: (profile && profile.caja_chica_id) || null
                 }
               };
               saveSession(session);
