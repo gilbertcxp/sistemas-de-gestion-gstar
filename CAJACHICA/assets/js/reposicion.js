@@ -391,7 +391,7 @@ const Reposicion = (() => {
       renderRows();
       renderDenoms();
     }
-    document.getElementById('ccNotesSection')?.classList.toggle('cc-print-empty', !(state?.nota || '').trim());
+    document.getElementById('ccNoteField')?.classList.toggle('cc-note-empty', !(state?.nota || '').trim());
     syncPrintValues();
   }
 
