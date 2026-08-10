@@ -212,9 +212,13 @@
 .repo-scope .row-no{min-width:100px;width:100px;}
 .repo-scope .row-ben{min-width:280px;}
 .repo-scope .row-desc{min-width:320px;}
+.repo-scope .row-comprobante{min-width:170px;width:170px;}
 .repo-scope .row-fecha{min-width:145px;width:145px;}
 .repo-scope .row-monto{min-width:130px;width:130px;}
 .repo-scope .row-balance{min-width:140px;width:140px;}
+.repo-scope .status-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;}
+.repo-scope .status-pendiente{background:#FFF3D6;color:#9A6700;}
+.repo-scope .status-repuesto{background:#DDF7EA;color:#147A4A;}
 .repo-scope .balance-cell{font-weight:700;text-align:right;padding-right:14px;}
 .repo-scope .balance-pos{color:var(--rp-green);}
 .repo-scope .balance-neg{color:var(--rp-red);}
@@ -286,6 +290,14 @@
 }
 .repo-scope .history-item .h-meta{color:var(--rp-muted);}
 .repo-scope .history-item .h-amount{font-weight:700;color:var(--rp-navy-2);}
+.repo-scope .history-item button{margin-left:12px;}
+.repo-scope .checklist-summary{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:14px;padding:14px 16px;background:#F3F6FC;border:1px solid #D9E2F2;border-radius:10px;}
+.repo-scope .checklist-summary strong{font-family:'Space Grotesk',sans-serif;font-size:20px;color:var(--rp-navy-2);}
+.repo-scope .checklist-table{min-width:920px;}
+.repo-scope .checklist-table th:first-child,.repo-scope .checklist-table td:first-child{width:54px;text-align:center;}
+.repo-scope .checklist-table td{vertical-align:middle;}
+.repo-scope .checklist-table input[type=checkbox]{width:18px;height:18px;accent-color:var(--rp-red);cursor:pointer;}
+.repo-scope .modal-note{margin:0 0 14px;color:var(--rp-muted);font-size:13px;}
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
 .repo-scope .cc-print-value{display:none;}
 
@@ -412,8 +424,13 @@
   .repo-scope table:not(.denoms-table) td:nth-child(6){width:16% !important;}
   .repo-scope table:not(.denoms-table) th:nth-child(7),
   .repo-scope table:not(.denoms-table) td:nth-child(7){display:none !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(8),
+  .repo-scope table:not(.denoms-table) td:nth-child(8){width:16% !important;}
+  .repo-scope table:not(.denoms-table) th:nth-child(9),
+  .repo-scope table:not(.denoms-table) td:nth-child(9){display:none !important;}
   .repo-scope .row-no, .repo-scope .row-fecha, .repo-scope .row-ben,
-  .repo-scope .row-desc, .repo-scope .row-monto, .repo-scope .row-balance{
+  .repo-scope .row-desc, .repo-scope .row-monto, .repo-scope .row-comprobante,
+  .repo-scope .row-balance{
     min-width:0 !important;
     width:auto !important;
   }
@@ -488,6 +505,10 @@
       <button class="nav-item" data-view="conceptos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
         Catálogo de Conceptos
+      </button>
+      <button class="nav-item" data-view="reposiciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M17 2v4M7 2v4"/></svg>
+        Reposiciones
       </button>
 
       <div class="nav-group-label">ANÁLISIS</div>
@@ -654,8 +675,10 @@
                       <th class="row-no">No.</th>
                       <th class="row-fecha">Fecha</th>
                       <th class="row-ben">Beneficiario</th>
-                      <th class="row-desc">Descripción del gasto</th>
+                      <th class="row-desc">Concepto</th>
                       <th class="row-monto">Monto</th>
+                      <th class="row-comprobante">Comprobante</th>
+                      <th>Estado</th>
                       <th class="row-balance">Balance</th>
                       <th style="width:36px;"></th>
                     </tr>
@@ -674,7 +697,7 @@
                   <div class="s-value" id="ccSumFacturas">RD$ 0.00</div>
                 </div>
                 <div class="summary-cell">
-                  <div class="s-label">Reposición anterior</div>
+                  <div class="s-label">Total repuesto</div>
                   <div class="s-value" id="ccSumRepAnterior">RD$ 0.00</div>
                 </div>
                 <div class="summary-cell total">
@@ -744,14 +767,30 @@
             </div>
           </div>
 
-          <!-- HISTORY -->
-          <div class="section print-hide">
-            <div class="card">
-              <div class="section-title">Historial de reposiciones</div>
-              <div class="history-list" id="ccHistoryList"></div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </section>
 
+    <!-- ===================== REPOSICIONES ===================== -->
+    <section class="view" id="view-reposiciones">
+      <div class="topbar">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Reposiciones</h1>
+          <p class="sub">Consulta y detalle de las reposiciones confirmadas</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary" onclick="App.switchView('movimientos'); Reposicion.iniciarNuevaReposicion()">↻ Iniciar nueva reposición</button>
+        </div>
+      </div>
+      <div class="repo-scope">
+        <div class="section">
+          <div class="card">
+            <div class="section-title">Historial de reposiciones</div>
+            <div class="history-list" id="ccReposicionesList"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -996,6 +1035,46 @@
       <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalDetalle')">✕</button>
     </div>
     <div class="modal-body" id="detBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NUEVA REPOSICIÓN ===================== -->
+<div class="modal-overlay" id="modalReposicion">
+  <div class="modal xwide">
+    <div class="modal-head">
+      <h3>Iniciar nueva reposición</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalReposicion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-note">Selecciona los desembolsos pendientes que deseas incluir en esta reposición. Solo los seleccionados cambiarán a estado <b>Repuesto</b>.</p>
+      <div class="table-scroll">
+        <table class="checklist-table">
+          <thead>
+            <tr><th>✓</th><th>Fecha</th><th>Beneficiario</th><th>Concepto</th><th>Monto</th><th>Comprobante</th><th>Estado</th></tr>
+          </thead>
+          <tbody id="ccPendingBody"></tbody>
+        </table>
+      </div>
+      <div class="checklist-summary">
+        <div><span id="ccSelectedCount">0</span> desembolsos seleccionados</div>
+        <strong id="ccSelectedTotal">RD$ 0.00</strong>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalReposicion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Reposicion.confirmarReposicion()">✓ Confirmar reposición</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE REPOSICIÓN ===================== -->
+<div class="modal-overlay" id="modalDetalleReposicion">
+  <div class="modal xwide">
+    <div class="modal-head">
+      <h3 id="ccRepDetailTitle">Detalle de reposición</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalDetalleReposicion')">✕</button>
+    </div>
+    <div class="modal-body" id="ccRepDetailBody"></div>
   </div>
 </div>
 

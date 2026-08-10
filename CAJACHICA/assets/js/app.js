@@ -99,6 +99,7 @@ const App = (() => {
     document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
     UI.closeSidebar();
     if(name === 'movimientos' && window.Reposicion) Reposicion.render();
+    if(name === 'reposiciones' && window.Reposicion) Reposicion.renderHistoryView();
     if(name === 'conceptos') renderConceptos();
     if(name === 'reportes' && window.Reportes) Reportes.render();
     if(name === 'config') renderConfig();

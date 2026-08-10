@@ -11,6 +11,7 @@ const Reposicion = (() => {
   let state = null;
   let _dirty = false;
   let _wired = false;
+  let _selectedPendingIds = new Set();
 
   function _padNo(n){ return String(n).padStart(5,'0'); }
 
@@ -37,17 +38,32 @@ const Reposicion = (() => {
   }
 
   function _addRowSilent(nula){
-    state.rows.push({ no:_padNo(state.nextNo), fecha:'', beneficiario:'', descripcion: nula ? 'NULO' : '', monto:'' });
+    state.rows.push({
+      id: Utils.uid('des'), no:_padNo(state.nextNo), fecha:'', beneficiario:'',
+      descripcion: nula ? 'NULO' : '', monto:'', comprobante:'', observaciones:'', estado:'Pendiente'
+    });
     state.nextNo += 1;
   }
 
   function _loadState(){
     const stored = Storage.getPeriodoActual();
-    state = (stored && typeof stored === 'object') ? stored : _defaultState();
+    const hasStoredState = stored && typeof stored === 'object';
+    state = hasStoredState ? stored : _defaultState();
     if(!Array.isArray(state.rows)) state.rows = [];
     if(!state.denoms) state.denoms = Object.fromEntries(DENOMS.map(d => [d, 0]));
     if(!state.nextNo) state.nextNo = 1;
-    if(state.rows.length === 0) _addRowSilent();
+    state.rows.forEach(row => {
+      if(!row.id) row.id = Utils.uid('des');
+      if(!row.estado) row.estado = row.repuesto ? 'Repuesto' : 'Pendiente';
+      if(row.comprobante == null) row.comprobante = '';
+      if(row.observaciones == null) row.observaciones = '';
+    });
+    if(state.rows.length === 0 && !hasStoredState) _addRowSilent();
+  }
+
+  function _isRepuesto(row){ return String(row.estado || '').toLowerCase() === 'repuesto' || row.repuesto === true; }
+  function _pendingRows(){
+    return state.rows.filter(row => !_isRepuesto(row) && Number(row.monto) > 0);
   }
 
   // Sin controles de fecha en pantalla: el período siempre corre desde el
@@ -134,10 +150,17 @@ const Reposicion = (() => {
     body.innerHTML = '';
     let running = Number(document.getElementById('ccFondo').value) || 0;
     let totalFacturas = 0;
+    let totalRepuesto = 0;
 
     state.rows.forEach((row, idx) => {
       const monto = parseFloat(row.monto);
-      if(!isNaN(monto)){ running -= monto; totalFacturas += monto; }
+      if(!isNaN(monto)){
+        totalFacturas += monto;
+        if(_isRepuesto(row)) totalRepuesto += monto;
+        else running -= monto;
+      }
+      const statusClass = _isRepuesto(row) ? 'status-repuesto' : 'status-pendiente';
+      const statusText = _isRepuesto(row) ? 'Repuesto' : 'Pendiente';
       const tr = document.createElement('tr');
       tr.className = 'perf';
       tr.innerHTML = `
@@ -146,6 +169,8 @@ const Reposicion = (() => {
         <td><input list="dlEmpleados" value="${Utils.escapeHtml(row.beneficiario)}" placeholder="Nombre" onchange="Reposicion.updateRow(${idx},'beneficiario',this.value)"></td>
         <td><input value="${Utils.escapeHtml(row.descripcion)}" placeholder="Descripción del gasto" onchange="Reposicion.updateRow(${idx},'descripcion',this.value)"></td>
         <td class="num row-monto"><input type="number" step="0.01" value="${row.monto}" placeholder="0.00" onchange="Reposicion.updateRow(${idx},'monto',this.value)"></td>
+        <td class="row-comprobante"><input value="${Utils.escapeHtml(row.comprobante)}" placeholder="No. comprobante" onchange="Reposicion.updateRow(${idx},'comprobante',this.value)"></td>
+        <td><span class="status-pill ${statusClass}">${statusText}</span></td>
         <td class="balance-cell row-balance ${running < 0 ? 'balance-neg' : 'balance-pos'}">${Utils.fmtMoney(running)}</td>
         <td class="center"><button class="del-btn" onclick="Reposicion.deleteRow(${idx})" title="Eliminar fila">✕</button></td>`;
       body.appendChild(tr);
@@ -154,13 +179,13 @@ const Reposicion = (() => {
     document.getElementById('ccFacturasView').value = totalFacturas.toFixed(2);
     document.getElementById('ccSumFacturas').textContent = Utils.fmtMoney(totalFacturas);
 
-    const disponible = (Number(document.getElementById('ccFondo').value) || 0) - totalFacturas;
+    const pendiente = totalFacturas - totalRepuesto;
+    const disponible = (Number(document.getElementById('ccFondo').value) || 0) - pendiente;
     document.getElementById('ccDisponibleView').value = disponible.toFixed(2);
     document.getElementById('ccSumDisponible').textContent = Utils.fmtMoney(disponible);
 
-    const repAnt = Number(state.repAnterior) || 0;
-    document.getElementById('ccSumRepAnterior').textContent = Utils.fmtMoney(repAnt);
-    document.getElementById('ccSumPorReponer').textContent = Utils.fmtMoney(totalFacturas - repAnt);
+    document.getElementById('ccSumRepAnterior').textContent = Utils.fmtMoney(totalRepuesto);
+    document.getElementById('ccSumPorReponer').textContent = Utils.fmtMoney(pendiente);
 
     renderDiff();
   }
@@ -215,52 +240,95 @@ const Reposicion = (() => {
   function iniciarNuevaReposicion(){
     syncHeaderFromDOM();
     _touchDates();
-    const disponible = Number(document.getElementById('ccDisponibleView').value) || 0;
-    const totalFacturas = Number(document.getElementById('ccFacturasView').value) || 0;
+    const pending = _pendingRows();
+    if(pending.length === 0){
+      UI.toast('No hay desembolsos pendientes de reposición', 'err');
+      return;
+    }
+    _selectedPendingIds = new Set();
+    renderPendingChecklist();
+    UI.openModal('modalReposicion');
+  }
 
-    UI.confirm('Iniciar nueva reposición',
-      `Se archivará el período ${Utils.fmtDate(state.fechaDesde)} → ${Utils.fmtDate(state.fechaHasta)} ` +
-      `(desembolsado: ${Utils.fmtMoney(totalFacturas)}, disponible: ${Utils.fmtMoney(disponible)}) ` +
-      `y se abrirá una nueva reposición con el fondo restablecido a ${Utils.fmtMoney(state.fondo)}. ¿Continuar?`,
-      () => {
-        const archive = {
-          id: Utils.uid('rep'),
-          fechaSolicitud: state.fechaSolicitud,
-          fechaDesde: state.fechaDesde,
-          fechaHasta: state.fechaHasta,
-          fondo: state.fondo,
-          repAnterior: state.repAnterior,
-          rows: state.rows,
-          totalFacturas, disponible,
-          denoms: state.denoms,
-          cheque: state.cheque,
-          nota: state.nota,
-          archivadoPor: currentUserLabel(),
-          archivadoEn: new Date().toISOString()
-        };
-        Storage.addHistorialReposicion(archive);
+  function renderPendingChecklist(){
+    const body = document.getElementById('ccPendingBody');
+    if(!body) return;
+    const pending = _pendingRows();
+    body.innerHTML = pending.map(row => `
+      <tr>
+        <td><input type="checkbox" class="chk" ${_selectedPendingIds.has(row.id) ? 'checked' : ''} onchange="Reposicion.togglePending('${Utils.jsAttr(row.id)}', this.checked)"></td>
+        <td>${Utils.fmtDate(row.fecha)}</td>
+        <td>${Utils.escapeHtml(row.beneficiario || '—')}</td>
+        <td>${Utils.escapeHtml(row.descripcion || '—')}</td>
+        <td class="num">${Utils.fmtMoney(row.monto)}</td>
+        <td>${Utils.escapeHtml(row.comprobante || '—')}</td>
+        <td><span class="status-pill status-pendiente">Pendiente</span></td>
+      </tr>`).join('');
+    if(pending.length === 0){
+      body.innerHTML = '<tr><td colspan="7" class="empty-hint">No hay desembolsos pendientes de reposición.</td></tr>';
+    }
+    updatePendingSummary();
+  }
 
-        state.fechaDesde = state.fechaHasta || Utils.todayISO();
-        state.fechaHasta = Utils.todayISO();
-        state.fechaSolicitud = Utils.todayISO();
-        state.repAnterior = totalFacturas;
-        state.rows = [];
-        state.denoms = Object.fromEntries(DENOMS.map(d => [d, 0]));
-        state.cheque = 0;
-        state.nota = '';
-        _addRowSilent();
+  function togglePending(id, checked){
+    if(checked) _selectedPendingIds.add(id);
+    else _selectedPendingIds.delete(id);
+    updatePendingSummary();
+  }
 
-        Storage.savePeriodoActual(state);
-        _dirty = false;
-        render();
-        UI.toast('Nueva reposición iniciada', 'ok');
-      });
+  function updatePendingSummary(){
+    const selected = state.rows.filter(row => _selectedPendingIds.has(row.id));
+    const total = selected.reduce((sum,row) => sum + (Number(row.monto)||0), 0);
+    document.getElementById('ccSelectedCount').textContent = selected.length;
+    document.getElementById('ccSelectedTotal').textContent = Utils.fmtMoney(total);
+  }
+
+  function confirmarReposicion(){
+    syncHeaderFromDOM();
+    const selected = state.rows.filter(row => _selectedPendingIds.has(row.id) && !_isRepuesto(row) && Number(row.monto) > 0);
+    if(selected.length === 0){
+      UI.toast('Selecciona al menos un desembolso', 'err');
+      return;
+    }
+    const fechaReposicion = Utils.todayISO();
+    const reposicionId = Utils.uid('rep');
+    const codigo = `RC-${fechaReposicion.replace(/-/g,'')}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    const montoTotal = selected.reduce((sum,row) => sum + (Number(row.monto)||0), 0);
+    const detalle = selected.map(row => ({
+      ...row,
+      observaciones: row.observaciones || state.nota || '',
+      estado: 'Repuesto',
+      reposicionId
+    }));
+    const archive = {
+      id: reposicionId,
+      codigo,
+      fechaReposicion,
+      fechaDesde: state.fechaDesde,
+      fechaHasta: state.fechaHasta,
+      usuario: currentUserLabel(),
+      estado: 'Confirmada',
+      cantidadDesembolsos: detalle.length,
+      montoTotal,
+      fondo: state.fondo,
+      nota: state.nota,
+      desembolsos: detalle
+    };
+    const selectedIds = new Set(selected.map(row => row.id));
+    state.rows = state.rows.filter(row => !selectedIds.has(row.id));
+    Storage.addHistorialReposicion(archive);
+    Storage.savePeriodoActual(state);
+    _selectedPendingIds = new Set();
+    UI.closeModal('modalReposicion');
+    _dirty = false;
+    render();
+    UI.toast(`Reposición ${codigo} confirmada`, 'ok');
   }
 
   function renderHistory(){
-    const host = document.getElementById('ccHistoryList');
+    const host = document.getElementById('ccReposicionesList') || document.getElementById('ccHistoryList');
     if(!host) return;
-    const list = Storage.getHistorialReposiciones().slice().sort((a,b) => (b.fechaHasta||'').localeCompare(a.fechaHasta||''));
+    const list = Storage.getHistorialReposiciones().slice().sort((a,b) => (b.fechaReposicion||b.fechaHasta||'').localeCompare(a.fechaReposicion||a.fechaHasta||''));
     if(list.length === 0){
       host.innerHTML = '<div class="empty-hint">Aún no hay reposiciones archivadas.</div>';
       return;
@@ -268,11 +336,32 @@ const Reposicion = (() => {
     host.innerHTML = list.map(it => `
       <div class="history-item">
         <div>
-          <div>${Utils.fmtDate(it.fechaDesde)} → ${Utils.fmtDate(it.fechaHasta)}</div>
-          <div class="h-meta">Fondo ${Utils.fmtMoney(it.fondo)} · Disponible final ${Utils.fmtMoney(it.disponible)}</div>
+          <div><b>${Utils.escapeHtml(it.codigo || it.id || 'Reposición')}</b> · ${Utils.fmtDate(it.fechaReposicion || it.fechaHasta)}</div>
+          <div class="h-meta">${Utils.escapeHtml(it.usuario || it.archivadoPor || 'Usuario')} · ${it.cantidadDesembolsos || (it.rows || []).filter(r => Number(r.monto) > 0).length} desembolso(s) · <span class="status-pill status-repuesto">${Utils.escapeHtml(it.estado || 'Confirmada')}</span></div>
         </div>
-        <div class="h-amount">${Utils.fmtMoney(it.totalFacturas)}</div>
+        <div><span class="h-amount">${Utils.fmtMoney(it.montoTotal != null ? it.montoTotal : it.totalFacturas)}</span><button class="btn btn-ghost" onclick="Reposicion.verDetalle('${Utils.jsAttr(it.id)}')">Ver detalle</button></div>
       </div>`).join('');
+  }
+
+  function renderHistoryView(){ renderHistory(); }
+
+  function verDetalle(id){
+    const item = Storage.getHistorialReposiciones().find(rep => rep.id === id);
+    if(!item) return;
+    const rows = item.desembolsos || item.rows || [];
+    document.getElementById('ccRepDetailTitle').textContent = `${item.codigo || 'Reposición'} · Detalle`;
+    document.getElementById('ccRepDetailBody').innerHTML = `
+      <div class="field-row">
+        <div><label class="f-label">Fecha de reposición</label><p>${Utils.fmtDate(item.fechaReposicion || item.fechaHasta)}</p></div>
+        <div><label class="f-label">Usuario</label><p>${Utils.escapeHtml(item.usuario || item.archivadoPor || '—')}</p></div>
+        <div><label class="f-label">Estado</label><p><span class="status-pill status-repuesto">${Utils.escapeHtml(item.estado || 'Confirmada')}</span></p></div>
+      </div>
+      <div class="table-scroll"><table class="checklist-table">
+        <thead><tr><th>Fecha</th><th>Beneficiario</th><th>Concepto</th><th>Monto</th><th>Comprobante</th><th>Observaciones</th></tr></thead>
+        <tbody>${rows.map(row => `<tr><td>${Utils.fmtDate(row.fecha)}</td><td>${Utils.escapeHtml(row.beneficiario || '—')}</td><td>${Utils.escapeHtml(row.descripcion || '—')}</td><td class="num">${Utils.fmtMoney(row.monto)}</td><td>${Utils.escapeHtml(row.comprobante || '—')}</td><td>${Utils.escapeHtml(row.observaciones || item.nota || '—')}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="checklist-summary"><div>${rows.length} desembolso(s)</div><strong>${Utils.fmtMoney(item.montoTotal != null ? item.montoTotal : item.totalFacturas)}</strong></div>`;
+    UI.openModal('modalDetalleReposicion');
   }
 
   function _printValueFor(field){
@@ -315,7 +404,7 @@ const Reposicion = (() => {
 
   return {
     render, addRow, deleteRow, updateRow, updateDenom,
-    guardar, iniciarNuevaReposicion, imprimir
+    guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir
   };
 })();
 window.Reposicion = Reposicion;
