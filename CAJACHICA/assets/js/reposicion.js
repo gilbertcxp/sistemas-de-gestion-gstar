@@ -79,6 +79,11 @@ const Reposicion = (() => {
     if(!_dirty || !state) _loadState();
     _touchDates();
     state.fondo = FONDO_FIJO; // fijo por ahora, no editable
+    const cajaLabel = Storage.getCaja && Storage.getCaja() === 'stgo'
+      ? 'Caja Chica Stgo · Reposición'
+      : 'Caja Chica Sto. Dgo · Reposición';
+    const cajaEl = document.getElementById('ccCajaLabel');
+    if(cajaEl) cajaEl.textContent = cajaLabel;
     _wireOnce();
     startClock();
     _applyHeaderToDOM();

@@ -11,6 +11,8 @@ const Storage = (() => {
   const K_COUNTER       = 'cc_counter';        // consecutivo local, no sincronizado
   const K_PERIODO_ACTUAL = 'cc_periodo_actual';       // reposición de fondo fijo en curso
   const K_HISTORIAL_REPO = 'cc_reposiciones_historial'; // reposiciones ya archivadas
+  const CAJAS = { sto_dgo:'', stgo:'_stgo' };
+  let _currentCaja = 'sto_dgo';
 
   const DEFAULT_SETTINGS = {
     adminPin: '1234',
@@ -29,8 +31,13 @@ const Storage = (() => {
   ].map(nombre => ({ id: 'cpt_' + nombre.toLowerCase().replace(/[^a-z0-9]+/g,'_'), nombre, activo: true }));
 
   // Claves que se comparten entre todos los usuarios (sincronizadas a la nube)
-  const SHARED_KEYS = [K_MOVIMIENTOS, K_REPOSICIONES, K_CONCEPTOS, K_SETTINGS, K_PERIODO_ACTUAL, K_HISTORIAL_REPO];
+  const BASE_SHARED_KEYS = [K_MOVIMIENTOS, K_REPOSICIONES, K_CONCEPTOS, K_SETTINGS, K_PERIODO_ACTUAL, K_HISTORIAL_REPO];
+  const SHARED_KEYS = Object.values(CAJAS).flatMap(suffix => BASE_SHARED_KEYS.map(key => key + suffix));
   let _suppressSync = false;
+
+  function _scopedKey(key){ return key + (CAJAS[_currentCaja] || ''); }
+  function setCaja(caja){ _currentCaja = Object.prototype.hasOwnProperty.call(CAJAS, caja) ? caja : 'sto_dgo'; }
+  function getCaja(){ return _currentCaja; }
 
   function _get(key, fallback){
     try{
@@ -65,18 +72,20 @@ const Storage = (() => {
     }
   }
   function init(){
-    _seedLocal(K_MOVIMIENTOS, []);
-    _seedLocal(K_REPOSICIONES, []);
-    _seedLocal(K_CONCEPTOS, DEFAULT_CONCEPTOS);
-    _seedLocal(K_SETTINGS, DEFAULT_SETTINGS);
-    _seedLocal(K_PERIODO_ACTUAL, null);
-    _seedLocal(K_HISTORIAL_REPO, []);
-    if(localStorage.getItem(K_COUNTER) === null) localStorage.setItem(K_COUNTER, '0');
+    Object.values(CAJAS).forEach(suffix => {
+      _seedLocal(K_MOVIMIENTOS + suffix, []);
+      _seedLocal(K_REPOSICIONES + suffix, []);
+      _seedLocal(K_CONCEPTOS + suffix, DEFAULT_CONCEPTOS);
+      _seedLocal(K_SETTINGS + suffix, DEFAULT_SETTINGS);
+      _seedLocal(K_PERIODO_ACTUAL + suffix, null);
+      _seedLocal(K_HISTORIAL_REPO + suffix, []);
+      if(localStorage.getItem(K_COUNTER + suffix) === null) localStorage.setItem(K_COUNTER + suffix, '0');
+    });
   }
 
   // ---------- Movimientos ----------
-  function getMovimientos(){ return _get(K_MOVIMIENTOS, []); }
-  function saveMovimientos(list){ return _set(K_MOVIMIENTOS, list); }
+  function getMovimientos(){ return _get(_scopedKey(K_MOVIMIENTOS), []); }
+  function saveMovimientos(list){ return _set(_scopedKey(K_MOVIMIENTOS), list); }
   function addMovimiento(mov){ const list = getMovimientos(); list.push(mov); saveMovimientos(list); return mov; }
   function updateMovimiento(id, patch){
     const list = getMovimientos();
@@ -87,13 +96,13 @@ const Storage = (() => {
   function getMovimiento(id){ return getMovimientos().find(m => m.id === id) || null; }
 
   // ---------- Reposiciones (detalle extendido, ligado a un movimiento) ----------
-  function getReposiciones(){ return _get(K_REPOSICIONES, []); }
-  function saveReposiciones(list){ return _set(K_REPOSICIONES, list); }
+  function getReposiciones(){ return _get(_scopedKey(K_REPOSICIONES), []); }
+  function saveReposiciones(list){ return _set(_scopedKey(K_REPOSICIONES), list); }
   function addReposicion(rep){ const list = getReposiciones(); list.push(rep); saveReposiciones(list); return rep; }
 
   // ---------- Catálogo de Conceptos ----------
-  function getConceptos(){ return _get(K_CONCEPTOS, DEFAULT_CONCEPTOS); }
-  function saveConceptos(list){ return _set(K_CONCEPTOS, list); }
+  function getConceptos(){ return _get(_scopedKey(K_CONCEPTOS), DEFAULT_CONCEPTOS); }
+  function saveConceptos(list){ return _set(_scopedKey(K_CONCEPTOS), list); }
   function addConcepto(nombre){
     const list = getConceptos();
     list.push({ id: Utils.uid('cpt'), nombre, activo: true });
@@ -109,28 +118,29 @@ const Storage = (() => {
   }
 
   // ---------- Reposición de fondo fijo (Movimientos) ----------
-  function getPeriodoActual(){ return _get(K_PERIODO_ACTUAL, null); }
-  function savePeriodoActual(obj){ return _set(K_PERIODO_ACTUAL, obj); }
-  function getHistorialReposiciones(){ return _get(K_HISTORIAL_REPO, []); }
+  function getPeriodoActual(){ return _get(_scopedKey(K_PERIODO_ACTUAL), null); }
+  function savePeriodoActual(obj){ return _set(_scopedKey(K_PERIODO_ACTUAL), obj); }
+  function getHistorialReposiciones(){ return _get(_scopedKey(K_HISTORIAL_REPO), []); }
   function addHistorialReposicion(item){
     const list = getHistorialReposiciones();
     list.push(item);
-    return _set(K_HISTORIAL_REPO, list);
+    return _set(_scopedKey(K_HISTORIAL_REPO), list);
   }
 
   // ---------- Settings ----------
-  function getSettings(){ return {...DEFAULT_SETTINGS, ..._get(K_SETTINGS, DEFAULT_SETTINGS)}; }
+  function getSettings(){ return {...DEFAULT_SETTINGS, ..._get(_scopedKey(K_SETTINGS), DEFAULT_SETTINGS)}; }
   function saveSettings(patch){
     const s = {...getSettings(), ...patch};
-    _set(K_SETTINGS, s);
+    _set(_scopedKey(K_SETTINGS), s);
     return s;
   }
 
   // ---------- Numeración consecutiva (local — no sincronizada) ----------
   function getNextNumero(){
-    const current = parseInt(localStorage.getItem(K_COUNTER) || '0', 10);
+    const counterKey = _scopedKey(K_COUNTER);
+    const current = parseInt(localStorage.getItem(counterKey) || '0', 10);
     const next = current + 1;
-    localStorage.setItem(K_COUNTER, String(next));
+    localStorage.setItem(counterKey, String(next));
     return 'CC-' + String(next).padStart(6, '0');
   }
 
@@ -145,7 +155,7 @@ const Storage = (() => {
       settings: getSettings(),
       periodoActual: getPeriodoActual(),
       historialReposiciones: getHistorialReposiciones(),
-      counter: parseInt(localStorage.getItem(K_COUNTER) || '0', 10)
+      counter: parseInt(localStorage.getItem(_scopedKey(K_COUNTER)) || '0', 10)
     };
   }
   function importBackup(obj){
@@ -153,24 +163,19 @@ const Storage = (() => {
     if(Array.isArray(obj.movimientos)) saveMovimientos(obj.movimientos);
     if(Array.isArray(obj.reposiciones)) saveReposiciones(obj.reposiciones);
     if(Array.isArray(obj.conceptos)) saveConceptos(obj.conceptos);
-    if(obj.settings) _set(K_SETTINGS, obj.settings);
+    if(obj.settings) _set(_scopedKey(K_SETTINGS), obj.settings);
     if(obj.periodoActual) savePeriodoActual(obj.periodoActual);
-    if(Array.isArray(obj.historialReposiciones)) _set(K_HISTORIAL_REPO, obj.historialReposiciones);
-    if(typeof obj.counter === 'number') localStorage.setItem(K_COUNTER, String(obj.counter));
+    if(Array.isArray(obj.historialReposiciones)) _set(_scopedKey(K_HISTORIAL_REPO), obj.historialReposiciones);
+    if(typeof obj.counter === 'number') localStorage.setItem(_scopedKey(K_COUNTER), String(obj.counter));
   }
   function resetAll(){
-    localStorage.removeItem(K_MOVIMIENTOS);
-    localStorage.removeItem(K_REPOSICIONES);
-    localStorage.removeItem(K_CONCEPTOS);
-    localStorage.removeItem(K_SETTINGS);
-    localStorage.removeItem(K_PERIODO_ACTUAL);
-    localStorage.removeItem(K_HISTORIAL_REPO);
-    localStorage.removeItem(K_COUNTER);
+    [K_MOVIMIENTOS,K_REPOSICIONES,K_CONCEPTOS,K_SETTINGS,K_PERIODO_ACTUAL,K_HISTORIAL_REPO,K_COUNTER]
+      .forEach(key => localStorage.removeItem(_scopedKey(key)));
     init();
   }
 
   return {
-    init,
+    init, setCaja, getCaja,
     getMovimientos, saveMovimientos, addMovimiento, updateMovimiento, getMovimiento,
     getReposiciones, saveReposiciones, addReposicion,
     getConceptos, saveConceptos, addConcepto, updateConcepto, deleteConcepto,

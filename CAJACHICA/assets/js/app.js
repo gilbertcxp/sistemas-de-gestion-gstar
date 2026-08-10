@@ -94,11 +94,14 @@ const App = (() => {
   }
 
   function switchView(name){
+    const viewName = name === 'movimientos-stgo' ? 'movimientos' : name;
+    if(name === 'movimientos-stgo') Storage.setCaja('stgo');
+    else if(name === 'movimientos') Storage.setCaja('sto_dgo');
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + name)?.classList.add('active');
+    document.getElementById('view-' + viewName)?.classList.add('active');
     document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
     UI.closeSidebar();
-    if(name === 'movimientos' && window.Reposicion) Reposicion.render();
+    if((name === 'movimientos' || name === 'movimientos-stgo') && window.Reposicion) Reposicion.render();
     if(name === 'reposiciones' && window.Reposicion) Reposicion.renderHistoryView();
     if(name === 'conceptos') renderConceptos();
     if(name === 'reportes' && window.Reportes) Reportes.render();
