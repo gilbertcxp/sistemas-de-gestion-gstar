@@ -256,7 +256,7 @@
 .repo-scope .summary-cell input{border:none;background:transparent;padding:0;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;text-align:left;}
 .repo-scope .summary-cell input:focus{outline:none;}
 
-.repo-scope .arqueo-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:20px;}
+.repo-scope .arqueo-grid{display:grid;grid-template-columns:1fr;gap:20px;}
 @media(max-width:820px){.repo-scope .arqueo-grid{grid-template-columns:1fr;}}
 .repo-scope .denoms-table{min-width:0;}
 .repo-scope .denoms-table td{padding:6px 10px;}
@@ -265,7 +265,11 @@
 .repo-scope .denoms-table input{max-width:80px;margin-left:auto;}
 .repo-scope .denoms-table td.den{font-weight:600;}
 .repo-scope .denoms-table td.tot{text-align:right;font-weight:600;}
+.repo-scope .denoms-table tr.cheque-total td{border-top:1px solid var(--rp-line);font-weight:600;background:#fff;}
+.repo-scope .denoms-table tr.cheque-total input{max-width:120px;margin-left:auto;text-align:right;}
 .repo-scope .denoms-table tr.grand td{border-top:2px solid var(--rp-navy);font-weight:700;background:#F3F2EC;}
+.repo-scope .denoms-table tr.diff-total td{border:0;padding:8px 0 0;background:#fff;}
+.repo-scope .denoms-table tr.diff-total .diff-box{width:100%;}
 
 .repo-scope .diff-panel{display:flex;flex-direction:column;gap:12px;}
 .repo-scope .diff-box{border-radius:10px;padding:16px;text-align:center;}
@@ -733,22 +737,24 @@
                     </thead>
                     <tbody id="ccDenomsBody"></tbody>
                     <tfoot>
+                      <tr class="cheque-total">
+                        <td colspan="2">Cheque / transferencia</td>
+                        <td class="tot"><input id="ccCheque" type="number" step="0.01"></td>
+                      </tr>
                       <tr class="grand">
                         <td colspan="2">Total efectivo contado</td>
                         <td class="tot" id="ccDenomsGrand">RD$ 0.00</td>
                       </tr>
+                      <tr class="diff-total">
+                        <td colspan="3">
+                          <div class="diff-box" id="ccDiffBox">
+                            <div class="d-label">Diferencia (arqueo vs. disponible)</div>
+                            <div class="d-value" id="ccDiffValue">RD$ 0.00</div>
+                          </div>
+                        </td>
+                      </tr>
                     </tfoot>
                   </table>
-                </div>
-                <div class="diff-panel">
-                  <div class="cheque-row">
-                    <label>Cheque / transferencia</label>
-                    <input id="ccCheque" type="number" step="0.01">
-                  </div>
-                  <div class="diff-box" id="ccDiffBox">
-                    <div class="d-label">Diferencia (arqueo vs. disponible)</div>
-                    <div class="d-value" id="ccDiffValue">RD$ 0.00</div>
-                  </div>
                 </div>
               </div>
             </div>
