@@ -77,26 +77,34 @@ const App = (() => {
   let _lockedCaja = null; // 'sto_dgo' | 'stgo' | null (null = ve ambas cajas, como antes)
 
   // Usuarios restringidos (usuarios.caja_chica_id, ver auth.js): fuerzan la
-  // caja asignada y ocultan el botón de la otra, para que un usuario nunca
-  // pueda ver ni tocar los datos de la caja que no le corresponde.
+  // caja asignada, ocultan TODO lo demás del menú (Dashboard, Conceptos,
+  // Reposiciones, Reportes, Configuración) y aterrizan directo en su caja —
+  // para que solo vean y toquen ese apartado, nada más.
   function _applyCajaAccessRestriction(){
     try{
       const u = window.Auth && Auth.getUser && Auth.getUser();
       const cajaId = u && u.cajaChicaId;
-      if(!cajaId) return;
+      if(!cajaId) return null;
       _lockedCaja = cajaId;
       Storage.setCaja(cajaId);
-      const otherView = cajaId === 'stgo' ? 'movimientos' : 'movimientos-stgo';
-      const btn = document.querySelector('.nav-item[data-view="' + otherView + '"]');
-      if(btn) btn.style.display = 'none';
-    }catch(e){}
+      const assignedView = cajaId === 'stgo' ? 'movimientos-stgo' : 'movimientos';
+      document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+        if(btn.dataset.view !== assignedView) btn.style.display = 'none';
+      });
+      ['navGroupPrincipal','navGroupAnalisis','navGroupSistema'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.style.display = 'none';
+      });
+      return assignedView;
+    }catch(e){ return null; }
   }
 
   async function init(){
     Storage.init();
-    _applyCajaAccessRestriction();
+    const assignedView = _applyCajaAccessRestriction();
     wireNav();
     setDefaultDates();
+    if(assignedView) switchView(assignedView);
     renderAll();
 
     if(window.Sync){
