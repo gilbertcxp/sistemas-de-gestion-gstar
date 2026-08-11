@@ -8,6 +8,7 @@ const Reposicion = (() => {
   const DENOMS = [1,5,10,25,50,100,200,500,1000,2000];
   const FONDO_FIJO = 20000; // fondo fijo de Caja Chica, no editable por ahora
   const LIMITE_AUTORIZACION = 2000;
+  const PRIMER_NO_STO_DGO = 264;
 
   let state = null;
   let _dirty = false;
@@ -15,6 +16,17 @@ const Reposicion = (() => {
   let _selectedPendingIds = new Set();
 
   function _padNo(n){ return String(n).padStart(5,'0'); }
+  function _minNextNo(){
+    return Storage.getCaja && Storage.getCaja() === 'stgo' ? 1 : PRIMER_NO_STO_DGO;
+  }
+  function _parseNo(no){
+    const match = String(no || '').match(/\d+/);
+    return match ? parseInt(match[0], 10) || 0 : 0;
+  }
+  function _ensureNextNo(){
+    const maxNo = (state.rows || []).reduce((max, row) => Math.max(max, _parseNo(row.no)), 0);
+    state.nextNo = Math.max(Number(state.nextNo) || 0, _minNextNo(), maxNo + 1);
+  }
 
   function _defaultState(){
     return {
@@ -39,6 +51,7 @@ const Reposicion = (() => {
   }
 
   function _addRowSilent(nula){
+    _ensureNextNo();
     state.rows.push({
       id: Utils.uid('des'), no:_padNo(state.nextNo), fecha:'', beneficiario:'',
       descripcion: nula ? 'NULO' : '', monto:'', comprobante:'', observaciones:'', estado:'Pendiente'
@@ -52,7 +65,7 @@ const Reposicion = (() => {
     state = hasStoredState ? stored : _defaultState();
     if(!Array.isArray(state.rows)) state.rows = [];
     if(!state.denoms) state.denoms = Object.fromEntries(DENOMS.map(d => [d, 0]));
-    if(!state.nextNo) state.nextNo = 1;
+    if(!state.nextNo) state.nextNo = _minNextNo();
     state.rows.forEach(row => {
       if(!row.id) row.id = Utils.uid('des');
       if(!row.estado) row.estado = row.repuesto ? 'Repuesto' : 'Pendiente';
@@ -60,6 +73,7 @@ const Reposicion = (() => {
       if(row.observaciones == null) row.observaciones = '';
       _syncAuthorizationState(row);
     });
+    _ensureNextNo();
     if(state.rows.length === 0 && !hasStoredState) _addRowSilent();
   }
 
@@ -177,6 +191,7 @@ const Reposicion = (() => {
   function updateRow(idx, field, value){
     state.rows[idx][field] = value;
     _syncAuthorizationState(state.rows[idx]);
+    if(field === 'no') _ensureNextNo();
     _dirty = true;
     if(field === 'monto') renderRows();
   }
