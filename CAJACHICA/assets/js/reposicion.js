@@ -57,7 +57,9 @@ const Reposicion = (() => {
   function _addRowSilent(nula){
     _ensureNextNo();
     state.rows.push({
-      id: Utils.uid('des'), no:_padNo(state.nextNo), fecha:'', beneficiario:'',
+      // Fecha precargada con hoy por defecto — el campo sigue siendo editable
+      // (input type="date"), el usuario puede cambiarla si el gasto fue otro día.
+      id: Utils.uid('des'), no:_padNo(state.nextNo), fecha: Utils.todayISO(), beneficiario:'',
       descripcion: nula ? 'NULO' : '', monto:'', comprobante:'', observaciones:'', estado:'Pendiente'
     });
     state.nextNo += 1;
