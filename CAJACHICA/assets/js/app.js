@@ -99,6 +99,34 @@ const App = (() => {
     }catch(e){ return null; }
   }
 
+  // ¿Hay un campo con el foco puesto ahora mismo (fecha, descripción, monto,
+  // etc.)? Si es así, un re-render forzado por la nube (Sync realtime)
+  // destruiría y recrearía ese <input> a mitad de la edición — cerrando el
+  // calendario de fecha o borrando lo que se está escribiendo. En vez de eso,
+  // se pospone el redibujado hasta que el usuario suelte el campo (blur);
+  // los datos ya quedaron guardados en el caché local mientras tanto.
+  function _isEditingField(){
+    const el = document.activeElement;
+    if(!el) return false;
+    const tag = el.tagName;
+    return (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') && !!el.closest('.repo-scope, .card, #app');
+  }
+  let _pendingRealtimeRender = false;
+  function _renderAllDeferred(){
+    if(_isEditingField()){
+      if(_pendingRealtimeRender) return;
+      _pendingRealtimeRender = true;
+      const retry = () => {
+        document.removeEventListener('focusout', retry, true);
+        _pendingRealtimeRender = false;
+        setTimeout(renderAll, 50); // deja que el onchange del campo termine primero
+      };
+      document.addEventListener('focusout', retry, true);
+      return;
+    }
+    renderAll();
+  }
+
   async function init(){
     Storage.init();
     const assignedView = _applyCajaAccessRestriction();
@@ -110,7 +138,7 @@ const App = (() => {
     if(window.Sync){
       const res = await Sync.pull();
       if(res.ok){ renderAll(); }
-      Sync.subscribeRealtime(() => renderAll());
+      Sync.subscribeRealtime(() => _renderAllDeferred());
     }
   }
 
