@@ -238,8 +238,8 @@ const Reposicion = (() => {
         if(_isRepuesto(row)) totalRepuesto += monto;
         else running -= monto;
       }
-      const statusClass = _isRepuesto(row) ? 'status-repuesto' : authPending ? 'status-autorizacion' : _authorizedForAmount(row) ? 'status-autorizado' : 'status-pendiente';
-      const statusText = _isRepuesto(row) ? 'Repuesto' : authPending ? 'Pendiente autorizacion' : _authorizedForAmount(row) ? 'Autorizado' : 'Pendiente';
+      const statusClass = _isRepuesto(row) ? 'status-repuesto' : authPending ? 'status-autorizacion' : 'status-pendiente';
+      const statusText = _isRepuesto(row) ? 'Repuesto' : authPending ? 'Pendiente' : 'Para reposicion';
       const tr = document.createElement('tr');
       tr.className = 'perf' + (authPending ? ' auth-pending-row' : '');
       tr.innerHTML = `
@@ -358,7 +358,7 @@ const Reposicion = (() => {
         <td>${Utils.escapeHtml(row.descripcion || '—')}</td>
         <td class="num">${Utils.fmtMoney(row.monto)}</td>
         <td>${Utils.escapeHtml(row.comprobante || '—')}</td>
-        <td><span class="status-pill ${_authorizedForAmount(row) ? 'status-autorizado' : 'status-pendiente'}">${_authorizedForAmount(row) ? 'Autorizado' : 'Pendiente'}</span></td>
+        <td><span class="status-pill status-pendiente">Para reposicion</span></td>
       </tr>`).join('');
     if(pending.length === 0){
       body.innerHTML = '<tr><td colspan="7" class="empty-hint">No hay desembolsos pendientes de reposición.</td></tr>';
