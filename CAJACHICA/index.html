@@ -328,6 +328,46 @@ if (window.Auth) {
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
 .repo-scope .cc-print-value{display:none;}
 
+/* ---- Arqueo de caja: plantilla estilo Excel adjunta ---- */
+.arq-wrap{max-width:760px;margin:0 auto;}
+.arq-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+.arq-sheet{
+  width:520px;max-width:100%;margin:0 auto;background:#fff;color:#111;
+  font-family:Arial, Helvetica, sans-serif;padding:24px 26px 30px;
+  border:1px solid #d8dce6;box-shadow:0 12px 34px -24px rgba(11,20,55,.35);
+}
+.arq-title{text-align:center;font-weight:700;font-size:16px;line-height:1.2;margin:0;}
+.arq-subtitle{text-align:center;font-weight:700;font-size:12px;line-height:1.2;margin:2px 0 46px;}
+.arq-meta{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;margin-bottom:18px;font-size:11px;}
+.arq-version{text-align:center;}
+.arq-date-label{text-align:right;font-weight:700;padding-right:8px;}
+.arq-date{text-align:left;font-weight:700;}
+.arq-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;}
+.arq-table th,.arq-table td{border:1px solid #222;padding:4px 7px;height:24px;vertical-align:middle;}
+.arq-table .label{font-size:14px;}
+.arq-table .amount{font-weight:700;text-align:left;}
+.arq-section-title{
+  border:none !important;border-bottom:1px solid #222 !important;
+  text-align:center;font-weight:700;font-size:14px;padding-top:16px !important;
+}
+.arq-table th{font-size:12px;font-weight:700;color:#C00000;text-align:center;}
+.arq-den{text-align:right;}
+.arq-qty{text-align:center;}
+.arq-total{text-align:left;}
+.arq-table input,.arq-table textarea{
+  width:100%;border:none;background:transparent;padding:0;margin:0;
+  font:inherit;color:inherit;text-align:inherit;outline:none;
+}
+.arq-table input[type=number]{appearance:textfield;}
+.arq-cheque{font-weight:700;text-align:right;}
+.arq-cheque-value{background:#FFFF00;}
+.arq-grand-label{text-align:center;font-weight:700;}
+.arq-grand-value{font-weight:700;font-size:16px;}
+.arq-note-label{text-align:center;font-weight:700;padding-top:20px;}
+.arq-note-cell{height:54px;}
+.arq-sign{height:48px;border-left:none !important;border-right:none !important;border-bottom:none !important;text-align:center;font-weight:700;}
+.arq-muted{color:#5f6471;font-size:12px;text-align:center;margin-top:12px;}
+
 @media print{
   @page{ size:letter portrait; margin:5mm; }
   html, body{height:auto !important;background:#fff !important;}
@@ -490,6 +530,31 @@ if (window.Auth) {
   .repo-scope .cheque-row label{font-size:9px !important;}
   .repo-scope .footer-grid{grid-template-columns:1fr 1fr !important;gap:18px !important;}
   .repo-scope .sign-line{margin-top:14px !important;font-size:9px !important;padding-top:3px !important;}
+  body.cc-print-arqueo #view-movimientos,
+  body.cc-print-arqueo #view-movimientos *{visibility:hidden !important;display:none !important;}
+  body.cc-print-arqueo #view-arqueo,
+  body.cc-print-arqueo #view-arqueo *{visibility:visible !important;}
+  body.cc-print-arqueo .view#view-movimientos{display:none !important;}
+  body.cc-print-arqueo .view#view-arqueo{
+    display:block !important;position:absolute !important;left:0 !important;top:0 !important;
+    width:100% !important;padding:0 !important;background:#fff !important;
+  }
+  body.cc-print-arqueo #view-arqueo .topbar,
+  body.cc-print-arqueo .arq-actions,
+  body.cc-print-arqueo #view-arqueo > .menu-btn{display:none !important;}
+  body.cc-print-arqueo .arq-wrap{max-width:100% !important;margin:0 !important;}
+  body.cc-print-arqueo .arq-sheet{
+    width:150mm !important;border:none !important;box-shadow:none !important;
+    padding:8mm 10mm !important;margin:0 auto !important;
+  }
+  body.cc-print-arqueo .arq-title{font-size:14px !important;}
+  body.cc-print-arqueo .arq-subtitle{font-size:10px !important;margin-bottom:32px !important;}
+  body.cc-print-arqueo .arq-table{font-size:11px !important;}
+  body.cc-print-arqueo .arq-table th{font-size:10px !important;}
+  body.cc-print-arqueo .arq-table th,
+  body.cc-print-arqueo .arq-table td{height:20px !important;padding:3px 5px !important;}
+  body.cc-print-arqueo .arq-note-cell{height:42px !important;}
+  body.cc-print-arqueo .arq-sign{height:42px !important;}
 }
 
 /* ---- Responsive: sidebar collapse ---- */
@@ -550,6 +615,10 @@ if (window.Auth) {
       <button class="nav-item" data-view="reposiciones">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M17 2v4M7 2v4"/></svg>
         Reposiciones
+      </button>
+      <button class="nav-item" data-view="arqueo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Arqueo de Caja
       </button>
 
       <div class="nav-group-label" id="navGroupAnalisis">ANÁLISIS</div>
@@ -834,6 +903,56 @@ if (window.Auth) {
             <div class="section-title">Historial de reposiciones</div>
             <div class="history-list" id="ccReposicionesList"></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ARQUEO DE CAJA ===================== -->
+    <section class="view" id="view-arqueo">
+      <div class="topbar" style="position:static;background:none;backdrop-filter:none;border:none;padding:0;">
+        <div>
+          <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <h1>Arqueo de Caja</h1>
+          <p class="sub" id="ccArqCajaSub">Formato de arqueo de caja chica</p>
+        </div>
+      </div>
+
+      <div class="arq-wrap">
+        <div class="arq-actions">
+          <button class="btn btn-primary" onclick="Reposicion.guardarArqueo()">Guardar</button>
+          <button class="btn btn-soft" onclick="Reposicion.renderArqueoView()">Actualizar</button>
+          <button class="btn btn-ghost" onclick="Reposicion.imprimirArqueo()">Imprimir</button>
+        </div>
+        <div class="arq-sheet" id="ccArqSheet">
+          <h2 class="arq-title">GSTAR SERVICES SA</h2>
+          <div class="arq-subtitle">ARQUEO DE CAJA CHICA</div>
+          <div class="arq-meta">
+            <div class="arq-version">V.01062021</div>
+            <div class="arq-date-label">Fecha de solicitud</div>
+            <div class="arq-date" id="ccArqFecha">--</div>
+          </div>
+          <table class="arq-table">
+            <colgroup><col style="width:48%"><col style="width:28%"><col style="width:24%"></colgroup>
+            <tbody>
+              <tr><td class="label">Fondo de caja</td><td></td><td class="amount" id="ccArqFondo">0.00</td></tr>
+              <tr><td class="label">Facturas y desembolsos</td><td></td><td class="amount" id="ccArqFacturas">0.00</td></tr>
+              <tr><td class="label">Repocision anterior</td><td></td><td class="amount" id="ccArqRepAnterior">0.00</td></tr>
+              <tr><td class="label">Total por reponer</td><td></td><td class="amount" id="ccArqPorReponer">0.00</td></tr>
+              <tr><td colspan="3" class="arq-section-title">ARQUEO DE CAJA</td></tr>
+              <tr><th>Denominaciones</th><th>Cantidad</th><th>Total</th></tr>
+            </tbody>
+            <tbody id="ccArqDenomsBody"></tbody>
+            <tfoot>
+              <tr><td class="arq-cheque">CHEQUE</td><td></td><td class="arq-cheque-value"><input id="ccArqCheque" type="number" step="0.01" oninput="Reposicion.updateArqueoCheque(this.value)"></td></tr>
+              <tr><td class="arq-grand-label">Totales</td><td></td><td class="arq-grand-value" id="ccArqTotal">0.00</td></tr>
+              <tr><td class="arq-note-label">NOTA:</td><td colspan="2" class="arq-note-cell"><textarea id="ccArqNota" rows="2" oninput="Reposicion.updateArqueoNota(this.value)"></textarea></td></tr>
+              <tr><td colspan="3" class="arq-sign">Custodio Caja Chica</td></tr>
+              <tr><td colspan="3" class="arq-sign">CONTABILIDAD</td></tr>
+            </tfoot>
+          </table>
+          <div class="arq-muted" id="ccArqDiff"></div>
         </div>
       </div>
     </section>

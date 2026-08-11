@@ -89,7 +89,7 @@ const App = (() => {
       Storage.setCaja(cajaId);
       const assignedView = cajaId === 'stgo' ? 'movimientos-stgo' : 'movimientos';
       document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-        if(btn.dataset.view !== assignedView) btn.style.display = 'none';
+        if(btn.dataset.view !== assignedView && btn.dataset.view !== 'arqueo') btn.style.display = 'none';
       });
       ['navGroupPrincipal','navGroupAnalisis','navGroupSistema'].forEach(id => {
         const el = document.getElementById(id);
@@ -156,11 +156,13 @@ const App = (() => {
     const viewName = name === 'movimientos-stgo' ? 'movimientos' : name;
     if(name === 'movimientos-stgo') Storage.setCaja('stgo');
     else if(name === 'movimientos') Storage.setCaja('sto_dgo');
+    else if(name === 'arqueo' && _lockedCaja) Storage.setCaja(_lockedCaja);
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + viewName)?.classList.add('active');
     document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
     UI.closeSidebar();
     if((name === 'movimientos' || name === 'movimientos-stgo') && window.Reposicion) Reposicion.render();
+    if(name === 'arqueo' && window.Reposicion) Reposicion.renderArqueoView();
     if(name === 'reposiciones' && window.Reposicion) Reposicion.renderHistoryView();
     if(name === 'conceptos') renderConceptos();
     if(name === 'reportes' && window.Reportes) Reportes.render();
@@ -173,6 +175,7 @@ const App = (() => {
     renderDashboard();
     const active = document.querySelector('.view.active')?.id;
     if(active === 'view-movimientos' && window.Reposicion) Reposicion.render();
+    if(active === 'view-arqueo' && window.Reposicion) Reposicion.renderArqueoView();
     if(active === 'view-conceptos') renderConceptos();
     if(active === 'view-reportes' && window.Reportes) Reportes.render();
     if(active === 'view-config') renderConfig();

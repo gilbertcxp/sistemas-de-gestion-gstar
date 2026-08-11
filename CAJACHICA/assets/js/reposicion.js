@@ -116,6 +116,31 @@ const Reposicion = (() => {
   function _pendingRows(){
     return state.rows.filter(row => !_isRepuesto(row) && !_isAuthPending(row) && Number(row.monto) > 0);
   }
+  function _calcTotals(){
+    let totalFacturas = 0;
+    let totalRepuesto = 0;
+    (state.rows || []).forEach(row => {
+      const monto = parseFloat(row.monto);
+      if(!isNaN(monto) && !_isAuthPending(row)){
+        totalFacturas += monto;
+        if(_isRepuesto(row)) totalRepuesto += monto;
+      }
+    });
+    const totalPorReponer = totalFacturas - totalRepuesto;
+    const disponible = (Number(state.fondo)||0) - totalPorReponer;
+    const denomsTotal = DENOMS.reduce((sum,d) => sum + (Number(state.denoms[d])||0) * d, 0);
+    const cheque = Number(state.cheque) || 0;
+    return {
+      totalFacturas,
+      totalRepuesto,
+      totalPorReponer,
+      disponible,
+      denomsTotal,
+      cheque,
+      arqueoTotal: denomsTotal + cheque,
+      diferencia: (denomsTotal + cheque) - disponible
+    };
+  }
 
   // Sin controles de fecha en pantalla: el período siempre corre desde el
   // cierre anterior (fechaDesde) hasta el momento actual (fechaHasta = hoy).
@@ -320,6 +345,80 @@ const Reposicion = (() => {
     box.className = 'diff-box ' + (Math.abs(diff) < 0.01 ? 'diff-ok' : 'diff-bad');
   }
 
+  function renderArqueoTotals(){
+    if(!state) return;
+    const t = _calcTotals();
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = value;
+    };
+    setText('ccArqFondo', Utils.fmtNum(state.fondo));
+    setText('ccArqFacturas', Utils.fmtNum(t.totalFacturas));
+    setText('ccArqRepAnterior', Utils.fmtNum(t.totalRepuesto));
+    setText('ccArqPorReponer', Utils.fmtNum(t.totalPorReponer));
+    setText('ccArqTotal', Utils.fmtNum(t.arqueoTotal));
+    setText('ccArqDiff', Math.abs(t.diferencia) >= 0.01 ? `Diferencia contra disponible: ${Utils.fmtMoney(t.diferencia)}` : '');
+    DENOMS.forEach(d => setText(`ccArqDenomTotal-${d}`, Utils.fmtNum((Number(state.denoms[d]) || 0) * d)));
+  }
+
+  function renderArqueoView(){
+    if(!_dirty || !state) _loadState();
+    _touchDates();
+    state.fondo = _fondoFijo();
+
+    const cajaLabel = Storage.getCaja && Storage.getCaja() === 'stgo'
+      ? 'Caja Chica Stgo'
+      : 'Caja Chica Sto. Dgo';
+    const sub = document.getElementById('ccArqCajaSub');
+    if(sub) sub.textContent = `${cajaLabel} · formato de arqueo`;
+    const fecha = document.getElementById('ccArqFecha');
+    if(fecha) fecha.textContent = Utils.fmtDate(state.fechaSolicitud || Utils.todayISO());
+
+    const body = document.getElementById('ccArqDenomsBody');
+    if(body){
+      body.innerHTML = DENOMS.map(d => `
+        <tr>
+          <td class="arq-den">${Utils.fmtNum(d)}</td>
+          <td class="arq-qty"><input type="number" min="0" step="1" value="${state.denoms[d] || ''}" oninput="Reposicion.updateArqueoDenom(${d}, this.value)"></td>
+          <td class="arq-total" id="ccArqDenomTotal-${d}">0.00</td>
+        </tr>`).join('');
+    }
+    const cheque = document.getElementById('ccArqCheque');
+    if(cheque) cheque.value = state.cheque || '';
+    const nota = document.getElementById('ccArqNota');
+    if(nota) nota.value = state.nota || '';
+    renderArqueoTotals();
+  }
+
+  function updateArqueoDenom(d, value){
+    if(!state) _loadState();
+    state.denoms[d] = value;
+    _dirty = true;
+    renderArqueoTotals();
+  }
+
+  function updateArqueoCheque(value){
+    if(!state) _loadState();
+    state.cheque = Number(value) || 0;
+    _dirty = true;
+    renderArqueoTotals();
+  }
+
+  function updateArqueoNota(value){
+    if(!state) _loadState();
+    state.nota = value || '';
+    _dirty = true;
+  }
+
+  function guardarArqueo(){
+    if(!state) _loadState();
+    _touchDates();
+    state.fondo = _fondoFijo();
+    Storage.savePeriodoActual(state);
+    _dirty = false;
+    UI.toast('Arqueo guardado', 'ok');
+  }
+
   /* ---------------- Guardar / Nueva reposición ---------------- */
   function guardar(){
     syncHeaderFromDOM();
@@ -485,6 +584,10 @@ const Reposicion = (() => {
   }
 
   function preparePrint(){
+    if(document.body.classList.contains('cc-print-arqueo')){
+      renderArqueoView();
+      return;
+    }
     if(state){
       syncHeaderFromDOM();
       renderRows();
@@ -499,11 +602,19 @@ const Reposicion = (() => {
     setTimeout(() => window.print(), 0);
   }
 
+  function imprimirArqueo(){
+    renderArqueoView();
+    document.body.classList.add('cc-print-arqueo');
+    setTimeout(() => window.print(), 0);
+  }
+
   window.addEventListener('beforeprint', preparePrint);
+  window.addEventListener('afterprint', () => document.body.classList.remove('cc-print-arqueo'));
 
   return {
     render, addRow, deleteRow, updateRow, autorizarRow, updateDenom,
-    guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir
+    guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir,
+    renderArqueoView, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo
   };
 })();
 window.Reposicion = Reposicion;
