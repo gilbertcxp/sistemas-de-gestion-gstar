@@ -328,45 +328,9 @@ if (window.Auth) {
 .repo-scope .empty-hint{color:var(--rp-muted);font-size:13px;font-style:italic;}
 .repo-scope .cc-print-value{display:none;}
 
-/* ---- Arqueo de caja: plantilla estilo Excel adjunta ---- */
-.arq-wrap{max-width:760px;margin:0 auto;}
-.arq-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:14px;}
-.arq-sheet{
-  width:520px;max-width:100%;margin:0 auto;background:#fff;color:#111;
-  font-family:Arial, Helvetica, sans-serif;padding:24px 26px 30px;
-  border:1px solid #d8dce6;box-shadow:0 12px 34px -24px rgba(11,20,55,.35);
-}
-.arq-title{text-align:center;font-weight:700;font-size:16px;line-height:1.2;margin:0;}
-.arq-subtitle{text-align:center;font-weight:700;font-size:12px;line-height:1.2;margin:2px 0 46px;}
-.arq-meta{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;margin-bottom:18px;font-size:11px;}
-.arq-version{text-align:center;}
-.arq-date-label{text-align:right;font-weight:700;padding-right:8px;}
-.arq-date{text-align:left;font-weight:700;}
-.arq-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;}
-.arq-table th,.arq-table td{border:1px solid #222;padding:4px 7px;height:24px;vertical-align:middle;}
-.arq-table .label{font-size:14px;}
-.arq-table .amount{font-weight:700;text-align:left;}
-.arq-section-title{
-  border:none !important;border-bottom:1px solid #222 !important;
-  text-align:center;font-weight:700;font-size:14px;padding-top:16px !important;
-}
-.arq-table th{font-size:12px;font-weight:700;color:#C00000;text-align:center;}
-.arq-den{text-align:right;}
-.arq-qty{text-align:center;}
-.arq-total{text-align:left;}
-.arq-table input,.arq-table textarea{
-  width:100%;border:none;background:transparent;padding:0;margin:0;
-  font:inherit;color:inherit;text-align:inherit;outline:none;
-}
-.arq-table input[type=number]{appearance:textfield;}
-.arq-cheque{font-weight:700;text-align:right;}
-.arq-cheque-value{background:#FFFF00;}
-.arq-grand-label{text-align:center;font-weight:700;}
-.arq-grand-value{font-weight:700;font-size:16px;}
-.arq-note-label{text-align:center;font-weight:700;padding-top:20px;}
-.arq-note-cell{height:54px;}
-.arq-sign{height:48px;border-left:none !important;border-right:none !important;border-bottom:none !important;text-align:center;font-weight:700;}
-.arq-muted{color:#5f6471;font-size:12px;text-align:center;margin-top:12px;}
+.arq-repo-view .wrap{max-width:980px;}
+.arq-repo-view .denoms-table{width:520px;max-width:100%;}
+.arq-repo-view .btn-row{justify-content:flex-end;}
 
 @media print{
   @page{ size:letter portrait; margin:5mm; }
@@ -540,21 +504,13 @@ if (window.Auth) {
     width:100% !important;padding:0 !important;background:#fff !important;
   }
   body.cc-print-arqueo #view-arqueo .topbar,
-  body.cc-print-arqueo .arq-actions,
+  body.cc-print-arqueo #view-arqueo .btn-row,
+  body.cc-print-arqueo #view-arqueo .print-hide,
   body.cc-print-arqueo #view-arqueo > .menu-btn{display:none !important;}
-  body.cc-print-arqueo .arq-wrap{max-width:100% !important;margin:0 !important;}
-  body.cc-print-arqueo .arq-sheet{
-    width:150mm !important;border:none !important;box-shadow:none !important;
-    padding:8mm 10mm !important;margin:0 auto !important;
-  }
-  body.cc-print-arqueo .arq-title{font-size:14px !important;}
-  body.cc-print-arqueo .arq-subtitle{font-size:10px !important;margin-bottom:32px !important;}
-  body.cc-print-arqueo .arq-table{font-size:11px !important;}
-  body.cc-print-arqueo .arq-table th{font-size:10px !important;}
-  body.cc-print-arqueo .arq-table th,
-  body.cc-print-arqueo .arq-table td{height:20px !important;padding:3px 5px !important;}
-  body.cc-print-arqueo .arq-note-cell{height:42px !important;}
-  body.cc-print-arqueo .arq-sign{height:42px !important;}
+  body.cc-print-arqueo #view-arqueo .repo-scope .wrap{max-width:100% !important;}
+  body.cc-print-arqueo #view-arqueo .repo-scope .denoms-table{width:310px !important;}
+  body.cc-print-arqueo #view-arqueo .repo-scope .section{margin-top:6px !important;}
+  body.cc-print-arqueo #view-arqueo .repo-scope .footer-grid{margin-top:14px !important;}
 }
 
 /* ---- Responsive: sidebar collapse ---- */
@@ -919,40 +875,95 @@ if (window.Auth) {
         </div>
       </div>
 
-      <div class="arq-wrap">
-        <div class="arq-actions">
-          <button class="btn btn-primary" onclick="Reposicion.guardarArqueo()">Guardar</button>
-          <button class="btn btn-soft" onclick="Reposicion.renderArqueoView()">Actualizar</button>
-          <button class="btn btn-ghost" onclick="Reposicion.imprimirArqueo()">Imprimir</button>
-        </div>
-        <div class="arq-sheet" id="ccArqSheet">
-          <h2 class="arq-title">GSTAR SERVICES SA</h2>
-          <div class="arq-subtitle">ARQUEO DE CAJA CHICA</div>
-          <div class="arq-meta">
-            <div class="arq-version">V.01062021</div>
-            <div class="arq-date-label">Fecha de solicitud</div>
-            <div class="arq-date" id="ccArqFecha">--</div>
+      <div class="repo-scope arq-repo-view">
+        <div class="wrap">
+          <header class="brand">
+            <div class="brand-left">
+              <div>
+                <img class="brand-logo" src="assets/img/logo.png" alt="Gstar Services">
+                <div class="brand-sub" id="ccArqCajaLabel">Caja Chica Sto. Dgo - Arqueo</div>
+              </div>
+            </div>
+            <div class="brand-right">
+              <div class="rnc-tag">
+                <span class="lbl">RNC</span>
+                <span class="val">131751016</span>
+              </div>
+              <div class="live-clock" id="ccArqLiveClock"></div>
+            </div>
+          </header>
+
+          <div class="section">
+            <div class="card">
+              <div class="section-title">Fondo de caja</div>
+              <div class="grid grid-3">
+                <label class="field">Fondo de caja (RD$)
+                  <input id="ccArqFondo" type="number" step="0.01" readonly>
+                </label>
+                <label class="field">Facturas y desembolsos
+                  <input id="ccArqFacturas" readonly value="0.00">
+                </label>
+                <label class="field">Disponible en caja
+                  <input id="ccArqDisponible" readonly value="0.00">
+                </label>
+              </div>
+            </div>
           </div>
-          <table class="arq-table">
-            <colgroup><col style="width:48%"><col style="width:28%"><col style="width:24%"></colgroup>
-            <tbody>
-              <tr><td class="label">Fondo de caja</td><td></td><td class="amount" id="ccArqFondo">0.00</td></tr>
-              <tr><td class="label">Facturas y desembolsos</td><td></td><td class="amount" id="ccArqFacturas">0.00</td></tr>
-              <tr><td class="label">Repocision anterior</td><td></td><td class="amount" id="ccArqRepAnterior">0.00</td></tr>
-              <tr><td class="label">Total por reponer</td><td></td><td class="amount" id="ccArqPorReponer">0.00</td></tr>
-              <tr><td colspan="3" class="arq-section-title">ARQUEO DE CAJA</td></tr>
-              <tr><th>Denominaciones</th><th>Cantidad</th><th>Total</th></tr>
-            </tbody>
-            <tbody id="ccArqDenomsBody"></tbody>
-            <tfoot>
-              <tr><td class="arq-cheque">CHEQUE</td><td></td><td class="arq-cheque-value"><input id="ccArqCheque" type="number" step="0.01" oninput="Reposicion.updateArqueoCheque(this.value)"></td></tr>
-              <tr><td class="arq-grand-label">Totales</td><td></td><td class="arq-grand-value" id="ccArqTotal">0.00</td></tr>
-              <tr><td class="arq-note-label">NOTA:</td><td colspan="2" class="arq-note-cell"><textarea id="ccArqNota" rows="2" oninput="Reposicion.updateArqueoNota(this.value)"></textarea></td></tr>
-              <tr><td colspan="3" class="arq-sign">Custodio Caja Chica</td></tr>
-              <tr><td colspan="3" class="arq-sign">CONTABILIDAD</td></tr>
-            </tfoot>
-          </table>
-          <div class="arq-muted" id="ccArqDiff"></div>
+
+          <div class="section">
+            <div class="card">
+              <div class="section-title">Arqueo de caja</div>
+              <div class="arqueo-grid">
+                <div class="table-scroll">
+                  <table class="denoms-table">
+                    <thead>
+                      <tr><th>Denominacion</th><th>Cantidad</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="ccArqDenomsBody"></tbody>
+                    <tfoot>
+                      <tr class="cheque-total">
+                        <td colspan="2">Cheque / transferencia</td>
+                        <td class="tot"><input id="ccArqCheque" type="number" step="0.01" oninput="Reposicion.updateArqueoCheque(this.value)"></td>
+                      </tr>
+                      <tr class="grand">
+                        <td colspan="2">Total efectivo contado</td>
+                        <td class="tot" id="ccArqTotal">RD$ 0.00</td>
+                      </tr>
+                      <tr class="diff-total">
+                        <td colspan="3">
+                          <div class="diff-box" id="ccArqDiffBox">
+                            <div class="d-label">Diferencia (arqueo vs. disponible)</div>
+                            <div class="d-value" id="ccArqDiffValue">RD$ 0.00</div>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" id="ccArqNotesSection">
+            <div class="card">
+              <div class="section-title">Notas y validacion</div>
+              <label class="field" id="ccArqNoteField">Nota
+                <textarea id="ccArqNota" rows="2" placeholder="Observaciones sobre este arqueo..." oninput="Reposicion.updateArqueoNota(this.value)"></textarea>
+              </label>
+              <div class="footer-grid">
+                <div class="sign-line">Custodio Caja Chica</div>
+                <div class="sign-line">Contabilidad</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section print-hide">
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="Reposicion.guardarArqueo()">Guardar</button>
+              <button class="btn btn-ghost" onclick="Reposicion.renderArqueoView()">Actualizar</button>
+              <button class="btn btn-ghost" onclick="Reposicion.imprimirArqueo()">Imprimir</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -175,8 +175,8 @@ const Reposicion = (() => {
     document.getElementById('ccNota')?.addEventListener('input', () => { syncHeaderFromDOM(); _dirty = true; });
   }
 
-  function startClock(){
-    const el = document.getElementById('ccLiveClock');
+  function startClockFor(id){
+    const el = document.getElementById(id);
     if(!el || el._ccClockStarted) return;
     el._ccClockStarted = true;
     const tick = () => {
@@ -187,6 +187,10 @@ const Reposicion = (() => {
     };
     tick();
     setInterval(tick, 30000);
+  }
+
+  function startClock(){
+    startClockFor('ccLiveClock');
   }
 
   function syncHeaderFromDOM(){
@@ -352,13 +356,23 @@ const Reposicion = (() => {
       const el = document.getElementById(id);
       if(el) el.textContent = value;
     };
-    setText('ccArqFondo', Utils.fmtNum(state.fondo));
-    setText('ccArqFacturas', Utils.fmtNum(t.totalFacturas));
-    setText('ccArqRepAnterior', Utils.fmtNum(t.totalRepuesto));
-    setText('ccArqPorReponer', Utils.fmtNum(t.totalPorReponer));
-    setText('ccArqTotal', Utils.fmtNum(t.arqueoTotal));
-    setText('ccArqDiff', Math.abs(t.diferencia) >= 0.01 ? `Diferencia contra disponible: ${Utils.fmtMoney(t.diferencia)}` : '');
-    DENOMS.forEach(d => setText(`ccArqDenomTotal-${d}`, Utils.fmtNum((Number(state.denoms[d]) || 0) * d)));
+    const setValue = (id, value) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      if('value' in el) el.value = value;
+      else el.textContent = value;
+    };
+    setValue('ccArqFondo', Number(state.fondo || 0).toFixed(2));
+    setValue('ccArqFacturas', t.totalFacturas.toFixed(2));
+    setValue('ccArqDisponible', t.disponible.toFixed(2));
+    setText('ccArqTotal', Utils.fmtMoney(t.arqueoTotal));
+    setText('ccArqDiffValue', Utils.fmtMoney(t.diferencia));
+    const diffBox = document.getElementById('ccArqDiffBox');
+    if(diffBox) diffBox.className = 'diff-box ' + (Math.abs(t.diferencia) < 0.01 ? 'diff-ok' : 'diff-bad');
+    DENOMS.forEach(d => {
+      const total = (Number(state.denoms[d]) || 0) * d;
+      setText(`ccArqDenomTotal-${d}`, total > 0 ? Utils.fmtMoney(total) : '-');
+    });
   }
 
   function renderArqueoView(){
@@ -370,17 +384,18 @@ const Reposicion = (() => {
       ? 'Caja Chica Stgo'
       : 'Caja Chica Sto. Dgo';
     const sub = document.getElementById('ccArqCajaSub');
-    if(sub) sub.textContent = `${cajaLabel} · formato de arqueo`;
-    const fecha = document.getElementById('ccArqFecha');
-    if(fecha) fecha.textContent = Utils.fmtDate(state.fechaSolicitud || Utils.todayISO());
+    if(sub) sub.textContent = `${cajaLabel} - formato de arqueo`;
+    const label = document.getElementById('ccArqCajaLabel');
+    if(label) label.textContent = `${cajaLabel} - Arqueo`;
+    startClockFor('ccArqLiveClock');
 
     const body = document.getElementById('ccArqDenomsBody');
     if(body){
       body.innerHTML = DENOMS.map(d => `
         <tr>
-          <td class="arq-den">${Utils.fmtNum(d)}</td>
-          <td class="arq-qty"><input type="number" min="0" step="1" value="${state.denoms[d] || ''}" oninput="Reposicion.updateArqueoDenom(${d}, this.value)"></td>
-          <td class="arq-total" id="ccArqDenomTotal-${d}">0.00</td>
+          <td class="den">${d.toLocaleString('es-DO',{minimumFractionDigits:2})}</td>
+          <td><input type="number" min="0" step="1" value="${state.denoms[d] || ''}" placeholder="0" oninput="Reposicion.updateArqueoDenom(${d}, this.value)"></td>
+          <td class="tot" id="ccArqDenomTotal-${d}">-</td>
         </tr>`).join('');
     }
     const cheque = document.getElementById('ccArqCheque');
@@ -565,7 +580,7 @@ const Reposicion = (() => {
     const raw = field.value || '';
     if(field.type === 'date') return Utils.fmtDate(raw);
     if(field.closest('td.num') && !raw.trim()) return ' ';
-    if(field.closest('td.num') || ['ccFondo','ccFacturasView','ccDisponibleView','ccCheque'].includes(field.id)){
+    if(field.closest('td.num') || ['ccFondo','ccFacturasView','ccDisponibleView','ccCheque','ccArqFondo','ccArqFacturas','ccArqDisponible','ccArqCheque'].includes(field.id)){
       return Utils.fmtMoney(raw);
     }
     return raw.trim() || ' ';
@@ -586,6 +601,8 @@ const Reposicion = (() => {
   function preparePrint(){
     if(document.body.classList.contains('cc-print-arqueo')){
       renderArqueoView();
+      document.getElementById('ccArqNoteField')?.classList.toggle('cc-note-empty', !(state?.nota || '').trim());
+      syncPrintValues();
       return;
     }
     if(state){
