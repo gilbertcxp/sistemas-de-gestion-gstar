@@ -38,6 +38,16 @@ const Storage = (() => {
   function _scopedKey(key){ return key + (CAJAS[_currentCaja] || ''); }
   function setCaja(caja){ _currentCaja = Object.prototype.hasOwnProperty.call(CAJAS, caja) ? caja : 'sto_dgo'; }
   function getCaja(){ return _currentCaja; }
+  // ¿Esta clave (ya sufijada, tal como llega de Supabase) pertenece a la caja
+  // dada? Se usa para que Sync NO dispare un re-render cuando cambia una caja
+  // que el usuario ni siquiera está viendo (evita que la tabla se reconstruya
+  // en medio de una edición — ej. al elegir una fecha — por cambios ajenos).
+  function isKeyForCaja(key, caja){
+    const suffix = CAJAS[caja] || '';
+    if(suffix) return key.endsWith(suffix);
+    // Caja por defecto (sin sufijo): la clave no debe terminar en el sufijo de NINGUNA otra caja.
+    return !Object.values(CAJAS).some(s => s && key.endsWith(s));
+  }
 
   function _get(key, fallback){
     try{
@@ -175,7 +185,7 @@ const Storage = (() => {
   }
 
   return {
-    init, setCaja, getCaja,
+    init, setCaja, getCaja, isKeyForCaja,
     getMovimientos, saveMovimientos, addMovimiento, updateMovimiento, getMovimiento,
     getReposiciones, saveReposiciones, addReposicion,
     getConceptos, saveConceptos, addConcepto, updateConcepto, deleteConcepto,

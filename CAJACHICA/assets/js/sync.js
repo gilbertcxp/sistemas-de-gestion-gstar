@@ -86,7 +86,15 @@ const Sync = (() => {
           if(Storage.getSharedKeys().indexOf(row.key) === -1) return;
           if(row.updated_by && row.updated_by === _email()) return; // ignora eco propio
           Storage.applyRemote(row.key, row.value);
-          if(typeof onChange === 'function') onChange(row.key);
+          // Solo dispara el re-render visible si el cambio es de la caja que el
+          // usuario tiene abierta ahora mismo — si no, actualizamos el caché
+          // local igual (arriba) pero sin reconstruir la pantalla. Evita que
+          // ediciones de OTRA caja (ej. otro usuario tecleando en Sto. Dgo)
+          // le rompan al usuario de Stgo lo que está haciendo en ese momento
+          // (como elegir una fecha) al reconstruir la tabla a mitad de la acción.
+          const activeCaja = Storage.getCaja ? Storage.getCaja() : null;
+          const relevant = !activeCaja || !Storage.isKeyForCaja || Storage.isKeyForCaja(row.key, activeCaja);
+          if(relevant && typeof onChange === 'function') onChange(row.key);
         })
         .subscribe();
     }catch(e){ console.warn('Sync.realtime', e); }
