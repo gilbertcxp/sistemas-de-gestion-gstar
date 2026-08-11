@@ -6,7 +6,8 @@
 const Reposicion = (() => {
 
   const DENOMS = [1,5,10,25,50,100,200,500,1000,2000];
-  const FONDO_FIJO = 20000; // fondo fijo de Caja Chica, no editable por ahora
+  const FONDO_FIJO_STO_DGO = 20000; // fondo fijo de Caja Chica, no editable por ahora
+  const FONDO_FIJO_STGO = 30000;
   const LIMITE_AUTORIZACION = 2000;
   const PRIMER_NO_STO_DGO = 264;
 
@@ -16,6 +17,9 @@ const Reposicion = (() => {
   let _selectedPendingIds = new Set();
 
   function _padNo(n){ return String(n).padStart(5,'0'); }
+  function _fondoFijo(){
+    return Storage.getCaja && Storage.getCaja() === 'stgo' ? FONDO_FIJO_STGO : FONDO_FIJO_STO_DGO;
+  }
   function _minNextNo(){
     return Storage.getCaja && Storage.getCaja() === 'stgo' ? 1 : PRIMER_NO_STO_DGO;
   }
@@ -33,7 +37,7 @@ const Reposicion = (() => {
       fechaSolicitud: Utils.todayISO(),
       fechaDesde: Utils.todayISO(),
       fechaHasta: Utils.todayISO(),
-      fondo: FONDO_FIJO,
+      fondo: _fondoFijo(),
       repAnterior: 0,
       nextNo: 1,
       rows: [],
@@ -123,7 +127,7 @@ const Reposicion = (() => {
   function render(){
     if(!_dirty || !state) _loadState();
     _touchDates();
-    state.fondo = FONDO_FIJO; // fijo por ahora, no editable
+    state.fondo = _fondoFijo(); // fijo por caja, no editable
     const cajaLabel = Storage.getCaja && Storage.getCaja() === 'stgo'
       ? 'Caja Chica Stgo · Reposición'
       : 'Caja Chica Sto. Dgo · Reposición';
