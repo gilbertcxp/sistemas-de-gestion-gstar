@@ -331,6 +331,17 @@ if (window.Auth) {
 .arq-repo-view .wrap{max-width:980px;}
 .arq-repo-view .denoms-table{width:520px;max-width:100%;}
 .arq-repo-view .btn-row{justify-content:flex-end;}
+.arq-caja-switch{
+  display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;
+  padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--paper);box-shadow:var(--shadow-sm);
+}
+.arq-caja-switch .field{margin:0;min-width:220px;}
+.arq-caja-switch select.input{height:38px;font-weight:600;}
+@media(max-width:700px){
+  .arq-caja-switch{width:100%;}
+  .arq-caja-switch .field{width:100%;min-width:0;}
+}
 
 @media print{
   @page{ size:letter portrait; margin:5mm; }
@@ -872,6 +883,17 @@ if (window.Auth) {
           </button>
           <h1>Arqueo de Caja</h1>
           <p class="sub" id="ccArqCajaSub">Formato de arqueo de caja chica</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="arq-caja-switch">
+            <div class="field">
+              <label class="f-label" for="ccArqCajaSelect">Caja chica</label>
+              <select class="input" id="ccArqCajaSelect" onchange="Reposicion.cambiarCajaArqueo(this.value)">
+                <option value="sto_dgo">Caja Chica Sto. Dgo</option>
+                <option value="stgo">Caja Chica Stgo</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 

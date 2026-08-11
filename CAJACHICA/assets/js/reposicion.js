@@ -54,6 +54,17 @@ const Reposicion = (() => {
     }catch(e){ return 'Usuario'; }
   }
 
+  function _lockedCajaId(){
+    try{
+      const u = window.Auth && Auth.getUser && Auth.getUser();
+      return u && (u.cajaChicaId === 'stgo' || u.cajaChicaId === 'sto_dgo') ? u.cajaChicaId : null;
+    }catch(e){ return null; }
+  }
+
+  function _activeCajaId(){
+    return Storage.getCaja && Storage.getCaja() === 'stgo' ? 'stgo' : 'sto_dgo';
+  }
+
   function _addRowSilent(nula){
     _ensureNextNo();
     state.rows.push({
@@ -380,13 +391,20 @@ const Reposicion = (() => {
     _touchDates();
     state.fondo = _fondoFijo();
 
-    const cajaLabel = Storage.getCaja && Storage.getCaja() === 'stgo'
+    const cajaActual = _activeCajaId();
+    const cajaLabel = cajaActual === 'stgo'
       ? 'Caja Chica Stgo'
       : 'Caja Chica Sto. Dgo';
     const sub = document.getElementById('ccArqCajaSub');
     if(sub) sub.textContent = `${cajaLabel} - formato de arqueo`;
     const label = document.getElementById('ccArqCajaLabel');
     if(label) label.textContent = `${cajaLabel} - Arqueo`;
+    const select = document.getElementById('ccArqCajaSelect');
+    if(select){
+      const locked = _lockedCajaId();
+      select.value = locked || cajaActual;
+      select.disabled = !!locked;
+    }
     startClockFor('ccArqLiveClock');
 
     const body = document.getElementById('ccArqDenomsBody');
@@ -403,6 +421,20 @@ const Reposicion = (() => {
     const nota = document.getElementById('ccArqNota');
     if(nota) nota.value = state.nota || '';
     renderArqueoTotals();
+  }
+
+  function cambiarCajaArqueo(caja){
+    const locked = _lockedCajaId();
+    const cajaDestino = locked || (caja === 'stgo' ? 'stgo' : 'sto_dgo');
+    if(state && _dirty){
+      _touchDates();
+      state.fondo = _fondoFijo();
+      Storage.savePeriodoActual(state);
+    }
+    Storage.setCaja(cajaDestino);
+    state = null;
+    _dirty = false;
+    renderArqueoView();
   }
 
   function updateArqueoDenom(d, value){
@@ -631,7 +663,7 @@ const Reposicion = (() => {
   return {
     render, addRow, deleteRow, updateRow, autorizarRow, updateDenom,
     guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir,
-    renderArqueoView, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo
+    renderArqueoView, cambiarCajaArqueo, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo
   };
 })();
 window.Reposicion = Reposicion;
