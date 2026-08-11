@@ -7,6 +7,7 @@ const Reposicion = (() => {
 
   const DENOMS = [1,5,10,25,50,100,200,500,1000,2000];
   const FONDO_FIJO = 20000; // fondo fijo de Caja Chica, no editable por ahora
+  const LIMITE_AUTORIZACION = 2000;
 
   let state = null;
   let _dirty = false;
@@ -57,13 +58,43 @@ const Reposicion = (() => {
       if(!row.estado) row.estado = row.repuesto ? 'Repuesto' : 'Pendiente';
       if(row.comprobante == null) row.comprobante = '';
       if(row.observaciones == null) row.observaciones = '';
+      _syncAuthorizationState(row);
     });
     if(state.rows.length === 0 && !hasStoredState) _addRowSilent();
   }
 
   function _isRepuesto(row){ return String(row.estado || '').toLowerCase() === 'repuesto' || row.repuesto === true; }
+  function _authorizedForAmount(row){
+    return row.autorizado === true && Math.abs((Number(row.montoAutorizado)||0) - (Number(row.monto)||0)) < 0.01;
+  }
+  function _syncAuthorizationState(row){
+    const monto = Number(row.monto) || 0;
+    if(_isRepuesto(row)) return;
+    if(monto > LIMITE_AUTORIZACION){
+      row.requiereAutorizacion = true;
+      if(!_authorizedForAmount(row)){
+        row.autorizado = false;
+        row.autorizadoPor = '';
+        row.autorizadoEn = '';
+        row.estado = 'Pendiente autorizacion';
+      }else if(row.estado === 'Pendiente autorizacion'){
+        row.estado = 'Pendiente';
+      }
+    }else{
+      row.requiereAutorizacion = false;
+      row.autorizado = false;
+      row.montoAutorizado = 0;
+      row.autorizadoPor = '';
+      row.autorizadoEn = '';
+      if(row.estado === 'Pendiente autorizacion') row.estado = 'Pendiente';
+    }
+  }
+  function _isAuthPending(row){
+    _syncAuthorizationState(row);
+    return !_isRepuesto(row) && Number(row.monto) > LIMITE_AUTORIZACION && !_authorizedForAmount(row);
+  }
   function _pendingRows(){
-    return state.rows.filter(row => !_isRepuesto(row) && Number(row.monto) > 0);
+    return state.rows.filter(row => !_isRepuesto(row) && !_isAuthPending(row) && Number(row.monto) > 0);
   }
 
   // Sin controles de fecha en pantalla: el período siempre corre desde el
@@ -145,8 +176,30 @@ const Reposicion = (() => {
 
   function updateRow(idx, field, value){
     state.rows[idx][field] = value;
+    _syncAuthorizationState(state.rows[idx]);
     _dirty = true;
     if(field === 'monto') renderRows();
+  }
+
+  function autorizarRow(idx){
+    const row = state.rows[idx];
+    if(!row) return;
+    if(Number(row.monto) <= LIMITE_AUTORIZACION){
+      UI.toast('Este desembolso no requiere autorizacion', 'ok');
+      return;
+    }
+    UI.requirePin(() => {
+      row.requiereAutorizacion = true;
+      row.autorizado = true;
+      row.montoAutorizado = Number(row.monto) || 0;
+      row.autorizadoPor = currentUserLabel();
+      row.autorizadoEn = new Date().toISOString();
+      row.estado = 'Pendiente';
+      Storage.savePeriodoActual(state);
+      _dirty = false;
+      renderRows();
+      UI.toast('Desembolso autorizado', 'ok');
+    });
   }
 
   function renderRows(){
@@ -159,15 +212,17 @@ const Reposicion = (() => {
 
     state.rows.forEach((row, idx) => {
       const monto = parseFloat(row.monto);
-      if(!isNaN(monto)){
+      const authPending = _isAuthPending(row);
+      const cuenta = !authPending;
+      if(!isNaN(monto) && cuenta){
         totalFacturas += monto;
         if(_isRepuesto(row)) totalRepuesto += monto;
         else running -= monto;
       }
-      const statusClass = _isRepuesto(row) ? 'status-repuesto' : 'status-pendiente';
-      const statusText = _isRepuesto(row) ? 'Repuesto' : 'Pendiente';
+      const statusClass = _isRepuesto(row) ? 'status-repuesto' : authPending ? 'status-autorizacion' : _authorizedForAmount(row) ? 'status-autorizado' : 'status-pendiente';
+      const statusText = _isRepuesto(row) ? 'Repuesto' : authPending ? 'Pendiente autorizacion' : _authorizedForAmount(row) ? 'Autorizado' : 'Pendiente';
       const tr = document.createElement('tr');
-      tr.className = 'perf';
+      tr.className = 'perf' + (authPending ? ' auth-pending-row' : '');
       tr.innerHTML = `
         <td class="row-no"><input value="${Utils.escapeHtml(row.no)}" onchange="Reposicion.updateRow(${idx},'no',this.value)"></td>
         <td class="row-fecha"><input type="date" value="${row.fecha}" onchange="Reposicion.updateRow(${idx},'fecha',this.value)"></td>
@@ -177,8 +232,20 @@ const Reposicion = (() => {
         <td><span class="status-pill ${statusClass}">${statusText}</span></td>
         <td class="balance-cell row-balance ${running < 0 ? 'balance-neg' : 'balance-pos'}">${Utils.fmtMoney(running)}</td>
         <td class="center"><button class="del-btn" onclick="Reposicion.deleteRow(${idx})" title="Eliminar fila">✕</button></td>`;
+      if(authPending){
+        const actionCell = tr.querySelector('td.center');
+        if(actionCell) actionCell.insertAdjacentHTML('afterbegin', `<button class="auth-btn" onclick="Reposicion.autorizarRow(${idx})">Autorizar</button>`);
+      }
       body.appendChild(tr);
     });
+
+    const pendientesAut = state.rows.filter(row => _isAuthPending(row));
+    const authNotice = document.getElementById('ccAuthNotice');
+    if(authNotice){
+      authNotice.textContent = pendientesAut.length
+        ? `${pendientesAut.length} desembolso(s) sobre RD$ 2,000.00 pendiente(s) de autorizacion. No afectan totales ni reposicion.`
+        : '';
+    }
 
     document.getElementById('ccFacturasView').value = totalFacturas.toFixed(2);
     document.getElementById('ccSumFacturas').textContent = Utils.fmtMoney(totalFacturas);
@@ -236,6 +303,7 @@ const Reposicion = (() => {
   function guardar(){
     syncHeaderFromDOM();
     _touchDates();
+    state.rows.forEach(_syncAuthorizationState);
     Storage.savePeriodoActual(state);
     _dirty = false;
     UI.toast('Reposición guardada', 'ok');
@@ -246,6 +314,11 @@ const Reposicion = (() => {
     _touchDates();
     const pending = _pendingRows();
     if(pending.length === 0){
+      const pendientesAut = state.rows.filter(row => _isAuthPending(row)).length;
+      if(pendientesAut > 0){
+        UI.toast('Hay desembolsos pendientes de autorizacion', 'err');
+        return;
+      }
       UI.toast('No hay desembolsos pendientes de reposición', 'err');
       return;
     }
@@ -266,7 +339,7 @@ const Reposicion = (() => {
         <td>${Utils.escapeHtml(row.descripcion || '—')}</td>
         <td class="num">${Utils.fmtMoney(row.monto)}</td>
         <td>${Utils.escapeHtml(row.comprobante || '—')}</td>
-        <td><span class="status-pill status-pendiente">Pendiente</span></td>
+        <td><span class="status-pill ${_authorizedForAmount(row) ? 'status-autorizado' : 'status-pendiente'}">${_authorizedForAmount(row) ? 'Autorizado' : 'Pendiente'}</span></td>
       </tr>`).join('');
     if(pending.length === 0){
       body.innerHTML = '<tr><td colspan="7" class="empty-hint">No hay desembolsos pendientes de reposición.</td></tr>';
@@ -289,7 +362,7 @@ const Reposicion = (() => {
 
   function confirmarReposicion(){
     syncHeaderFromDOM();
-    const selected = state.rows.filter(row => _selectedPendingIds.has(row.id) && !_isRepuesto(row) && Number(row.monto) > 0);
+    const selected = state.rows.filter(row => _selectedPendingIds.has(row.id) && !_isRepuesto(row) && !_isAuthPending(row) && Number(row.monto) > 0);
     if(selected.length === 0){
       UI.toast('Selecciona al menos un desembolso', 'err');
       return;
@@ -408,7 +481,7 @@ const Reposicion = (() => {
   window.addEventListener('beforeprint', preparePrint);
 
   return {
-    render, addRow, deleteRow, updateRow, updateDenom,
+    render, addRow, deleteRow, updateRow, autorizarRow, updateDenom,
     guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir
   };
 })();

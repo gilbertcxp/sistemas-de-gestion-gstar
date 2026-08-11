@@ -230,6 +230,18 @@ if (window.Auth) {
 .repo-scope .status-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;}
 .repo-scope .status-pendiente{background:#FFF3D6;color:#9A6700;}
 .repo-scope .status-repuesto{background:#DDF7EA;color:#147A4A;}
+.repo-scope .status-autorizacion{background:#FEE2E2;color:#B91C1C;}
+.repo-scope .status-autorizado{background:#DBEAFE;color:#1D4ED8;}
+.repo-scope .auth-pending-row{background:#FFF7F7 !important;}
+.repo-scope .auth-btn{
+  border:none;background:#1F3D6E;color:#fff;border-radius:7px;
+  padding:5px 8px;margin-right:5px;font-size:10px;font-weight:700;cursor:pointer;
+}
+.repo-scope .auth-btn:hover{background:#132A4E;}
+.repo-scope .auth-notice{
+  min-height:0;margin-top:10px;font-size:12.5px;font-weight:600;color:#B91C1C;
+}
+.repo-scope .auth-notice:empty{display:none;}
 .repo-scope .balance-cell{font-weight:700;text-align:right;padding-right:14px;}
 .repo-scope .balance-pos{color:var(--rp-green);}
 .repo-scope .balance-neg{color:var(--rp-red);}
@@ -718,6 +730,7 @@ if (window.Auth) {
                 <button class="btn btn-primary" onclick="Reposicion.addRow()">+ Agregar desembolso</button>
                 <button class="btn btn-ghost" onclick="Reposicion.addRow(true)">+ Fila nula</button>
               </div>
+              <div class="auth-notice print-hide" id="ccAuthNotice"></div>
 
               <div class="summary-strip">
                 <div class="summary-cell">
@@ -952,7 +965,7 @@ if (window.Auth) {
           <div class="field" style="margin-bottom:0;">
             <label class="f-label">PIN de administrador</label>
             <input type="password" class="input" id="cfgAdminPin" placeholder="PIN actual o nuevo">
-            <p class="hint">Requerido para anular movimientos, administrar conceptos y borrar todos los datos. Default: 1234</p>
+            <p class="hint">Requerido para autorizar desembolsos sobre RD$ 2,000, administrar conceptos y borrar todos los datos. Default: 1234</p>
           </div>
           <div><button class="btn btn-primary" onclick="App.guardarConfigPin()">Guardar PIN</button></div>
         </div>
@@ -1120,7 +1133,7 @@ if (window.Auth) {
         <label class="f-label">PIN de administrador</label>
         <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
           onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
-        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
+        <p class="hint">Usa el PIN del usuario autorizado. Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
       </div>
     </div>
     <div class="modal-foot">
