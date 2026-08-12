@@ -241,6 +241,7 @@ const App = (() => {
       try{ await Sync.pull(); }catch(e){ console.warn('Sync.pull falló, se usa data local', e); }
       try{ await DataModule.syncFijosFromAging(); }catch(e){ console.warn('Sync de Pagos Fijos falló, se usa data local', e); }
       try{ await DataModule.syncCompensacion(); }catch(e){ console.warn('Sync de Compensación falló, se usa data local', e); }
+      try{ await Sync.pullBancoOperativo(); }catch(e){ console.warn('Sync de Banco Operativo falló, se usa data local', e); }
     }
     wire();
     DataModule.render();

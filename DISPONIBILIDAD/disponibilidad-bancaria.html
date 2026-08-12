@@ -523,15 +523,21 @@ const DATA = {
 };
 
 /* ===== SHARED STORAGE — publica datos para CXP Solicitud de Pago =====
-   (se invoca desde loadBancosFromSupabase, una vez cargados los datos reales) */
+   (se invoca desde loadBancosFromSupabase, una vez cargados los datos reales)
+   Antes esto SOLO se guardaba en localStorage local ('gstar_disp_banco'), por
+   lo que un usuario que abriera CXP > Solicitud de Pago sin haber visitado
+   antes Disponibilidad Bancaria EN ESE MISMO NAVEGADOR nunca veía la
+   Transferencia entre Cuentas (quedaba en 0.00 aunque en Supabase sí
+   existiera). Ahora también se publica a Supabase (app_state) para que
+   cualquier usuario/dispositivo la reciba vía Sync.pullBancoOperativo(). */
 function publishBancoOperativo(){
   try{
     const op = DATA.bancos.rows.find(r => r.ref && r.ref.includes('9600882715'));
-    if(op) localStorage.setItem('gstar_disp_banco', JSON.stringify({
-      balance:  op.balance,
-      transito: Math.abs(op.transito),
-      transfer: op.transfer
-    }));
+    if(op){
+      const payload = { balance: op.balance, transito: Math.abs(op.transito), transfer: op.transfer };
+      localStorage.setItem('gstar_disp_banco', JSON.stringify(payload));
+      kvSet('disponibilidad_banco_operativo', payload);
+    }
   }catch(e){}
 }
 
@@ -854,6 +860,19 @@ async function kvGet(key){
   const { data, error } = await window.db.from('app_state').select('value').eq('key', key).single();
   if(error || !data) return null;
   return data.value;
+}
+
+async function kvSet(key, value){
+  if(!window.db) return false;
+  try{
+    const session = window.Auth && Auth.getUser ? Auth.getUser() : null;
+    const { error } = await window.db.from('app_state').upsert(
+      { key, value, updated_at: new Date().toISOString(), updated_by: session ? session.email : null },
+      { onConflict: 'key' }
+    );
+    if(error){ console.warn('kvSet', key, error.message); return false; }
+    return true;
+  }catch(e){ console.warn('kvSet ex', key, e); return false; }
 }
 
 async function loadBancosFromSupabase(){

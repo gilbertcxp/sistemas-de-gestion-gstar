@@ -84,6 +84,21 @@ const Sync = (() => {
     return null;
   }
 
+  // Resumen de la Cuenta Operativa (balance, tránsito, transferencia entre
+  // cuentas) publicado por Disponibilidad Bancaria. CXP lo usa para llenar
+  // "Depositos o transferencias entre cuentas" en la Solicitud de Pago —
+  // antes solo se leía de un localStorage local ('gstar_disp_banco') que
+  // quedaba vacío si el usuario nunca había visitado Disponibilidad Bancaria
+  // en ese mismo navegador.
+  async function pullBancoOperativo(){
+    const data = await _pullExternalKey('disponibilidad_banco_operativo');
+    if(data && typeof data === 'object'){
+      try{ localStorage.setItem('gstar_disp_banco', JSON.stringify(data)); }catch(e){}
+      return data;
+    }
+    return null;
+  }
+
   // Empuje con debounce por clave (se llama desde Storage._set)
   function push(key, value){
     clearTimeout(_pushTimers[key]);
@@ -122,6 +137,13 @@ const Sync = (() => {
             if(typeof onChange === 'function') onChange(row.key);
             return;
           }
+          // Resumen de Cuenta Operativa (Disponibilidad Bancaria): se cachea
+          // local con la misma clave que ya leía Solicitud de Pago.
+          if(row.key === 'disponibilidad_banco_operativo'){
+            try{ localStorage.setItem('gstar_disp_banco', JSON.stringify(row.value || {})); }catch(e){}
+            if(typeof onChange === 'function') onChange(row.key);
+            return;
+          }
           if(Storage.getSharedKeys().indexOf(row.key) === -1) return;
           if(row.updated_by && row.updated_by === _email()) return; // ignora eco propio
           Storage.applyRemote(row.key, row.value);
@@ -133,6 +155,6 @@ const Sync = (() => {
 
   function isReady(){ return _ready; }
 
-  return { pull, push, publishAll, subscribeRealtime, isReady, pullAgingData, pullCompensacionRows };
+  return { pull, push, publishAll, subscribeRealtime, isReady, pullAgingData, pullCompensacionRows, pullBancoOperativo };
 })();
 window.Sync = Sync;
