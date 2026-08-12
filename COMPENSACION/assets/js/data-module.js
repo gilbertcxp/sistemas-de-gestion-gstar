@@ -316,6 +316,14 @@ const DataModule = (() => {
           : `<button class="btn btn-ghost btn-icon btn-sm" title="Eliminar esta factura" onclick="DataModule.confirmDeleteRow('${r.id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
             </button>`;
+        // El Pago es editable a mano (excepto en filas agrupadas UD, que
+        // consolidan varios registros): al cambiarlo se recalcula Pendiente
+        // y Estado en vivo, y eso se refleja de inmediato en Solicitud de Pago.
+        const pagoCell = r._count
+          ? Utils.fmtNum(r.pago)
+          : `<input type="number" class="input" step="0.01" min="0" max="${r.monto}" value="${r.pago}"
+               style="width:110px;padding:5px 7px;font-size:12.5px;text-align:right"
+               onchange="DataModule.updatePago('${r.id}', this.value, this)">`;
         return `<tr>
           <td>${nombreCell}</td>
           <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
@@ -325,7 +333,7 @@ const DataModule = (() => {
           <td>${tipoPill}</td>
           <td>${estadoCell}</td>
           <td class="r num">${Utils.fmtNum(r.monto)}</td>
-          <td class="r num">${Utils.fmtNum(r.pago)}</td>
+          <td class="r num">${pagoCell}</td>
           <td class="r num"><b>${Utils.fmtNum(r.pendiente)}</b></td>
           <td class="c">${accionesCell}</td>
         </tr>`;
@@ -390,6 +398,28 @@ const DataModule = (() => {
     const estado  = _deriveEstado(r.tipo, monto, pagoNew, pendNew);
     Storage.updateDataRow(id, { pago:pagoNew, pendiente:pendNew, estado, fechaPago: pagoNew <= 0.001 ? '' : r.fechaPago });
     return { pago:pagoNew, pendiente:pendNew, estado };
+  }
+
+  // Edición manual del Pago desde la tabla Data (ej. corregir un monto pagado
+  // parcialmente): recalcula Pendiente y Estado a partir del nuevo Pago —
+  // si Juan tiene una CXP de 5,000 y se pone Pago 4,500, Pendiente queda en
+  // 500 y así aparece automáticamente en Solicitud de Pago.
+  function updatePago(id, rawValue, inputEl){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r){ if(inputEl) inputEl.value = 0; return; }
+    const monto = Number(r.monto) || 0;
+    let pagoNew = _round2(Number(rawValue) || 0);
+    if(pagoNew < 0) pagoNew = 0;
+    if(pagoNew > monto) pagoNew = monto;
+    const pendNew = _round2(Math.max(monto - pagoNew, 0));
+    const estado  = _deriveEstado(r.tipo, monto, pagoNew, pendNew);
+    UI.requirePin(() => {
+      Storage.updateDataRow(id, { pago: pagoNew, pendiente: pendNew, estado });
+      load();
+      render();
+      UI.toast('Pago actualizado', 'ok');
+      if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+    });
   }
 
   // Marca una fila como saldada por completo (CXP -> Pagada, CXC -> Cobrada).
@@ -535,8 +565,10 @@ const DataModule = (() => {
     document.getElementById('modalDuplicados')?.classList.remove('open');
   }
 
+  // Incluye tanto "Pendiente" como "Parcial" — un CXP con pago parcial sigue
+  // teniendo un saldo por reponer y debe poder aparecer en Solicitud de Pago.
   function getCortes(){
-    return [...new Set(_rows.filter(r => r.tipo==='CXP' && r.estado==='Pendiente').map(r=>r.corte).filter(Boolean))].sort();
+    return [...new Set(_rows.filter(r => r.tipo==='CXP' && (r.estado==='Pendiente' || r.estado==='Parcial')).map(r=>r.corte).filter(Boolean))].sort();
   }
 
   function getConsorcios(){
@@ -544,7 +576,7 @@ const DataModule = (() => {
   }
 
   function getCXPByCorte(corte){
-    return _rows.filter(r => r.tipo==='CXP' && r.corte===corte && r.estado==='Pendiente');
+    return _rows.filter(r => r.tipo==='CXP' && r.corte===corte && (r.estado==='Pendiente' || r.estado==='Parcial'));
   }
 
   // Usa el pendiente "efectivo" (ver _pendienteEfectivo) en vez de confiar
@@ -663,7 +695,7 @@ const DataModule = (() => {
   }
 
   return { render, importFile, load, goPage, setFilter,
-           applyCobro, revertCobro, applyPagoTotal, refresh, getCXCByConsorcio, getConsorciosConCXC,
+           applyCobro, revertCobro, applyPagoTotal, updatePago, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly, corteExists, corteLabelFor, findDuplicates,
            showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte, confirmDeleteRow,
