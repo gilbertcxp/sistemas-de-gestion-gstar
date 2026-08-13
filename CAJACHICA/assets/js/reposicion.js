@@ -657,13 +657,70 @@ const Reposicion = (() => {
     setTimeout(() => window.print(), 0);
   }
 
+  /* ---------------- Descargar desembolsos (Excel) ---------------- */
+  // Junta los desembolsos del período en curso (pendientes o ya autorizados,
+  // aún no repuestos) con todos los ya repuestos en reposiciones archivadas —
+  // es decir, TODOS los desembolsos hechos hasta ahora en la caja activa.
+  function exportarDesembolsos(){
+    if(!_dirty || !state) _loadState();
+
+    const cajaActual = _activeCajaId();
+    const cajaLabel = cajaActual === 'stgo' ? 'Stgo' : 'Sto. Dgo';
+
+    const enCurso = (state.rows || [])
+      .filter(row => Number(row.monto) > 0)
+      .map(row => ({
+        no: row.no,
+        fecha: row.fecha,
+        beneficiario: row.beneficiario || '',
+        descripcion: row.descripcion || '',
+        monto: Number(row.monto) || 0,
+        comprobante: row.comprobante || '',
+        estado: _isRepuesto(row) ? 'Repuesto' : _isAuthPending(row) ? 'Pendiente autorización' : 'Para reposición',
+        reposicion: '',
+        observaciones: row.observaciones || ''
+      }));
+
+    const archivados = Storage.getHistorialReposiciones().flatMap(item =>
+      (item.desembolsos || item.rows || [])
+        .filter(row => Number(row.monto) > 0)
+        .map(row => ({
+          no: row.no,
+          fecha: row.fecha,
+          beneficiario: row.beneficiario || '',
+          descripcion: row.descripcion || '',
+          monto: Number(row.monto) || 0,
+          comprobante: row.comprobante || '',
+          estado: 'Repuesto',
+          reposicion: item.codigo || item.id || '',
+          observaciones: row.observaciones || item.nota || ''
+        }))
+    );
+
+    const todos = [...archivados, ...enCurso].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+
+    if(todos.length === 0){ UI.toast('No hay desembolsos registrados todavía', 'err'); return; }
+
+    const aoa = [
+      ['No.','Fecha','Beneficiario','Descripción','Monto','Comprobante','Estado','Reposición','Observaciones'],
+      ...todos.map(r => [r.no, r.fecha ? Utils.fmtDate(r.fecha) : '', r.beneficiario, r.descripcion, r.monto, r.comprobante, r.estado, r.reposicion, r.observaciones])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:8},{wch:12},{wch:26},{wch:34},{wch:13},{wch:16},{wch:20},{wch:16},{wch:30}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Desembolsos'.slice(0,31));
+    XLSX.writeFile(wb, `CajaChica_Desembolsos_${cajaLabel.replace(/\s+|\./g,'')}_${Utils.todayISO()}.xlsx`);
+    UI.toast('Excel descargado', 'ok');
+  }
+
   window.addEventListener('beforeprint', preparePrint);
   window.addEventListener('afterprint', () => document.body.classList.remove('cc-print-arqueo'));
 
   return {
     render, addRow, deleteRow, updateRow, autorizarRow, updateDenom,
     guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir,
-    renderArqueoView, cambiarCajaArqueo, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo
+    renderArqueoView, cambiarCajaArqueo, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo,
+    exportarDesembolsos
   };
 })();
 window.Reposicion = Reposicion;
