@@ -589,6 +589,23 @@ const Reposicion = (() => {
 
   function renderHistoryView(){ renderHistory(); }
 
+  // Borra el historial de reposiciones archivadas de la caja activa (Sto. Dgo
+  // o Stgo, según cuál se esté viendo). No toca el período en curso ni la
+  // otra caja. Requiere PIN de administrador por ser irreversible.
+  function confirmarBorrarHistorial(){
+    const list = Storage.getHistorialReposiciones();
+    if(list.length === 0){ UI.toast('No hay historial para borrar', 'err'); return; }
+    UI.requirePin(() => {
+      UI.confirm('Borrar historial de reposiciones',
+        `¿Borrar las ${list.length} reposición(es) archivada(s) de esta caja? Esta acción no se puede deshacer.`,
+        () => {
+          Storage.clearHistorialReposiciones();
+          renderHistory();
+          UI.toast('Historial de reposiciones borrado', 'ok');
+        });
+    });
+  }
+
   function verDetalle(id){
     const item = Storage.getHistorialReposiciones().find(rep => rep.id === id);
     if(!item) return;
@@ -720,7 +737,7 @@ const Reposicion = (() => {
     render, addRow, deleteRow, updateRow, autorizarRow, updateDenom,
     guardar, iniciarNuevaReposicion, togglePending, confirmarReposicion, verDetalle, renderHistoryView, imprimir,
     renderArqueoView, cambiarCajaArqueo, updateArqueoDenom, updateArqueoCheque, updateArqueoNota, guardarArqueo, imprimirArqueo,
-    exportarDesembolsos
+    exportarDesembolsos, confirmarBorrarHistorial
   };
 })();
 window.Reposicion = Reposicion;

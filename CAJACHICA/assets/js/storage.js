@@ -136,6 +136,7 @@ const Storage = (() => {
     list.push(item);
     return _set(_scopedKey(K_HISTORIAL_REPO), list);
   }
+  function clearHistorialReposiciones(){ return _set(_scopedKey(K_HISTORIAL_REPO), []); }
 
   // ---------- Settings ----------
   function getSettings(){ return {...DEFAULT_SETTINGS, ..._get(_scopedKey(K_SETTINGS), DEFAULT_SETTINGS)}; }
@@ -190,7 +191,7 @@ const Storage = (() => {
     getReposiciones, saveReposiciones, addReposicion,
     getConceptos, saveConceptos, addConcepto, updateConcepto, deleteConcepto,
     getSettings, saveSettings,
-    getPeriodoActual, savePeriodoActual, getHistorialReposiciones, addHistorialReposicion,
+    getPeriodoActual, savePeriodoActual, getHistorialReposiciones, addHistorialReposicion, clearHistorialReposiciones,
     getNextNumero,
     exportBackup, importBackup, resetAll,
     applyRemote, getSharedKeys
