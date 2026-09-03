@@ -548,6 +548,9 @@ table.dash-clients tbody tr:hover{background:#f1f5f9;cursor:pointer}
             <button class="btn btn-outline no-print" id="ecBtnPrint" onclick="CXC.ecPrint()" disabled>
               <i class="bi bi-printer"></i> Imprimir
             </button>
+            <button class="btn btn-outline no-print" id="ecBtnExcel" onclick="CXC.ecExportExcel()" disabled>
+              <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
             <button class="btn btn-outline no-print" id="ecBtnPDF" onclick="CXC.ecExportPDF()" disabled>
               <i class="bi bi-file-earmark-pdf"></i> PDF
             </button>
@@ -1099,8 +1102,10 @@ const CXC = (() => {
       _allRows.map(r=>`<option value="${_esc(r.name)}">${_esc(r.name)}</option>`).join('');
     _ecClientName = '';
     const bp = document.getElementById('ecBtnPrint');
+    const be = document.getElementById('ecBtnExcel');
     const bd = document.getElementById('ecBtnPDF');
     if (bp) bp.disabled = true;
+    if (be) be.disabled = true;
     if (bd) bd.disabled = true;
     document.getElementById('ecDocument').innerHTML =
       `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
@@ -1109,16 +1114,19 @@ const CXC = (() => {
   function ecOnClientChange(name) {
     _ecClientName = name;
     const bp = document.getElementById('ecBtnPrint');
+    const be = document.getElementById('ecBtnExcel');
     const bd = document.getElementById('ecBtnPDF');
     if (!name) {
       document.getElementById('ecDocument').innerHTML =
         `<div class="ec-placeholder"><i class="bi bi-person-lines-fill ico"></i><span class="msg">Selecciona un cliente para ver su estado de cuenta</span></div>`;
       if (bp) bp.disabled = true;
+      if (be) be.disabled = true;
       if (bd) bd.disabled = true;
       return;
     }
     document.getElementById('ecDocument').innerHTML = _buildEstadoCuenta(name);
     if (bp) bp.disabled = false;
+    if (be) be.disabled = false;
     if (bd) bd.disabled = false;
   }
 
@@ -1256,6 +1264,46 @@ const CXC = (() => {
       </style></head><body>${content}</body></html>`);
     w.document.close(); w.focus();
     w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+  }
+
+  function ecExportExcel() {
+    if (!_ecClientName) return;
+    const rowData  = _allRows.find(r => r.name === _ecClientName);
+    const invoices = _rawByClient[_ecClientName] || [];
+    if (!rowData) { toast('Cliente no encontrado', true); return; }
+
+    const bucketAoa = [
+      ['Período','Rango de Días','Monto'],
+      ...rowData.buckets.map((v,i) => [BKT_NAMES[i], BKT_LABELS[i], v]).filter(r => r[2] !== 0),
+      ['','TOTAL', rowData.total]
+    ];
+
+    const invoiceAoa = [
+      ['N° Doc','Fecha','Vence','Días','Estado','Descripción','Pendiente'],
+      ...invoices.map(row => {
+        const dias = Number(row[6])||0;
+        return [
+          String(row[1]||'').trim(),
+          _fmtExcelDate(row[3]),
+          _fmtExcelDate(row[4]),
+          dias,
+          BKT_NAMES[getBucket(dias)],
+          String(row[7]||'').trim(),
+          parseFloat(String(row[10]).replace(/,/g,''))||0
+        ];
+      }),
+      ['','','','','','TOTAL PENDIENTE', rowData.total]
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const wsBuckets = XLSX.utils.aoa_to_sheet(bucketAoa);
+    XLSX.utils.book_append_sheet(wb, wsBuckets, 'Antigüedad de Saldo');
+    const wsFacturas = XLSX.utils.aoa_to_sheet(invoiceAoa);
+    XLSX.utils.book_append_sheet(wb, wsFacturas, 'Detalle de Facturas');
+
+    const safe = _ecClientName.replace(/[^a-z0-9]/gi,'_');
+    XLSX.writeFile(wb, `EstadoCuenta_CXC_${safe}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Excel descargado');
   }
 
   function ecExportPDF() {
@@ -1791,7 +1839,7 @@ const CXC = (() => {
   })();
 
   return { loadFile, handleDrop, filterTable, clearFilters, exportExcel,
-           navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportPDF, publicar,
+           navigate, toggleGroup, toggleSidebar, ecOnClientChange, ecPrint, ecExportExcel, ecExportPDF, publicar,
            dashApplyFilters, dashReset, dashExport, ddOpen, ddOpenCell, ddClose };
 })();
 </script>
