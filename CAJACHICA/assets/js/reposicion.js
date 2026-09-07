@@ -7,7 +7,7 @@ const Reposicion = (() => {
 
   const DENOMS = [1,5,10,25,50,100,200,500,1000,2000];
   const FONDO_FIJO_STO_DGO = 20000; // fondo fijo de Caja Chica, no editable por ahora
-  const FONDO_FIJO_STGO = 30000;
+  const FONDO_FIJO_STGO = 20000;
   const LIMITE_AUTORIZACION = 2000;
   const PRIMER_NO_STO_DGO = 264;
 
