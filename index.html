@@ -254,6 +254,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       <button class="sub-btn" data-page="cxp-reporte"><span class="dot"></span> Reporte de CXP</button>
     </div>
 
+    <!-- FACTURACIÓN (con submenú) -->
+    <button class="nav-btn" id="facturacionToggle" onclick="toggleSub('facturacion')">
+      <i class="bi bi-file-earmark-text nav-ico"></i> Facturación
+      <i class="bi bi-chevron-double-right chev"></i>
+    </button>
+    <div class="submenu" id="sub-facturacion">
+      <button class="sub-btn" data-page="legalizacion"><span class="dot"></span> Legalización</button>
+    </div>
+
     <button class="nav-btn" id="reportesToggle" onclick="toggleSub('reportes')">
       <i class="bi bi-bar-chart-steps nav-ico"></i> Reportes
       <i class="bi bi-chevron-double-right chev"></i>
@@ -387,6 +396,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="mc-desc">Reporte detallado de cuentas por pagar y gestión de facturas de proveedores.</div>
           <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
         </button>
+        <button class="mod-card" data-page="legalizacion">
+          <div class="mc-top"><div class="mc-icon g"><i class="bi bi-file-earmark-text"></i></div></div>
+          <div class="mc-title">Facturación · Legalización</div>
+          <div class="mc-desc">Control de puntos legalizados por consorcio, grupo e histórico de legalizaciones.</div>
+          <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
+        </button>
         <button class="mod-card" data-page="er">
           <div class="mc-top"><div class="mc-icon g"><i class="bi bi-file-earmark-bar-graph"></i></div></div>
           <div class="mc-title">Reportes · Estado de Resultados</div>
@@ -491,6 +506,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
+  <!-- ======= FACTURACIÓN · LEGALIZACIÓN (app integrada) ======= -->
+  <section class="page" id="page-legalizacion">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-legalizacion"
+              data-src="FACTURACION/legalizacion/index.html"
+              title="Legalización"></iframe>
+    </div>
+  </section>
+
   <!-- ======= CXP · CARTA DE RETENCIÓN (app integrada) ======= -->
   <section class="page" id="page-cxp-carta">
     <div class="embed-wrap">
@@ -562,6 +586,7 @@ const PAGES = {
   'cxp-antiguedad':  {title:'Antigüedad de Saldo',        crumb:'Cuentas por Pagar › Antigüedad de Saldo',  sub:'cxp'},
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
   'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'},
+  'legalizacion':    {title:'Legalización',               crumb:'Facturación › Legalización',                sub:'facturacion'},
   'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'},
   'bg':              {title:'Balance General',            crumb:'Reportes › Balance General',                 sub:'reportes'},
   'usuarios':        {title:'Usuarios',                    crumb:'Administración › Usuarios',                  sub:false}
@@ -639,6 +664,11 @@ function lazyLoadFrame(page){
   // CXC · Antigüedad de Saldo
   if(page==='cxc'){
     const f=document.getElementById('frame-cxc');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Facturación · Legalización
+  if(page==='legalizacion'){
+    const f=document.getElementById('frame-legalizacion');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // CXP · Antigüedad de Saldo
@@ -763,7 +793,7 @@ function initials(name){
     document.querySelectorAll('[data-page]').forEach(function(el){
       if(perms.indexOf(el.getAttribute('data-page')) === -1) el.style.display = 'none';
     });
-    ['bancoToggle','sub-banco','cxpToggle','sub-cxp','reportesToggle','sub-reportes','navGroupAdmin','navGroupOperacion']
+    ['bancoToggle','sub-banco','cxpToggle','sub-cxp','facturacionToggle','sub-facturacion','reportesToggle','sub-reportes','navGroupAdmin','navGroupOperacion']
       .forEach(function(id){ var el = document.getElementById(id); if(el) el.style.display = 'none'; });
     if(perms.length) navigate(perms[0]);
   }

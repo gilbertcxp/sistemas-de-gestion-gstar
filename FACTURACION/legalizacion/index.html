@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legalización — Gstar Services</title>
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../supabase-client.js"></script>
+<!-- Guard de autenticación -->
+<script src="../../auth/auth.js"></script>
+<script>
+if (window.Auth) {
+  Auth.requireAuth();
+  // Defensa adicional: si el usuario está autenticado pero su acceso está
+  // restringido a otro módulo (usuarios.modulos_permitidos), no dejarlo
+  // entrar por URL directa — lo mandamos al shell principal.
+  if (Auth.isAuthenticated() && !Auth.hasPermission('legalizacion')) {
+    location.replace('../../index.html');
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+/* ---- Legalización: ajustes específicos del módulo ---- */
+.sidebar{ background:#0B1437; }
+.sidebar-brand{ padding:18px 16px 14px; border-bottom:1px solid rgba(255,255,255,.06); gap:0; }
+.sidebar-brand .txt b{ font-size:17px; font-weight:800; letter-spacing:-.3px; color:#fff; display:block; line-height:1.1; }
+.sidebar-brand .txt b span{ color:#3B82F6; }
+.sidebar-brand .txt span{ font-size:9px; font-weight:600; color:#3A5080; text-transform:uppercase; letter-spacing:.9px; }
+.nav-group-label{ font-size:10px; font-weight:700; color:#3A5080; text-transform:uppercase; letter-spacing:1px; padding:12px 10px 4px; }
+.nav-item{ color:#7E94B8; padding:9px 10px; border-radius:8px; }
+.nav-item:hover{ background:rgba(255,255,255,.07) !important; color:#c8d8f0 !important; box-shadow:none !important; }
+.nav-item.active{ background:rgba(59,130,246,.18) !important; color:#fff !important; box-shadow:none !important; border-left:3px solid #3B82F6 !important; padding-left:7px !important; }
+.sidebar-foot{ border-top:1px solid rgba(255,255,255,.05); padding:14px 20px 20px; font-size:11px; color:#4A6090; }
+.sidebar-foot b{ color:#7E94B8; }
+
+/* Breadcrumb de drill-down */
+.lz-breadcrumb{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-faint); margin-bottom:2px; }
+.lz-breadcrumb .lz-link{ color:var(--brand-blue); cursor:pointer; }
+.lz-breadcrumb .lz-link:hover{ text-decoration:underline; }
+
+/* Filas clicables (drill-down) */
+tr.row-clickable, td.row-clickable{ cursor:pointer; }
+table.t tbody tr.row-clickable:hover, table.t tbody td.row-clickable:hover{ background:var(--canvas); }
+
+/* Orden por columna (patrón de DISPONIBILIDAD/disponibilidad-bancaria.html) */
+table.t thead th{ cursor:pointer; user-select:none; }
+table.t thead th .th-in{ display:inline-flex; align-items:center; gap:6px; }
+table.t thead th .sort-i{ font-size:9px; opacity:.35; transition:opacity .15s, transform .2s; }
+table.t thead th.sorted .sort-i{ opacity:1; color:var(--brand-blue); }
+table.t thead th.desc .sort-i{ transform:rotate(180deg); }
+
+/* Alertas */
+.cc-alert{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:var(--r-md); font-size:13px; font-weight:600; }
+.cc-alert svg{ width:18px; height:18px; flex:none; }
+.cc-alert.warn{ background:var(--warn-soft); color:var(--warn); }
+.cc-alert.danger{ background:var(--danger-soft); color:var(--danger); }
+
+/* Dropzone de importación */
+.dropzone{ border:1.5px dashed var(--line); border-radius:var(--r-lg); padding:38px 24px; text-align:center; background:var(--canvas); cursor:pointer; }
+.dropzone:hover{ border-color:var(--brand-red); background:var(--brand-red-soft); }
+.dropzone input[type=file]{ display:none; }
+
+/* Checklist de puntos (modal Nueva Legalización) */
+.leg-puntos-wrap{ max-height:280px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--r-md); }
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex;min-height:100vh;">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="txt">
+        <b>LEGALIZA<span>CIÓN</span></b>
+        <span>GSTAR SERVICES S.A.</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group-label">PRINCIPAL</div>
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+
+      <div class="nav-group-label">GESTIÓN</div>
+      <button class="nav-item" data-view="historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M17 2v4M7 2v4"/></svg>
+        Historial
+      </button>
+      <button class="nav-item" data-view="importar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Importar Catálogo
+      </button>
+
+      <div class="nav-group-label">ANÁLISIS</div>
+      <button class="nav-item" data-view="reportes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7"/><path d="M3 19h18"/></svg>
+        Reportes
+      </button>
+
+      <div class="nav-group-label">SISTEMA</div>
+      <button class="nav-item" data-view="auditoria">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+        Auditoría
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <b>Gstar Services S.A.</b><br>RNC 131751016
+    </div>
+  </aside>
+
+  <main class="main" style="flex:1;min-width:0;">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div>
+        <h1>Legalización</h1>
+        <p class="sub">Control centralizado de puntos legalizados por consorcio y grupo</p>
+      </div>
+
+      <div id="dashAlertas"></div>
+
+      <div class="grid-kpi">
+        <div class="kpi blue"><div class="lbl">Total de Puntos</div><div class="val" id="kpiTotalPuntos">0</div></div>
+        <div class="kpi ok"><div class="lbl">Legalizados</div><div class="val" id="kpiLegalizados">0</div></div>
+        <div class="kpi indigo"><div class="lbl">% Legalizado</div><div class="val" id="kpiPctLegalizado">0%</div></div>
+        <div class="kpi red"><div class="lbl">Vencidos</div><div class="val" id="kpiVencidos">0</div></div>
+        <div class="kpi"><div class="lbl">Pendientes</div><div class="val" id="kpiPendientes">0</div></div>
+      </div>
+      <div class="grid-kpi">
+        <div class="kpi"><div class="lbl">Por Vencer</div><div class="val" id="kpiPorVencer">0</div></div>
+        <div class="kpi"><div class="lbl">Consorcios</div><div class="val" id="kpiConsorcios">0</div></div>
+        <div class="kpi"><div class="lbl">Grupos</div><div class="val" id="kpiGrupos">0</div></div>
+        <div class="kpi"><div class="lbl">Legalizaciones Vigentes</div><div class="val" id="kpiLegalizacionesVigentes">0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Resumen por Consorcio</h3><p class="sub">Haz clic en un consorcio para ver el detalle por grupo</p></div>
+          <button class="btn btn-accent" onclick="Legalizacion.abrirModalNueva()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14m-7-7h14"/></svg>
+            Nueva Legalización
+          </button>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>Consorcio</th><th class="c">Grupos</th><th class="r">Puntos</th><th class="r">Legalizados</th><th class="r">Por Vencer</th><th class="r">Vencidos</th><th class="r">% Legalizado</th></tr></thead>
+            <tbody id="dashConsorcioBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DETALLE CONSORCIO ===================== -->
+    <section class="view" id="view-consorcio">
+      <div class="lz-breadcrumb">
+        <span class="lz-link" onclick="App.switchView('dashboard')">Dashboard</span> ›
+        <b id="consBreadcrumbNombre">—</b>
+      </div>
+      <div>
+        <button class="btn btn-ghost btn-sm" onclick="Consorcio.volver()">← Volver</button>
+      </div>
+
+      <div class="grid-kpi">
+        <div class="kpi blue"><div class="lbl">Total Puntos</div><div class="val" id="consKpiTotal">0</div></div>
+        <div class="kpi ok"><div class="lbl">Legalizados</div><div class="val" id="consKpiLegalizados">0</div></div>
+        <div class="kpi"><div class="lbl">Por Vencer</div><div class="val" id="consKpiPorVencer">0</div></div>
+        <div class="kpi red"><div class="lbl">Vencidos</div><div class="val" id="consKpiVencidos">0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Grupos</h3></div></div>
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>Grupo</th><th>Socio</th><th class="r">Puntos</th><th class="r">Legalizados</th><th class="r">Por Vencer</th><th class="r">Vencidos</th><th>Última Vigencia</th><th></th></tr></thead>
+            <tbody id="consGrupoBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DETALLE GRUPO ===================== -->
+    <section class="view" id="view-grupo">
+      <div class="lz-breadcrumb">
+        <span class="lz-link" onclick="App.switchView('dashboard')">Dashboard</span> ›
+        <span class="lz-link" id="grupoBreadcrumbConsorcio">—</span> ›
+        <b id="grupoBreadcrumbNombre">—</b>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="Grupo.volver()">← Volver</button>
+        <span class="sub">Socio: <b id="grupoSocio">—</b></span>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Puntos del grupo</h3></div>
+          <button class="btn btn-accent" onclick="Legalizacion.abrirModalNueva(Grupo.getActualId())">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14m-7-7h14"/></svg>
+            Nueva Legalización de este grupo
+          </button>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap">
+            <table class="t">
+              <tbody id="grupoTheadWrap"></tbody>
+              <tbody id="grupoPuntosBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HISTORIAL ===================== -->
+    <section class="view" id="view-historial">
+      <div>
+        <h1>Historial de Legalizaciones</h1>
+        <p class="sub">Consulta y filtra todas las legalizaciones registradas</p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="field-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;">
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Año</label>
+              <select class="input" id="histAnio" onchange="Historial.setFilter('anio', this.value)">
+                <option value="">Todos</option>
+                <option value="2023">2023</option><option value="2024">2024</option>
+                <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Mes</label>
+              <select class="input" id="histMes" onchange="Historial.setFilter('mes', this.value)">
+                <option value="">Todos</option>
+                <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+                <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+                <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Consorcio</label>
+              <select class="input" id="histConsorcio" onchange="Historial.setFilter('consorcioId', this.value)"></select>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Grupo</label>
+              <select class="input" id="histGrupo" onchange="Historial.setFilter('grupoId', this.value)"></select>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Punto</label>
+              <input type="text" class="input" id="histPuntoInput" list="histPuntoList" autocomplete="off" placeholder="Buscar punto…" onchange="Historial.onPuntoInput(this.value)">
+              <datalist id="histPuntoList"></datalist>
+            </div>
+          </div>
+          <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="Historial.clearFilters()">Limpiar filtros</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>Fecha</th><th>Grupo</th><th>Consorcio</th><th class="r">Cant. Puntos</th><th>Vence</th><th>Estado</th><th>Creado Por</th><th class="c">Acciones</th></tr></thead>
+            <tbody id="histBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== IMPORTAR CATÁLOGO ===================== -->
+    <section class="view" id="view-importar">
+      <div>
+        <h1>Importar Catálogo MASTER</h1>
+        <p class="sub">Carga el Excel MASTER para actualizar el catálogo de puntos</p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <label class="dropzone" for="impFileInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="34" height="34" style="margin:0 auto 10px;display:block;color:var(--ink-faint)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <div style="font-weight:600">Haz clic aquí o arrastra el archivo Excel MASTER</div>
+            <div class="sub" style="margin-top:4px">Hoja "MASTER", con las columnas ID, CONSORCIO, NO. TERMINALES, etc.</div>
+            <input type="file" id="impFileInput" accept=".xlsx,.xls" onchange="Importador.handleFile(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="card" id="impPreviewWrap" style="display:none">
+        <div class="card-head"><div><h3>Vista Previa</h3></div></div>
+        <div class="card-body">
+          <div id="impPreviewSummary"></div>
+          <div class="table-wrap" style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+            <table class="t">
+              <thead><tr><th>ID</th><th>Punto de Venta</th><th>Grupo</th><th>Municipio</th><th class="r">Terminales</th></tr></thead>
+              <tbody id="impPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="btn-row" style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn btn-primary" id="impBtnConfirmar" onclick="Importador.confirmImport()" disabled>Confirmar Importación</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REPORTES ===================== -->
+    <section class="view" id="view-reportes">
+      <div>
+        <h1>Reportes</h1>
+        <p class="sub">Exporta el resumen y el historial de legalizaciones</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Resumen General</h3><p class="sub">Por consorcio y por grupo, en un solo Excel</p></div></div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-soft" onclick="Exportadores.exportResumenExcel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Excel
+          </button>
+          <button class="btn btn-accent" onclick="Exportadores.exportResumenPDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            PDF (del Dashboard)
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Historial de Legalizaciones</h3><p class="sub">Todas las legalizaciones registradas, con fechas y estado</p></div></div>
+        <div class="card-body">
+          <button class="btn btn-soft" onclick="Exportadores.exportHistorialExcel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 3v12m0-12 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Excel
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AUDITORÍA ===================== -->
+    <section class="view" id="view-auditoria">
+      <div>
+        <h1>Auditoría</h1>
+        <p class="sub">Registro de acciones administrativas (solo lectura)</p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="field-row" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="field" style="margin-bottom:0;">
+              <label class="f-label">Entidad</label>
+              <select class="input" onchange="Auditoria.setFilter('entidad', this.value)">
+                <option value="">Todas</option>
+                <option value="legalizacion">Legalización</option>
+                <option value="catalogo">Catálogo</option>
+                <option value="punto">Punto</option>
+                <option value="grupo">Grupo</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0;"><label class="f-label">Desde</label><input type="date" class="input" onchange="Auditoria.setFilter('desde', this.value)"></div>
+            <div class="field" style="margin-bottom:0;"><label class="f-label">Hasta</label><input type="date" class="input" onchange="Auditoria.setFilter('hasta', this.value)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th class="c">Detalle</th></tr></thead>
+            <tbody id="audBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== MODAL: NUEVA LEGALIZACIÓN ===================== -->
+<div class="modal-overlay" id="modalNuevaLegalizacion">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Nueva Legalización</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalNuevaLegalizacion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">Grupo</label>
+        <select class="input" id="legGrupoSelect" onchange="Legalizacion.onGrupoChange(this.value)"></select>
+      </div>
+
+      <div class="field">
+        <label class="f-label">Puntos a incluir</label>
+        <input type="text" class="input" placeholder="Buscar puntos…" oninput="Legalizacion.filtrarPuntos(this.value)" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;color:var(--ink-soft)">
+          <input type="checkbox" class="chk" id="legChkAll" onchange="Legalizacion.toggleAll(this.checked)">
+          <span>Seleccionar todos</span>
+          <span style="margin-left:auto">Seleccionados: <b id="legSelCount">0</b></span>
+        </div>
+        <div class="leg-puntos-wrap">
+          <table class="t" style="margin:0">
+            <thead><tr><th style="width:36px"></th><th>ID</th><th>Punto de Venta</th><th>Municipio</th></tr></thead>
+            <tbody id="legPuntosBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field"><label class="f-label">Fecha de legalización (Desde)</label><input type="date" class="input" id="legFechaLegalizacion"></div>
+        <div class="field"><label class="f-label">Fecha de vencimiento (Hasta)</label><input type="date" class="input" id="legFechaVencimiento"></div>
+      </div>
+      <div class="field"><label class="f-label">Observaciones</label><textarea class="input" id="legObservaciones" rows="2" placeholder="Observaciones sobre esta legalización…"></textarea></div>
+      <div class="field"><label class="f-label">Documento / soporte (enlace, opcional)</label><input type="text" class="input" id="legDocumentoUrl" placeholder="https://…"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalNuevaLegalizacion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Legalizacion.guardar()">Guardar Legalización</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE PUNTO ===================== -->
+<div class="modal-overlay" id="modalPuntoDetalle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="puntoDetTitle">Detalle de Punto</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalPuntoDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="puntoDetBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE LEGALIZACIÓN (HISTORIAL) ===================== -->
+<div class="modal-overlay" id="modalHistorialDetalle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="histDetTitle">Detalle de Legalización</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalHistorialDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="histDetBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE AUDITORÍA ===================== -->
+<div class="modal-overlay" id="modalAuditoriaDetalle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="audDetTitle">Detalle</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAuditoriaDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="audDetBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: PIN ADMINISTRADOR ===================== -->
+<div class="modal-overlay" id="modalAdminPin" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Verificación de administrador</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
+          onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button>
+      <button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR ===================== -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<!-- Librerías empaquetadas localmente: funciona sin internet -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<script src="assets/vendor/html2canvas.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+<script src="assets/vendor/jspdf.plugin.autotable.min.js"></script>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/estado.js"></script>
+<script src="assets/js/auditoria.js"></script>
+<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/consorcio.js"></script>
+<script src="assets/js/grupo.js"></script>
+<script src="assets/js/legalizacion.js"></script>
+<script src="assets/js/historial.js"></script>
+<script src="assets/js/importador.js"></script>
+<script src="assets/js/exportadores.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
