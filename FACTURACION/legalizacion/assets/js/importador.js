@@ -27,7 +27,7 @@ const Importador = (() => {
     'MIDAS':                 { consorcio:'MIDAS',         socio:'PABLO' },
     'BANI':                  { consorcio:'UD',            socio:'ALEX' },
     'LOS CIBAO':             { consorcio:'UD',            socio:'ALEX' },
-    'VILLA ALTAGRACIA':      { consorcio:'UD',            socio:'LENIN' },
+    'VILLA ALTRAGRACIA':     { consorcio:'UD',            socio:'LENIN' },
     'JOELVIS BONAO':         { consorcio:'ELVIS',         socio:'JOELVIS' },
     'LA VEGA':               { consorcio:'VIVA',          socio:'ALEX' },
     'JUAN TERCEROS':         { consorcio:'JUAN TERCEROS', socio:'JUAN' },
