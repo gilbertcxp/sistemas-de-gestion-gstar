@@ -547,6 +547,8 @@ const certUpd  = r => r.balance + r.intGan + r.intTasa + r.ret;
 
 /* ===== FORMATO ===== */
 function fnum(v){ return Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Igual que fnum pero con paréntesis cuando el monto es negativo (totales/KPIs)
+function fneg(v){ return v<0 ? '('+fnum(v)+')' : fnum(v); }
 function moneyCell(v,{neutral=false,result=false}={}){
   if(v===0||v===null||v===undefined) return '<span class="zero">—</span>';
   const cls = v<0 ? 'neg' : (neutral ? 'val balance' : 'pos');
@@ -605,7 +607,7 @@ function renderBancos(){
         <td>${moneyCell(t.upd,{result:true})}</td>
      </tr></tfoot>`;
 
-  document.querySelector('#tagBancos .mono').textContent = 'RD$ '+fnum(t.upd);
+  document.querySelector('#tagBancos .mono').textContent = 'RD$ '+fneg(t.upd);
   return t.upd;
 }
 
@@ -653,7 +655,7 @@ function renderCert(){
         <td>${moneyCell(t.upd,{result:true})}</td>
      </tr></tfoot>`;
 
-  document.querySelector('#tagCert .mono').textContent = 'RD$ '+fnum(t.upd);
+  document.querySelector('#tagCert .mono').textContent = 'RD$ '+fneg(t.upd);
   return t.upd;
 }
 
@@ -725,11 +727,11 @@ function renderKPIs(totBancos, totCert){
 function renderGrand(totBancos,totCert){
   const disponible = totBancos+totCert;
   const balInicial = DATA.bancos.rows.reduce((s,r)=>s+r.balance,0) + DATA.certificados.rows.reduce((s,r)=>s+r.balance,0);
-  document.getElementById('grandTotal').textContent = fnum(disponible);
-  document.getElementById('gbBancos').textContent   = fnum(totBancos);
-  document.getElementById('gbCert').textContent     = fnum(totCert);
+  document.getElementById('grandTotal').textContent = fneg(disponible);
+  document.getElementById('gbBancos').textContent   = fneg(totBancos);
+  document.getElementById('gbCert').textContent     = fneg(totCert);
   document.getElementById('grandSub').innerHTML =
-    `Balance inicial consolidado <b class="mono" style="color:#E7EEFC">RD$ ${fnum(balInicial)}</b> · Disponibilidad neta al corte`;
+    `Balance inicial consolidado <b class="mono" style="color:#E7EEFC">RD$ ${fneg(balInicial)}</b> · Disponibilidad neta al corte`;
 }
 
 /* ====================================================================
@@ -769,7 +771,7 @@ function renderResumen(totBancos,totCert){
       </div>
       <div class="exc-total exc-total-clickable" ondblclick="switchView('detalle')" title="Doble clic para ver el detalle por cuenta">
         <span class="exc-total-l">Total Disponible</span>
-        <span class="exc-total-v mono ${total<0?'neg':''}"><span class="cur">RD$</span>${fnum(total)}</span>
+        <span class="exc-total-v mono ${total<0?'neg':''}"><span class="cur">RD$</span>${fneg(total)}</span>
       </div>
     </div>`;
   }).join('');
@@ -789,22 +791,22 @@ function renderResumen(totBancos,totCert){
       <div class="exc-body">
         <div class="cert-big">
           <div class="cert-big-l">Balance total de certificados</div>
-          <div class="cert-big-v mono"><span class="cur">RD$</span>${fnum(totCert)}</div>
+          <div class="cert-big-v mono"><span class="cur">RD$</span>${fneg(totCert)}</div>
         </div>
         ${excRow('Cantidad de certificados', certCount, 'count')}
         <div class="exc-row"><span class="exc-row-l">Fecha de actualización</span><span class="exc-row-v">${certFecha||'—'}</span></div>
       </div>
       <div class="exc-total gold exc-total-clickable" ondblclick="switchView('detalle')" title="Doble clic para ver el detalle por cuenta">
         <span class="exc-total-l">Total Certificados</span>
-        <span class="exc-total-v mono"><span class="cur">RD$</span>${fnum(totCert)}</span>
+        <span class="exc-total-v mono"><span class="cur">RD$</span>${fneg(totCert)}</span>
       </div>
     </div>`;
 
   document.getElementById('exCards').innerHTML = acctCards + certCard;
 
-  document.getElementById('rBancos').textContent = fnum(totBancos);
-  document.getElementById('rCert').textContent   = fnum(totCert);
-  document.getElementById('rTotal').textContent  = fnum(totBancos+totCert);
+  document.getElementById('rBancos').textContent = fneg(totBancos);
+  document.getElementById('rCert').textContent   = fneg(totCert);
+  document.getElementById('rTotal').textContent  = fneg(totBancos+totCert);
 }
 
 /* ====================================================================
@@ -830,7 +832,7 @@ function renderCXC(){
     </div>`;
   }).join('');
   const cxcTotal = cxc.consorcios + cxc.ud + cxc.midasDom;
-  document.getElementById('cxcTotal').textContent = 'RD$ '+fnum(cxcTotal);
+  document.getElementById('cxcTotal').textContent = 'RD$ '+fneg(cxcTotal);
 
   const cob = DATA.cobros || { anterior:{rango:'',monto:0}, actual:{rango:'',monto:0} };
   document.getElementById('cobAnteriorRangoOut').textContent = cob.anterior.rango || '—';
@@ -1165,10 +1167,10 @@ function exportPDF(){
     doc.setTextColor(157,234,201); doc.setFont('helvetica','bold'); doc.setFontSize(9);
     doc.text('BALANCE GENERAL DISPONIBLE',20,y+8);
     doc.setTextColor(255,255,255); doc.setFontSize(17);
-    doc.text('RD$ '+fnum(tb+tc),20,y+16);
+    doc.text('RD$ '+fneg(tb+tc),20,y+16);
     doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(174,192,230);
-    doc.text('Total en Bancos: RD$ '+fnum(tb),W-20,y+9,{align:'right'});
-    doc.text('Certificados e Inv.: RD$ '+fnum(tc),W-20,y+15,{align:'right'});
+    doc.text('Total en Bancos: RD$ '+fneg(tb),W-20,y+9,{align:'right'});
+    doc.text('Certificados e Inv.: RD$ '+fneg(tc),W-20,y+15,{align:'right'});
 
     doc.save('disponibilidad_bancaria_'+DATA.reportDateISO+'.pdf');
     toast('PDF exportado');
