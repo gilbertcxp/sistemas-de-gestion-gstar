@@ -542,7 +542,7 @@ function publishBancoOperativo(){
 }
 
 /* ===== LÓGICA (no se altera) ===== */
-const bancoUpd = r => r.balance + r.transito + r.transfer + r.pagos;
+const bancoUpd = r => r.balance + r.transito + r.transfer + r.pagos + (r.pagoComp||0);
 const certUpd  = r => r.balance + r.intGan + r.intTasa + r.ret;
 
 /* ===== FORMATO ===== */
@@ -569,13 +569,14 @@ function renderBancos(){
     {key:'transito',label:'Cheque y Transf.', note:'en tránsito (−)'},
     {key:'transfer',label:'Transferencias', note:'entre cuenta / devol. (+)'},
     {key:'pagos',   label:'Pagos de la semana', note:'y provisión (−)'},
+    {key:'pagoComp',label:'Pago de Compensación', note:'(−)'},
     {key:'upd',     label:'Balance Actualizado'}
   ];
   let rows = cfg.rows.map(r=>({...r, upd:bancoUpd(r)}));
   rows = applySort(rows,'bancos');
 
-  const t = {balance:0,transito:0,transfer:0,pagos:0,upd:0};
-  cfg.rows.forEach(r=>{ t.balance+=r.balance; t.transito+=r.transito; t.transfer+=r.transfer; t.pagos+=r.pagos; t.upd+=bancoUpd(r); });
+  const t = {balance:0,transito:0,transfer:0,pagos:0,pagoComp:0,upd:0};
+  cfg.rows.forEach(r=>{ t.balance+=r.balance; t.transito+=r.transito; t.transfer+=r.transfer; t.pagos+=r.pagos; t.pagoComp+=(r.pagoComp||0); t.upd+=bancoUpd(r); });
 
   document.getElementById('tblBancos').innerHTML =
     thead(cols,'bancos') +
@@ -591,6 +592,7 @@ function renderBancos(){
         <td>${moneyCell(r.transito)}</td>
         <td>${moneyCell(r.transfer)}</td>
         <td>${moneyCell(r.pagos)}</td>
+        <td>${moneyCell(r.pagoComp)}</td>
         <td>${moneyCell(r.upd,{result:true})}</td>
       </tr>`).join('') + '</tbody>' +
     `<tfoot><tr>
@@ -599,6 +601,7 @@ function renderBancos(){
         <td>${moneyCell(t.transito)}</td>
         <td>${moneyCell(t.transfer)}</td>
         <td>${moneyCell(t.pagos)}</td>
+        <td>${moneyCell(t.pagoComp)}</td>
         <td>${moneyCell(t.upd,{result:true})}</td>
      </tr></tfoot>`;
 
@@ -762,6 +765,7 @@ function renderResumen(totBancos,totCert){
         ${excRow('Cheque en Tránsito', r.transito)}
         ${excRow('Transferencias entre cuentas', r.transfer)}
         ${excRow('Pagos pendientes de aprobación', r.pagos)}
+        ${excRow('Pago de Compensación', r.pagoComp)}
       </div>
       <div class="exc-total exc-total-clickable" ondblclick="switchView('detalle')" title="Doble clic para ver el detalle por cuenta">
         <span class="exc-total-l">Total Disponible</span>
@@ -875,6 +879,24 @@ async function kvSet(key, value){
   }catch(e){ console.warn('kvSet ex', key, e); return false; }
 }
 
+/* Pago de Compensación = misma cifra que la línea "Menos: Provisiones, Reservas
+   y pagos de compensacion de la sem." de CXP > Solicitud de Pago: suma de lo
+   pendiente de las filas tipo CXP de la data de Compensación ('fc_data_rows').
+   Se lee de Supabase (no de localStorage) para que sea igual en cualquier
+   navegador/usuario. Misma fórmula que SolicitudPago._pendienteCompensacion. */
+async function getPagoCompensacion(){
+  try{
+    const rows = await kvGet('fc_data_rows');
+    if(!Array.isArray(rows)) return 0;
+    const r2 = n => Math.round((Number(n)||0)*100)/100;
+    return r2(rows.filter(r => r && r.tipo === 'CXP').reduce((s,r)=>{
+      const pendVivo = r2((Number(r.monto)||0) - (Number(r.pago)||0));
+      const pendGuardado = (r.pendiente != null && r.pendiente !== '') ? r2(Number(r.pendiente)||0) : pendVivo;
+      return s + Math.max(0, Math.min(pendVivo, pendGuardado));
+    },0));
+  }catch(e){ console.warn('getPagoCompensacion', e); return 0; }
+}
+
 async function loadBancosFromSupabase(){
   try{
     const balanceInicial = (await kvGet('disponibilidad_balance_inicial')) || {};
@@ -883,6 +905,7 @@ async function loadBancosFromSupabase(){
     const solicitudes    = (await kvGet('cxp_solicitudes')) || [];
     const activa = (Array.isArray(solicitudes) ? solicitudes : []).find(s => s.estado === 'Pendiente');
     const pagosSemana = activa ? (activa.items||[]).reduce((s,i)=>s+(i.valor||0),0) : 0;
+    const pagoCompensacion = await getPagoCompensacion();
 
     const rows = [];
     for(const acc of ['operativa','compensacion']){
@@ -899,8 +922,9 @@ async function loadBancosFromSupabase(){
         return s;
       },0);
       const pagos = acc==='operativa' ? -pagosSemana : 0;
+      const pagoComp = acc==='operativa' ? -pagoCompensacion : 0;
 
-      rows.push({ cuenta:ACCOUNTS_META[acc].cuenta, ref:ACCOUNTS_META[acc].ref, tasa:null, balance, transito, transfer, pagos });
+      rows.push({ cuenta:ACCOUNTS_META[acc].cuenta, ref:ACCOUNTS_META[acc].ref, tasa:null, balance, transito, transfer, pagos, pagoComp });
     }
     DATA.bancos.rows = rows;
     publishBancoOperativo();
@@ -1059,26 +1083,27 @@ function exportExcel(){
     ['Al corte de: '+DATA.reportDateLabel],
     ['Generado: '+new Date().toLocaleString('es-DO')],
     [],
-    ['CUENTAS BANCARIAS E INVERSIONES',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Balance Actualizado'],
-    ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.balance, r.transito, r.transfer, r.pagos, bancoUpd(r)]),
+    ['CUENTAS BANCARIAS E INVERSIONES',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Pago de Compensación (-)','Balance Actualizado'],
+    ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.balance, r.transito, r.transfer, r.pagos, (r.pagoComp||0), bancoUpd(r)]),
     ['TOTAL CUENTAS BANCARIAS',
       DATA.bancos.rows.reduce((s,r)=>s+r.balance,0),
       DATA.bancos.rows.reduce((s,r)=>s+r.transito,0),
       DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0),
-      DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0), tb],
+      DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0),
+      DATA.bancos.rows.reduce((s,r)=>s+(r.pagoComp||0),0), tb],
     [],
-    ['CERTIFICADOS FINANCIEROS E INVERSIONES','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Ret. Intereses 1% (-)','Balance Actualizado'],
-    ...DATA.certificados.rows.map(r=>[r.cuenta+' '+r.ref,(r.tasa*100).toFixed(2)+'%', r.balance, r.intGan, r.ret, certUpd(r)]),
+    ['CERTIFICADOS FINANCIEROS E INVERSIONES','Tasa',DATA.certificados.balanceLabel,'Intereses Ganados','Ret. Intereses 1% (-)','','Balance Actualizado'],
+    ...DATA.certificados.rows.map(r=>[r.cuenta+' '+r.ref,(r.tasa*100).toFixed(2)+'%', r.balance, r.intGan, r.ret, '', certUpd(r)]),
     ['TOTAL CERTIFICADOS FINANCIEROS E INV.','',
       DATA.certificados.rows.reduce((s,r)=>s+r.balance,0),
       DATA.certificados.rows.reduce((s,r)=>s+r.intGan,0),
-      DATA.certificados.rows.reduce((s,r)=>s+r.ret,0), tc],
+      DATA.certificados.rows.reduce((s,r)=>s+r.ret,0), '', tc],
     [],
-    ['TOTAL DISPONIBLE','','','','', tb+tc]
+    ['TOTAL DISPONIBLE','','','','','', tb+tc]
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:42},{wch:9},{wch:20},{wch:20},{wch:20},{wch:20}];
-  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}},{s:{r:1,c:0},e:{r:1,c:5}},{s:{r:2,c:0},e:{r:2,c:5}}];
+  ws['!cols']=[{wch:42},{wch:9},{wch:20},{wch:20},{wch:20},{wch:20},{wch:20}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}},{s:{r:2,c:0},e:{r:2,c:6}}];
   XLSX.utils.book_append_sheet(wb,ws,'Disponibilidad');
   XLSX.writeFile(wb,'disponibilidad_bancaria_'+DATA.reportDateISO+'.xlsx');
   toast('Excel exportado');
@@ -1106,14 +1131,14 @@ function exportPDF(){
     const tc = DATA.certificados.rows.reduce((s,r)=>s+certUpd(r),0);
 
     const moneyCol={1:{halign:'center'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'}};
-    const bancoCol={1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'}};
+    const bancoCol={1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'}};
 
     doc.autoTable({
       startY:31,
-      head:[['Cuentas Bancarias e Inversiones',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Balance Actualizado']],
+      head:[['Cuentas Bancarias e Inversiones',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Pago de Compensación (-)','Balance Actualizado']],
       body:[
-        ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(bancoUpd(r))]),
-        ['TOTAL CUENTAS BANCARIAS',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(tb)]
+        ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(r.pagoComp||0), money(bancoUpd(r))]),
+        ['TOTAL CUENTAS BANCARIAS',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(DATA.bancos.rows.reduce((s,r)=>s+(r.pagoComp||0),0)),money(tb)]
       ],
       theme:'grid', styles:{fontSize:7.5,cellPadding:2.4,lineColor:[229,234,241],textColor:[40,50,70]},
       headStyles:{fillColor:[37,99,235],textColor:255,fontSize:7,fontStyle:'bold',halign:'right'},
