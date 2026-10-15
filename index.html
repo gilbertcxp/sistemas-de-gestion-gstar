@@ -95,6 +95,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
 .topbar-actions{display:flex;align-items:center;gap:9px}
 .icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
 .icon-btn:hover{background:var(--blue-lt);color:var(--blue);border-color:var(--blue)}
+/* Botón "Cerrar" (cierra el módulo abierto y vuelve al Dashboard) */
+.close-page-btn{display:none;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;transition:all .15s}
+.close-page-btn:hover{background:#FEE2E2;color:#DC2626;border-color:#DC2626}
+@media (max-width:640px){.close-page-btn span{display:none}.close-page-btn{width:36px;padding:0;justify-content:center}}
 .user-menu{position:relative}
 .user-chip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;border-radius:30px;border:1px solid var(--border-color);background:var(--bg-card);cursor:pointer;transition:all .15s}
 .user-chip:hover{border-color:var(--blue)}
@@ -298,6 +302,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
       </div>
     </div>
     <div class="topbar-actions">
+      <button class="close-page-btn" id="closePageBtn" onclick="closePage()" title="Cerrar esta pestaña y volver al Dashboard"><i class="bi bi-x-lg"></i><span>Cerrar</span></button>
       <button class="icon-btn" onclick="toggleTheme()" title="Cambiar tema"><i class="bi bi-moon-stars" id="themeIco"></i></button>
       <!-- USER MENU: refleja la sesión activa (auth.js) y permite cerrar sesión. -->
       <div class="user-menu" id="userMenu">
@@ -641,9 +646,31 @@ function navigate(page){
   // Carga diferida de iframes (solo la primera vez)
   lazyLoadFrame(page);
 
+  // Si el módulo se cerró con el botón "Cerrar", se vuelve a cargar desde cero al reabrirlo
+  const frAbierto = target && target.querySelector('iframe');
+  if(frAbierto && frAbierto.dataset.reopen){ frAbierto.src = frAbierto.dataset.reopen; delete frAbierto.dataset.reopen; }
+
+  // Botón "Cerrar": solo fuera del Dashboard y para usuarios sin acceso restringido
+  const cu = window.Auth && Auth.getUser && Auth.getUser();
+  const cperms = (cu && cu.role && cu.role.permissions) || ['*'];
+  const cbtn = document.getElementById('closePageBtn');
+  if(cbtn) cbtn.style.display = (page === 'home' || cperms.indexOf('*') === -1) ? 'none' : 'inline-flex';
+
   // Cerrar sidebar en móvil
   closeSidebar();
   window.scrollTo(0,0);
+}
+
+/* Cierra el módulo abierto (descarga su iframe para liberar memoria y estado) y vuelve al Dashboard */
+function closePage(){
+  const cur = document.querySelector('.page.active');
+  if(!cur || cur.id === 'page-home') return;
+  const fr = cur.querySelector('iframe');
+  if(fr){
+    const src = fr.getAttribute('src');
+    if(src && src !== 'about:blank'){ fr.dataset.reopen = src; fr.src = 'about:blank'; }
+  }
+  navigate('home');
 }
 
 /* Lazy-load de iframes + gestión del placeholder de Erogaciones */
