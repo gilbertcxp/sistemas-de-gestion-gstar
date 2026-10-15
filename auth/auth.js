@@ -25,6 +25,11 @@
   var SESSION_KEY = 'gstar.session';
   var AUDIT_KEY   = 'gstar.audit';
 
+  // Cierre de sesión automático: pasadas 24 horas desde el login, la sesión
+  // se considera vencida y se trata como si el usuario nunca hubiera entrado
+  // (obliga a iniciar sesión de nuevo cada día, sin importar la actividad).
+  var SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
   function audit(event, data) {
     try {
       var log = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
@@ -37,7 +42,20 @@
   function saveSession(s) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) {} }
   function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} }
   function loadSession() {
-    try { var raw = localStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) : null; }
+    try {
+      var raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      var issuedAt = s && s.issuedAt;
+      if (issuedAt && (Date.now() - issuedAt) > SESSION_MAX_AGE_MS) {
+        // Vencida: se limpia y se cierra también del lado de Supabase (best-effort).
+        audit('SESSION_EXPIRED', { email: s.user ? s.user.email : null });
+        clearSession();
+        if (window.db && window.db.auth) { try { window.db.auth.signOut(); } catch (e) {} }
+        return null;
+      }
+      return s;
+    }
     catch (e) { return null; }
   }
 
