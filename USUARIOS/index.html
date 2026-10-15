@@ -156,6 +156,7 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
             <option value="">Completo (todos los módulos)</option>
             <option value="cajachica">Solo Caja Chica</option>
             <option value="legalizacion">Solo Legalización</option>
+            <option value="juegos-virtuales">Solo Juegos Virtuales</option>
           </select>
         </div>
         <div class="ffield" id="nuCajaWrap" style="display:none"><label>Caja Chica asignada</label>
@@ -254,6 +255,7 @@ async function loadUsuarios(){
                 <option value="" ${!u.modulos_permitidos?'selected':''}>Completo</option>
                 <option value="cajachica" ${u.modulos_permitidos==='cajachica'?'selected':''}>Solo Caja Chica</option>
                 <option value="legalizacion" ${u.modulos_permitidos==='legalizacion'?'selected':''}>Solo Legalización</option>
+                <option value="juegos-virtuales" ${u.modulos_permitidos==='juegos-virtuales'?'selected':''}>Solo Juegos Virtuales</option>
               </select>
               <select class="fi" style="min-width:110px;display:${u.modulos_permitidos==='cajachica'?'':'none'}" id="cajaSel_${esc(u.id)}">
                 <option value="sto_dgo" ${u.caja_chica_id==='sto_dgo'?'selected':''}>Sto. Dgo</option>

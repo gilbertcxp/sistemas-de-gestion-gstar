@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juegos Virtuales — Gstar Services</title>
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../supabase-client.js"></script>
+<!-- Guard de autenticación -->
+<script src="../../auth/auth.js"></script>
+<script>
+if (window.Auth) {
+  Auth.requireAuth();
+  // Si el usuario está restringido a otro módulo (usuarios.modulos_permitidos),
+  // no lo dejamos entrar por URL directa: lo mandamos al shell principal.
+  if (Auth.isAuthenticated() && !Auth.hasPermission('juegos-virtuales')) {
+    location.replace('../../index.html');
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+/* ---- Juegos Virtuales: ajustes específicos del módulo (mismo look de Legalización) ---- */
+.sidebar{ background:#0B1437; }
+.sidebar-brand{ padding:18px 16px 14px; border-bottom:1px solid rgba(255,255,255,.06); gap:0; }
+.sidebar-brand .txt b{ font-size:17px; font-weight:800; letter-spacing:-.3px; color:#fff; display:block; line-height:1.1; }
+.sidebar-brand .txt b span{ color:#3B82F6; }
+.sidebar-brand .txt span{ font-size:9px; font-weight:600; color:#3A5080; text-transform:uppercase; letter-spacing:.9px; }
+.nav-group-label{ font-size:10px; font-weight:700; color:#3A5080; text-transform:uppercase; letter-spacing:1px; padding:12px 10px 4px; }
+.nav-item{ color:#7E94B8; padding:9px 10px; border-radius:8px; }
+.nav-item:hover{ background:rgba(255,255,255,.07) !important; color:#c8d8f0 !important; box-shadow:none !important; }
+.nav-item.active{ background:rgba(59,130,246,.18) !important; color:#fff !important; box-shadow:none !important; border-left:3px solid #3B82F6 !important; padding-left:7px !important; }
+.sidebar-foot{ border-top:1px solid rgba(255,255,255,.05); padding:14px 20px 20px; font-size:11px; color:#4A6090; }
+.sidebar-foot b{ color:#7E94B8; }
+
+tr.row-clickable{ cursor:pointer; }
+table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
+
+.cc-alert{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:var(--r-md); font-size:13px; font-weight:600; margin-bottom:10px; }
+.cc-alert.warn{ background:var(--warn-soft); color:var(--warn); }
+.cc-alert.danger{ background:var(--danger-soft); color:var(--danger); }
+
+.dropzone{ border:1.5px dashed var(--line); border-radius:var(--r-lg); padding:38px 24px; text-align:center; background:var(--canvas); cursor:pointer; display:block; }
+.dropzone:hover{ border-color:var(--brand-red); background:var(--brand-red-soft); }
+.dropzone input[type=file]{ display:none; }
+
+.filters{ display:grid; grid-template-columns:2fr 1.4fr 1fr 1fr 1fr 1fr; gap:12px; align-items:end; }
+@media (max-width:900px){ .filters{ grid-template-columns:1fr 1fr; } }
+
+/* ---- Réplica de la factura (formato aprobado) ---- */
+.fac-scroll{ overflow-x:auto; padding-bottom:6px; }
+.inv{ position:relative; width:874px; max-width:none; background:#fff; color:#000; font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif; font-size:14.5px; margin:0 auto; padding-bottom:6px; box-sizing:border-box; }
+.inv-box{ border:1px solid #000; width:874px; box-sizing:border-box; }
+.inv-head{ display:block; width:100%; height:auto; }
+.inv-t{ border-collapse:collapse; table-layout:fixed; width:100%; }
+.inv-t td{ padding:0 6px; white-space:nowrap; overflow:hidden; line-height:1.15; }
+.inv-foot{ position:relative; width:874px; height:150px; }
+.inv-pie{ position:absolute; left:15px; top:14px; width:837px; height:130px; }
+.inv-sello{ position:absolute; left:614px; top:14px; width:93px; }
+.inv-anulada{ position:absolute; top:330px; left:50%; transform:translateX(-50%) rotate(-18deg); font-size:90px; font-weight:800; color:rgba(220,38,38,.22); border:8px solid rgba(220,38,38,.22); padding:0 24px; letter-spacing:6px; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<div class="sidebar-scrim" id="scrim" onclick="UI.closeSidebar()"></div>
+<div id="app" style="display:flex;min-height:100vh;">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="txt">
+        <b>JUEGOS <span>VIRTUALES</span></b>
+        <span>GSTAR SERVICES S.A.</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group-label">JUEGOS VIRTUALES</div>
+      <button class="nav-item active" data-view="facturas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 13h6M9 17h6M9 9h2"/></svg>
+        Facturas
+      </button>
+      <button class="nav-item" data-view="cargar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Cargar
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <b>Gstar Services S.A.</b><br>RNC 131751016
+    </div>
+  </aside>
+
+  <main class="main" style="flex:1;min-width:0;">
+
+    <!-- ===================== FACTURAS ===================== -->
+    <section class="view active" id="view-facturas">
+      <div>
+        <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()" style="margin-bottom:10px;" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <h1>Facturas · Juegos Virtuales</h1>
+        <p class="sub">Facturas generadas a partir de las ventas cargadas desde ORKAPI</p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="filters">
+            <div class="field" style="margin:0"><label class="f-label">Buscar (N° factura o cliente)</label>
+              <input type="text" class="input" placeholder="Ej. JV-0003 o UD ALEX" oninput="Facturas.setFilter('q', this.value)"></div>
+            <div class="field" style="margin:0"><label class="f-label">Período de las ventas</label>
+              <select class="input" id="fcPeriodo" onchange="Facturas.setFilter('periodo', this.value)"></select></div>
+            <div class="field" style="margin:0"><label class="f-label">Tipo</label>
+              <select class="input" onchange="Facturas.setFilter('tipo', this.value)">
+                <option value="">Todas</option><option value="Normal">Normales</option><option value="General">General</option>
+              </select></div>
+            <div class="field" style="margin:0"><label class="f-label">Estado</label>
+              <select class="input" onchange="Facturas.setFilter('estado', this.value)">
+                <option value="">Todos</option><option value="Emitida">Emitida</option><option value="Anulada">Anulada</option>
+              </select></div>
+            <div class="field" style="margin:0"><label class="f-label">Emisión desde</label>
+              <input type="date" class="input" onchange="Facturas.setFilter('emDesde', this.value)"></div>
+            <div class="field" style="margin:0"><label class="f-label">Emisión hasta</label>
+              <input type="date" class="input" onchange="Facturas.setFilter('emHasta', this.value)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Listado de facturas</h3><p class="sub" id="fcCount">0 factura(s)</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-soft" onclick="Asiento.abrirConfig()">Centros de costo / TXT</button><button class="btn btn-accent" onclick="Facturas.abrirGenerar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14m-7-7h14"/></svg>
+            Generar facturas
+          </button></div>
+        </div>
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>N° Factura</th><th>Emisión</th><th>Cliente</th><th>Período</th><th class="r">Venta Bruta</th><th class="r">Total Operador</th><th class="r">Total Gstar</th><th>Estado</th><th>Creada</th><th></th></tr></thead>
+            <tbody id="fcBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CARGAR ===================== -->
+    <section class="view" id="view-cargar">
+      <div>
+        <button class="btn btn-ghost btn-icon menu-btn" onclick="UI.openSidebar()" style="margin-bottom:10px;" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <h1>Cargar ventas · ORKAPI</h1>
+        <p class="sub">Importa el reporte "Movimientos Rapid Resumido" (Excel). Revisa la vista previa antes de confirmar.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <label class="dropzone">
+            <div style="font-weight:600">Haz clic aquí para seleccionar el archivo Excel de ORKAPI</div>
+            <div class="sub" style="margin-top:4px">.xlsx o .xls · columnas Consorcios, Ventas Netas, Pagos, Cargo y Total Bruto</div>
+            <input type="file" id="cgFileInput" accept=".xlsx,.xls" onchange="Cargar.handleFile(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="card" id="cgPreviewWrap" style="display:none">
+        <div class="card-head"><div><h3>Vista previa · <span id="cgArchivoNombre">—</span></h3><p class="sub" id="cgArchivoMeta"></p></div></div>
+        <div class="card-body">
+          <div style="margin-bottom:12px"><span class="f-label" style="display:block;margin-bottom:4px">Período del reporte</span><div id="cgPeriodo"></div></div>
+          <div id="cgAlertas"></div>
+          <div class="grid-kpi" id="cgResumen" style="margin-bottom:14px"></div>
+          <div class="table-wrap" style="max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+            <table class="t">
+              <thead><tr><th class="c">Item</th><th>Consorcio</th><th class="r">Ventas Netas</th><th class="r">Pagos</th><th class="r">Cargo</th><th class="r">Total Bruto</th><th>Estado</th></tr></thead>
+              <tbody id="cgPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="btn-row" style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn btn-ghost" onclick="Cargar.cancelar()">Cancelar</button>
+            <button class="btn btn-primary" id="cgBtnConfirmar" onclick="Cargar.confirmar()" disabled>Confirmar importación</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Lotes importados</h3><p class="sub">Trazabilidad de cada archivo cargado</p></div></div>
+        <div class="card-body pad-0">
+          <div class="table-wrap"><table class="t">
+            <thead><tr><th>Archivo</th><th>Período</th><th class="r">Registros</th><th class="r">Ventas Netas</th><th>Importado</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="cgLotesBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== MODAL: GENERAR FACTURAS ===================== -->
+<div class="modal-overlay" id="modalGenerar">
+  <div class="modal wide" style="max-width:980px">
+    <div class="modal-head">
+      <h3>Generar facturas</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalGenerar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row" style="grid-template-columns:2fr 1fr 1fr;">
+        <div class="field"><label class="f-label">Lote (período de ventas)</label><select class="input" id="genLote" onchange="Facturas.onGenLote(this.value)"></select></div>
+        <div class="field"><label class="f-label">Fecha de emisión</label><input type="date" class="input" id="genEmision" onchange="Facturas.onGenEmision(this.value)"></div>
+        <div class="field"><label class="f-label">Vence</label><input type="date" class="input" id="genVence"></div>
+      </div>
+      <div id="genGeneralBox" style="border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;margin:4px 0 12px;background:var(--canvas)">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px">
+          <input type="checkbox" class="chk" id="genGeneralChk" onchange="Facturas.updGenCount()" style="margin-top:3px">
+          <span><b>Factura GENERAL del lote</b> — una sola factura con la suma de todos los consorcios, a nombre del cliente <b>GENERAL</b>, con numeración aparte (JVG-0001…) distinta a las facturas normales. Sirve para generar el TXT.
+            <span id="genGeneralInfo" style="display:block;margin-top:4px;color:var(--ink-soft)"></span></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;font-size:12.5px;color:var(--ink-soft)">
+        <input type="checkbox" class="chk" id="genChkAll" onchange="Facturas.toggleGenAll(this.checked)">
+        <span>Seleccionar todos</span>
+        <span style="margin-left:auto">Se generará una factura por consorcio · Seleccionados: <b id="genCount">0</b></span>
+      </div>
+      <div class="table-wrap" style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+        <table class="t">
+          <thead><tr><th></th><th>Consorcio (ORKAPI)</th><th>Cliente en la factura</th><th class="r">Venta Bruta</th><th class="r">Premios</th><th class="r">Total Operador</th><th class="r">Total Gstar</th><th>Estado</th></tr></thead>
+          <tbody id="genBody"></tbody>
+        </table>
+      </div>
+      <div class="field" style="margin-top:12px"><label class="f-label">Observaciones (opcional)</label><textarea class="input" id="genObs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalGenerar')">Cancelar</button>
+      <button class="btn btn-primary" id="genBtn" onclick="Facturas.generar()">Generar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE FACTURA ===================== -->
+<div class="modal-overlay" id="modalFacturaDetalle">
+  <div class="modal wide" style="max-width:940px">
+    <div class="modal-head">
+      <h3 id="facDetTitle">Factura</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalFacturaDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="facDetBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="facBtnAnular" onclick="Facturas.anular()" style="margin-right:auto">Anular factura</button>
+      <button class="btn btn-primary" id="facBtnTxt" onclick="Facturas.abrirAsiento()" style="display:none">TXT contable</button>
+      <button class="btn btn-soft" onclick="Facturas.exportarExcel()">Excel</button>
+      <button class="btn btn-accent" onclick="Facturas.exportarPDF()">PDF</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalFacturaDetalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: MOTIVO DE ANULACIÓN ===================== -->
+<div class="modal-overlay" id="modalAnularFactura">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head"><h3>Anular factura</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAnularFactura')">✕</button></div>
+    <div class="modal-body">
+      <p id="anularInfo" style="font-size:13px;color:var(--ink-soft);margin-bottom:10px"></p>
+      <div class="field"><label class="f-label">Motivo de la anulación (obligatorio)</label><textarea class="input" id="anularMotivo" rows="3" placeholder="Ej. Error en el período / datos del cliente…"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalAnularFactura')">Cancelar</button>
+      <button class="btn btn-danger" onclick="Facturas.confirmarAnular()">Anular factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ASIENTO (ENTRADA DE DIARIO / TXT) ===================== -->
+<div class="modal-overlay" id="modalAsiento">
+  <div class="modal wide" style="max-width:980px">
+    <div class="modal-head">
+      <div><h3 id="asTitulo">Entrada de diario</h3><p class="sub" id="asSub"></p></div>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAsiento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="asAlertas"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span id="asEstado"></span></div>
+      <div class="table-wrap" style="max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+        <table class="t">
+          <thead><tr><th>Cuenta</th><th>Concepto</th><th class="r">Débito</th><th class="r">Crédito</th><th class="c">IdCentroCosto</th></tr></thead>
+          <tbody id="asBody"></tbody>
+        </table>
+      </div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;margin-top:12px;max-width:560px">
+        <div class="field" style="margin:0"><label class="f-label">Separador de columnas del TXT</label>
+          <select class="input" id="asDelim"><option value="tab">Tabulador (como Excel «Texto delimitado por tabulaciones»)</option><option value="|">Barra vertical ( | )</option><option value=",">Coma ( , )</option><option value=";">Punto y coma ( ; )</option></select></div>
+        <div class="field" style="margin:0;align-self:end"><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" class="chk" id="asEnc" checked> Incluir fila de encabezado</label></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalAsiento')">Cerrar</button>
+      <button class="btn btn-soft" id="asBtnXlsx" onclick="Asiento.descargarExcel()">Excel (Entrada de diario)</button>
+      <button class="btn btn-primary" id="asBtnTxt" onclick="Asiento.descargarTXT()">Descargar TXT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIGURACIÓN DEL ASIENTO ===================== -->
+<div class="modal-overlay" id="modalConfigAsiento">
+  <div class="modal wide" style="max-width:760px">
+    <div class="modal-head">
+      <h3>Centros de costo y cuentas del asiento</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalConfigAsiento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="sub" style="margin-bottom:10px">Cada consorcio necesita su <b>IdCentroCosto</b> para el renglón de débito de su factura. Se guarda para todos los usuarios.</p>
+      <div class="table-wrap" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
+        <table class="t"><thead><tr><th>Código ORKAPI</th><th>Consorcio</th><th>IdCentroCosto</th></tr></thead><tbody id="cfgCentrosBody"></tbody></table>
+      </div>
+      <div class="field-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="field"><label class="f-label">Cuenta Ventas (débito/crédito)</label><input class="input" id="cfgCuentaVentas"></div>
+        <div class="field"><label class="f-label">Cuenta Pago de Premios</label><input class="input" id="cfgCuentaPremios"></div>
+        <div class="field"><label class="f-label">Cuenta Comisión Banquera</label><input class="input" id="cfgCuentaComision"></div>
+        <div class="field"><label class="f-label">Cuenta Distribución</label><input class="input" id="cfgCuentaDistrib"></div>
+      </div>
+      <div class="field"><label class="f-label">Descripción de los renglones</label><input class="input" id="cfgDescripcion"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfigAsiento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Asiento.guardarConfig()">Guardar (PIN)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALLE DE LOTE ===================== -->
+<div class="modal-overlay" id="modalLoteDetalle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="loteDetTitle">Lote</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalLoteDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="loteDetBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: PIN ADMINISTRADOR ===================== -->
+<div class="modal-overlay" id="modalAdminPin" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Verificación de administrador</h3>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN"
+          onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button>
+      <button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CONFIRMAR ===================== -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<!-- Librerías empaquetadas localmente: funciona sin internet -->
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<script src="assets/vendor/jszip.min.js"></script>
+<script src="assets/vendor/html2canvas.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/calculo.js"></script>
+<script src="assets/js/plantilla-excel.js"></script>
+<script src="assets/js/exportador.js"></script>
+<script src="assets/js/cargar.js"></script>
+<script src="assets/js/asiento.js"></script>
+<script src="assets/js/facturas.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
