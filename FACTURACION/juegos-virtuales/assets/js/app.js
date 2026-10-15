@@ -51,11 +51,34 @@ const UI = (() => {
     if(cb) cb();
   }
 
+  // Mostrar / ocultar el panel lateral en escritorio (se recuerda mientras dure la sesión del navegador)
+  const CHEV_IZQ = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>';
+  const CHEV_DER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>';
+  function _pintarToggle(colapsado){
+    document.querySelectorAll('.sb-toggle-btn').forEach(b => {
+      b.innerHTML = colapsado ? CHEV_DER : CHEV_IZQ;
+      b.title = colapsado ? 'Mostrar panel' : 'Ocultar panel';
+    });
+  }
+  function toggleSidebarCollapse(){
+    const sb = document.getElementById('sidebar');
+    if(!sb) return;
+    const colapsado = sb.classList.toggle('collapsed');
+    _pintarToggle(colapsado);
+    try{ sessionStorage.setItem('jvSidebarCollapsed', colapsado ? '1' : '0'); }catch(e){}
+  }
+  function restoreSidebarCollapse(){
+    let colapsado = false;
+    try{ colapsado = sessionStorage.getItem('jvSidebarCollapsed') === '1'; }catch(e){}
+    document.getElementById('sidebar')?.classList.toggle('collapsed', colapsado);
+    _pintarToggle(colapsado);
+  }
+
   // Menú lateral en pantallas angostas (móvil/tablet)
   function openSidebar(){ document.getElementById('sidebar')?.classList.add('open'); document.getElementById('scrim')?.classList.add('open'); }
   function closeSidebar(){ document.getElementById('sidebar')?.classList.remove('open'); document.getElementById('scrim')?.classList.remove('open'); }
 
-  return { openModal, closeModal, toast, confirm, runConfirm, requirePin, closeAdminPin, confirmAdminPin, openSidebar, closeSidebar };
+  return { openModal, closeModal, toast, confirm, runConfirm, requirePin, closeAdminPin, confirmAdminPin, openSidebar, closeSidebar, toggleSidebarCollapse, restoreSidebarCollapse };
 })();
 window.UI = UI;
 
@@ -95,6 +118,7 @@ const App = (() => {
 
   async function init(){
     Storage.init();
+    UI.restoreSidebarCollapse();
     wireNav();
     switchView('facturas');
 
