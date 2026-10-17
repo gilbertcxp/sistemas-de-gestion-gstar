@@ -340,7 +340,7 @@ const DataModule = (() => {
         const estadoCls = r.estado === 'Pagada' ? 'ok' : r.estado === 'Pagar' ? 'blue' : (vencida ? 'red' : 'warn');
         const tipoPago = r.tipoPago || 'Provisional';
         const tipoCls = tipoPago === 'Fijo' ? 'blue' : tipoPago === 'Compensación' ? 'indigo' : 'warn';
-        return `<tr>
+        return `<tr data-row-id="${Utils.escapeHtml(r.id)}">
           <td class="c"><input type="checkbox" class="chk" ${_selected.has(r.id)?'checked':''} onchange="DataModule.toggleSelect('${r.id}')"></td>
           <td><input type="text" class="input cxp-inline-input" value="${Utils.escapeHtml(r.proveedor)}"
                 onblur="DataModule.updateField('${r.id}','proveedor', this.value)"
@@ -400,6 +400,26 @@ const DataModule = (() => {
   }
 
   function goPage(p){ _page = p; _renderTable(); }
+
+  // Abre el registro de una factura en el Reporte: limpia los filtros, va a la página
+  // donde está la fila y la resalta (lo usan las Notificaciones de vencimiento).
+  function focusRow(id){
+    load();
+    _f = { proveedor:'', estado:'', desde:'', hasta:'', factura:'' };
+    ['dfProveedor','dfFactura','dfDesde','dfHasta','dfEstado'].forEach(i => { const el = document.getElementById(i); if(el) el.value = ''; });
+    const lista = _getSorted(_getFiltered());
+    const idx = lista.findIndex(r => r.id === id);
+    if(idx < 0){ render(); UI.toast('La factura ya no está en el Reporte de CXP', 'err'); return false; }
+    _page = Math.floor(idx / PER_PAGE) + 1;
+    _renderTable();
+    const tr = [...document.querySelectorAll('#tblCXP tbody tr[data-row-id]')].find(t => t.dataset.rowId === id);
+    if(tr){
+      tr.scrollIntoView({ block:'center' });
+      tr.classList.add('nt-flash');
+      setTimeout(() => tr.classList.remove('nt-flash'), 2600);
+    }
+    return true;
+  }
 
   // ------ public render ------
   function render(){
@@ -471,7 +491,7 @@ const DataModule = (() => {
   }
 
   return {
-    render, load, syncFijosFromAging, syncCompensacion, syncCompensacionFromRows, importProvisionalFile, setFilter, setSort, goPage,
+    render, load, focusRow, syncFijosFromAging, syncCompensacion, syncCompensacionFromRows, importProvisionalFile, setFilter, setSort, goPage,
     toggleSelect, selectAllVisible, clearSelection, getSelectedRows, getSelectedCount,
     updateEstado, updateField, deleteRow, abrirModalAgregarProvision, submitAgregarProvision
   };

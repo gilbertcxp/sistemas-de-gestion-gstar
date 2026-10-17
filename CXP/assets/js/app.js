@@ -245,6 +245,7 @@ const App = (() => {
     }
     wire();
     DataModule.render();
+    if(window.Notificaciones){ try{ Notificaciones.init(); }catch(e){ console.warn('Notificaciones.init falló', e); } }
     if(window.Sync){ Sync.subscribeRealtime(key => syncRerender(key)); }
   }
 

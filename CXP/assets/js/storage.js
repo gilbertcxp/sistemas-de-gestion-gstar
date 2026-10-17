@@ -29,6 +29,14 @@ const Storage = (() => {
   const SHARED_KEYS = [K_ROWS, K_SETTINGS, K_BANK, K_SOLICITUDES];
   let _suppressSync = false;
 
+  // Aviso de cambios (propios o recibidos de otros usuarios): lo usa Notificaciones
+  // para recalcular las alertas de vencimiento. No altera el guardado ni la sincronización.
+  const _listeners = [];
+  function onChange(cb){ if(typeof cb === 'function') _listeners.push(cb); }
+  function _emitChange(key){
+    _listeners.forEach(cb => { try{ cb(key); }catch(e){ console.warn('Storage.onChange', e); } });
+  }
+
   function _get(key, fallback){
     try{
       const raw = localStorage.getItem(key);
@@ -41,6 +49,7 @@ const Storage = (() => {
       if(!_suppressSync && SHARED_KEYS.indexOf(key) !== -1 && window.Sync){
         window.Sync.push(key, value);
       }
+      _emitChange(key);
       return true;
     }catch(e){ console.error('Storage write error', key, e); return false; }
   }
@@ -49,6 +58,7 @@ const Storage = (() => {
     try{ localStorage.setItem(key, JSON.stringify(value)); }
     catch(e){ console.error('applyRemote error', key, e); }
     _suppressSync = false;
+    _emitChange(key);
   }
   function getSharedKeys(){ return SHARED_KEYS.slice(); }
 
@@ -172,6 +182,6 @@ const Storage = (() => {
     getNextNumero, getNumeroActual,
     getSeleccion, saveSeleccion,
     exportBackup, importBackup, resetAll,
-    applyRemote, getSharedKeys
+    applyRemote, getSharedKeys, onChange
   };
 })();
