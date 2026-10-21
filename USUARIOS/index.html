@@ -155,7 +155,6 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
           <select class="fi" id="nuAcceso">
             <option value="">Completo (todos los módulos)</option>
             <option value="cajachica">Solo Caja Chica</option>
-            <option value="legalizacion">Solo Legalización</option>
             <option value="juegos-virtuales">Solo Juegos Virtuales</option>
           </select>
         </div>
@@ -254,7 +253,6 @@ async function loadUsuarios(){
               <select class="fi" style="min-width:150px" id="accSel_${esc(u.id)}" onchange="document.getElementById('cajaSel_${esc(u.id)}').style.display=this.value==='cajachica'?'':'none'">
                 <option value="" ${!u.modulos_permitidos?'selected':''}>Completo</option>
                 <option value="cajachica" ${u.modulos_permitidos==='cajachica'?'selected':''}>Solo Caja Chica</option>
-                <option value="legalizacion" ${u.modulos_permitidos==='legalizacion'?'selected':''}>Solo Legalización</option>
                 <option value="juegos-virtuales" ${u.modulos_permitidos==='juegos-virtuales'?'selected':''}>Solo Juegos Virtuales</option>
               </select>
               <select class="fi" style="min-width:110px;display:${u.modulos_permitidos==='cajachica'?'':'none'}" id="cajaSel_${esc(u.id)}">
