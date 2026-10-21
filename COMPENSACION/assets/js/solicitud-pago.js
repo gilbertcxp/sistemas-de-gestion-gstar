@@ -8,6 +8,18 @@ const SolicitudPago = (() => {
   let _rows = [];
   let _solicitudNumero = null;   // número de la solicitud persistida para el corte actual
 
+  // "Unir cortes": varios cortes pendientes de pago en UNA sola hoja / solicitud.
+  // Mientras haya unión (2+ cortes) _corteSelected guarda la etiqueta combinada
+  // ("corte A + corte B") y _rows reúne los CXP pendientes de todos ellos.
+  let _cortesUnidos = [];
+  const _UNIDOS = '__unidos__';
+  const _SEP = ' + ';
+  const _esUnion = () => _cortesUnidos.length > 1;
+  function _rowsDeSeleccion(){
+    if(_esUnion()) return _cortesUnidos.reduce((acc, c) => acc.concat(DataModule.getCXPByCorte(c)), []);
+    return _corteSelected ? DataModule.getCXPByCorte(_corteSelected) : [];
+  }
+
   // Indicadores financieros: siempre auto-calculados desde Disponibilidad Bancaria
   // y Saldo a Favor de Compensación, nunca digitados a mano (ver _fetchIndicadores).
   let _indicadores = { balanceComp:0, transferencia:0, balanceOp:0 };
@@ -71,7 +83,8 @@ const SolicitudPago = (() => {
     const sel = document.getElementById('spCorteSelect');
     if(!sel) return;
     sel.innerHTML = `<option value="">-- Seleccionar corte --</option>` +
-      cortes.map(c => `<option value="${Utils.escapeHtml(c)}"${c===_corteSelected?' selected':''}>${Utils.escapeHtml(c)}</option>`).join('');
+      (_esUnion() ? `<option value="${_UNIDOS}" selected>Cortes unidos (${_cortesUnidos.length})</option>` : '') +
+      cortes.map(c => `<option value="${Utils.escapeHtml(c)}"${(!_esUnion() && c===_corteSelected)?' selected':''}>${Utils.escapeHtml(c)}</option>`).join('');
   }
 
   // ------ Build document HTML ------
@@ -86,13 +99,30 @@ const SolicitudPago = (() => {
          <span class="doc-bal-val${val<0?' neg':''}">${val<0 ? '('+Utils.fmtMoney(-val)+')' : Utils.fmtMoney(val)}</span>
        </div>`;
 
+    // Con cortes unidos, cada consorcio sale UNA sola vez con la suma de lo pendiente en
+    // todos los cortes (los ítems guardados siguen siendo uno por factura de Data).
+    const _filasUnidas = () => {
+      const mapa = new Map();
+      _rows.forEach(r => {
+        const g = mapa.get(r.consorcio) || { consorcio: r.consorcio, cortes: [], total: 0 };
+        if(g.cortes.indexOf(r.corte) === -1) g.cortes.push(r.corte);
+        g.total += Math.abs(r.pendiente);
+        mapa.set(r.consorcio, g);
+      });
+      return [...mapa.values()].sort((a,b) => String(a.consorcio).localeCompare(String(b.consorcio), 'es'))
+        .map(g => `<tr>
+            <td>${Utils.escapeHtml(g.consorcio)}</td>
+            <td>${Utils.escapeHtml(g.cortes.join(_SEP))}</td>
+            <td class="r">${Utils.fmtMoney(g.total)}</td>
+          </tr>`).join('');
+    };
     const tableRows = _rows.length === 0
       ? `<tr><td colspan="3"><div class="t-empty">${_corteSelected ? 'No hay CXP pendientes en este corte.' : 'Selecciona un corte.'}</div></td></tr>`
-      : _rows.map(r => `<tr>
+      : (_esUnion() ? _filasUnidas() : _rows.map(r => `<tr>
             <td>${Utils.escapeHtml(r.consorcio)}</td>
             <td>${Utils.escapeHtml(r.corte)}</td>
             <td class="r">${Utils.fmtMoney(Math.abs(r.pendiente))}</td>
-          </tr>`).join('');
+          </tr>`).join(''));
 
     return `
       <div class="doc-page">
@@ -111,7 +141,7 @@ const SolicitudPago = (() => {
         </div>
 
         <div class="doc-corte-tag">
-          ${_solicitudNumero ? `<b>Solicitud No.</b> ${_solicitudNumero} &nbsp;·&nbsp; ` : ''}${_corteSelected ? `<b>Corte:</b> ${Utils.escapeHtml(_corteSelected)}` : '<i style="opacity:.6">Selecciona un corte</i>'}
+          ${_solicitudNumero ? `<b>Solicitud No.</b> ${_solicitudNumero} &nbsp;·&nbsp; ` : ''}${_corteSelected ? `<b>${_esUnion() ? 'Cortes unidos:' : 'Corte:'}</b> ${Utils.escapeHtml(_corteSelected)}` : '<i style="opacity:.6">Selecciona un corte</i>'}
         </div>
 
         <div class="doc-balance-grid">
@@ -131,7 +161,7 @@ const SolicitudPago = (() => {
 
         <table class="doc-table">
           <thead>
-            <tr><th>CONSORCIO</th><th>CORTE</th><th class="r">PENDIENTE</th></tr>
+            <tr><th>CONSORCIO</th><th>${_esUnion() ? 'CORTES' : 'CORTE'}</th><th class="r">PENDIENTE</th></tr>
           </thead>
           <tbody>${tableRows}</tbody>
           ${_rows.length > 0 ? `<tfoot>
@@ -154,7 +184,7 @@ const SolicitudPago = (() => {
   async function render(){
     DataModule.load();
     if(_corteSelected){
-      _rows = DataModule.getCXPByCorte(_corteSelected);
+      _rows = _rowsDeSeleccion();
       const found = _findSolicitudForCorte(_corteSelected);
       _solicitudNumero = found ? found.numero : null;
     }
@@ -169,8 +199,12 @@ const SolicitudPago = (() => {
   }
 
   function onCorteChange(val){
+    if(val === _UNIDOS){ updatePreview(); return; }     // se queda la unión actual
+    const veniaDeUnion = _esUnion();
+    _cortesUnidos = [];                                  // elegir un corte suelto deshace la unión
     _corteSelected = val;
-    _rows = val ? DataModule.getCXPByCorte(val) : [];
+    _rows = _rowsDeSeleccion();
+    if(veniaDeUnion) _populateCortes();                  // quita la opción "Cortes unidos" del selector
     const found = val ? _findSolicitudForCorte(val) : null;
     _solicitudNumero = found ? found.numero : null;
     updatePreview();
@@ -179,7 +213,7 @@ const SolicitudPago = (() => {
   // ------ Generar / guardar la solicitud con numeración consecutiva ------
   function generarSolicitud(){
     if(!_corteSelected){ UI.toast('Selecciona un corte primero', 'err'); return; }
-    const rows = DataModule.getCXPByCorte(_corteSelected);
+    const rows = _rowsDeSeleccion();
     if(rows.length === 0){ UI.toast('No hay CXP pendientes en este corte', 'err'); return; }
     const existing = _findSolicitudForCorte(_corteSelected);
     const doIt = () => {
@@ -198,6 +232,14 @@ const SolicitudPago = (() => {
     };
     if(existing){
       UI.confirm('Ya existe una solicitud', `Este corte ya tiene la Solicitud ${existing.numero}. ¿Deseas generar una nueva?`, doIt);
+    } else if(_esUnion()){
+      // Aviso (no bloquea): solicitudes PENDIENTES anteriores que ya incluyen facturas de estos mismos cortes
+      const ids = new Set(rows.map(r => r.id));
+      const solapadas = Storage.getSolicitudes().filter(s => (s.estado || 'Pendiente') === 'Pendiente' && (s.items || []).some(i => ids.has(i.dataRowId)));
+      if(solapadas.length){
+        UI.confirm('Ya hay solicitudes pendientes con estos cortes',
+          `La(s) Solicitud(es) No. ${solapadas.map(s => s.numero).join(', ')} ya incluye(n) facturas de estos cortes. Si generas la unión, esas facturas quedarán en dos solicitudes pendientes (elimina las anteriores si ya no las necesitas). ¿Continuar?`, doIt);
+      } else { doIt(); }
     } else { doIt(); }
   }
 
@@ -242,7 +284,7 @@ const SolicitudPago = (() => {
             yOff += pgH;
           }
         }
-        pdf.save(`Solicitud_Pago_${(_corteSelected||Utils.todayISO()).replace(/[\s\/]/g,'_')}.pdf`);
+        pdf.save(`Solicitud_Pago_${(_esUnion() ? 'Cortes_unidos_' + Utils.todayISO() : (_corteSelected||Utils.todayISO())).replace(/[\s\/]/g,'_')}.pdf`);
         UI.toast('PDF descargado correctamente', 'ok');
       })
       .catch(() => UI.toast('Error al generar el PDF', 'err'));
@@ -285,5 +327,76 @@ const SolicitudPago = (() => {
     .t-empty{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   `; }
 
-  return { render, onCorteChange, updatePreview, printDoc, exportPDF, generarSolicitud };
+  // ------ Unir cortes (modal) ------
+  // Los cortes se etiquetan "dd/mm/aaaa – dd/mm/aaaa": para unirlos se ordenan por su fecha de inicio
+  function _inicioCorte(c){
+    const m = String(c).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    return m ? m[3] + m[2].padStart(2,'0') + m[1].padStart(2,'0') : String(c);
+  }
+  const _porFecha = (a, b) => _inicioCorte(a).localeCompare(_inicioCorte(b));
+  function _datosCorte(corte, solPend){
+    const rows = DataModule.getCXPByCorte(corte);
+    return {
+      corte,
+      consorcios: new Set(rows.map(r => r.consorcio)).size,
+      total: rows.reduce((s, r) => s + Math.abs(r.pendiente), 0),
+      solicitudes: solPend.filter(s => (s.items || []).some(i => i.corte === corte)).map(s => s.numero)
+    };
+  }
+
+  function abrirUnirCortes(){
+    DataModule.load();
+    const cortes = DataModule.getCortes().slice().sort(_porFecha);
+    if(cortes.length < 2){ UI.toast('Solo hay un corte pendiente de pago: no hay cortes que unir', 'err'); return; }
+    const solPend = Storage.getSolicitudes().filter(s => (s.estado || 'Pendiente') === 'Pendiente');
+    const previos = _esUnion() ? new Set(_cortesUnidos) : null;
+    const box = document.getElementById('unirCortesList');
+    if(!box) return;
+    box.innerHTML = cortes.map((c, i) => {
+      const d = _datosCorte(c, solPend);
+      const marcado = previos ? previos.has(c) : true;      // por defecto, todos los pendientes
+      return `<label class="unir-row" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;">
+        <input type="checkbox" class="chk unir-chk" data-corte="${Utils.escapeHtml(c)}" ${marcado ? 'checked' : ''} onchange="SolicitudPago.actualizarResumenUnir()">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${Utils.escapeHtml(c)}</div>
+          <div style="font-size:12px;color:var(--ink-soft)">${d.consorcios} consorcio${d.consorcios !== 1 ? 's' : ''} por pagar${d.solicitudes.length ? ` · <span style="color:var(--warn)">Solicitud No. ${d.solicitudes.join(', ')} pendiente</span>` : ''}</div>
+        </div>
+        <div style="font-family:monospace;font-weight:700;white-space:nowrap">${Utils.fmtMoney(d.total)}</div>
+      </label>`;
+    }).join('');
+    actualizarResumenUnir();
+    UI.openModal('modalUnirCortes');
+  }
+
+  function _cortesMarcados(){
+    return [...document.querySelectorAll('.unir-chk')].filter(c => c.checked).map(c => c.dataset.corte);
+  }
+
+  function actualizarResumenUnir(){
+    const sel = _cortesMarcados();
+    const rows = sel.reduce((acc, c) => acc.concat(DataModule.getCXPByCorte(c)), []);
+    const total = rows.reduce((s, r) => s + Math.abs(r.pendiente), 0);
+    const consorcios = new Set(rows.map(r => r.consorcio)).size;
+    const el = document.getElementById('unirCortesResumen');
+    if(el) el.innerHTML = `<b>${sel.length}</b> corte(s) · <b>${consorcios}</b> consorcio(s) · Total a pagar <b>${Utils.fmtMoney(total)}</b>`;
+    const btn = document.getElementById('unirCortesBtn');
+    if(btn) btn.disabled = sel.length < 2;
+  }
+
+  function confirmarUnirCortes(){
+    const sel = _cortesMarcados().sort(_porFecha);
+    if(sel.length < 2){ UI.toast('Marca al menos dos cortes para unirlos', 'err'); return; }
+    _cortesUnidos = sel;
+    _corteSelected = sel.join(_SEP);
+    _rows = _rowsDeSeleccion();
+    const found = _findSolicitudForCorte(_corteSelected);
+    _solicitudNumero = found ? found.numero : null;
+    UI.closeModal('modalUnirCortes');
+    _populateCortes();
+    updatePreview();
+    UI.toast(`${sel.length} cortes unidos en una sola hoja`, 'ok');
+  }
+
+  return { render, onCorteChange, updatePreview, printDoc, exportPDF, generarSolicitud,
+           abrirUnirCortes, actualizarResumenUnir, confirmarUnirCortes };
 })();

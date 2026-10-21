@@ -997,6 +997,10 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
           <p class="sub">Genera el documento de solicitud para el corte seleccionado</p>
         </div>
         <div class="topbar-actions">
+          <button class="btn btn-ghost" onclick="SolicitudPago.abrirUnirCortes()" title="Une varios cortes pendientes de pago en una sola hoja">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v6a6 6 0 0 0 6 6h0a6 6 0 0 1 6 6"/><path d="M18 3v6a6 6 0 0 1-6 6"/><path d="m15 18 3 3 3-3"/></svg>
+            Unir cortes
+          </button>
           <button class="btn btn-soft" onclick="SolicitudPago.generarSolicitud()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>
             Generar Solicitud
@@ -1544,6 +1548,27 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button>
       <button class="btn btn-danger" id="btnConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: UNIR CORTES (Solicitud de Pago) ===================== -->
+<div class="modal-overlay" id="modalUnirCortes">
+  <div class="modal" style="max-width:620px;width:95vw">
+    <div class="modal-head">
+      <div>
+        <h3>Unir cortes en una sola hoja</h3>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:3px;">Marca los cortes pendientes de pago que quieres reunir. Cada consorcio saldrá una sola vez con el total de todos los cortes.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalUnirCortes')">✕</button>
+    </div>
+    <div style="overflow-y:auto;max-height:52vh;" id="unirCortesList"></div>
+    <div class="modal-foot" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:13px;color:var(--ink-soft);" id="unirCortesResumen"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="UI.closeModal('modalUnirCortes')">Cancelar</button>
+        <button class="btn btn-primary" id="unirCortesBtn" onclick="SolicitudPago.confirmarUnirCortes()">Unir cortes</button>
+      </div>
     </div>
   </div>
 </div>
