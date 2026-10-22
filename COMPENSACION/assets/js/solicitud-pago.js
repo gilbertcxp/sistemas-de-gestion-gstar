@@ -243,21 +243,75 @@ const SolicitudPago = (() => {
     } else { doIt(); }
   }
 
+  // ------ Firmas siempre en la primera hoja ------
+  // Cuando hay muchos consorcios por pagar y el documento no cabe en una sola hoja, el
+  // bloque de firmas se sube justo debajo de los balances (antes de la tabla), para que
+  // SIEMPRE quede en la primera hoja. Si todo cabe en una hoja, las firmas quedan al final.
+  const _RATIO_A4 = 297 / 210;
+  const _ANCHO_A4_PX = 794;                       // 210 mm a 96 dpi
+
+  function _subirFirmas(root){
+    const sig  = root && root.querySelector('.doc-signatures');
+    const grid = root && root.querySelector('.doc-balance-grid');
+    if(!sig || !grid) return false;
+    grid.insertAdjacentElement('afterend', sig);
+    sig.style.margin = '22px 0';
+    sig.classList.add('doc-signatures-top');
+    return true;
+  }
+  // Sube las firmas solo si lo medido (medido) pasa del límite de una hoja
+  function _acomodarFirmas(root, medido, limitePx){
+    if(!medido || !(limitePx > 0)) return false;
+    if(medido.getBoundingClientRect().height <= limitePx) return false;      // cabe en una hoja
+    return _subirFirmas(root);
+  }
+  // ¿El documento completo pasa de una hoja A4? Se mide en un contenedor aparte de ancho A4 fijo
+  // (así la decisión no depende del ancho de la ventana del usuario).
+  function _esLargoA4(){
+    const host = document.createElement('div');
+    host.className = 'doc-preview';
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;visibility:hidden;width:' + _ANCHO_A4_PX + 'px;';
+    host.innerHTML = _buildDocHTML();
+    document.body.appendChild(host);
+    const h = host.getBoundingClientRect().height;
+    host.remove();
+    return h > _ANCHO_A4_PX * _RATIO_A4 * 0.97;
+  }
+
   function updatePreview(){
     const el = document.getElementById('spDocument');
-    if(el) el.innerHTML = _buildDocHTML();
+    if(!el) return;
+    el.innerHTML = _buildDocHTML();
+    if(_esLargoA4()) _subirFirmas(el);          // varias hojas: las firmas van en la primera
   }
 
   // ------ Print ------
   function printDoc(){
     updatePreview();
-    const content = document.getElementById('spDocument').innerHTML;
+    // Documento original (firmas al final): aquí se decide con el ancho/alto reales de la hoja impresa
+    const content = _buildDocHTML();
     const w = window.open('', '_blank', 'width=900,height=700');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Solicitud de Pago</title>
       <style>${_printCSS()}</style></head><body>${content}</body></html>`);
     w.document.close(); w.focus();
-    w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+    w.onload = () => {
+      try{
+        // Área imprimible de una hoja A4 con márgenes de 18mm/20mm (ver @page en _printCSS)
+        const d = w.document, page = d.querySelector('.doc-page');
+        const probe = d.createElement('div');
+        probe.style.cssText = 'position:absolute;visibility:hidden;width:170mm;height:261mm;';
+        d.body.appendChild(probe);
+        const r = probe.getBoundingClientRect();
+        probe.remove();
+        if(page){
+          page.style.width = r.width + 'px';                       // mismo ancho que la hoja impresa
+          _acomodarFirmas(d.body, page, r.height * 0.97);
+          page.style.width = '';
+        }
+      }catch(e){ console.warn('SolicitudPago: no se pudo acomodar las firmas', e); }
+      w.print(); w.onafterprint = () => w.close();
+    };
   }
 
   // ------ PDF export — captura el preview HTML tal como se ve ------
@@ -266,8 +320,11 @@ const SolicitudPago = (() => {
     const el = document.getElementById('spDocument');
     if(!el){ UI.toast('No hay documento para exportar', 'err'); return; }
     UI.toast('Generando PDF…', 'ok');
+    // El PDF se arma con la imagen de la vista: si esa imagen pasaría de una hoja, las firmas suben a la primera
+    _acomodarFirmas(el, el, el.getBoundingClientRect().width * _RATIO_A4 * 0.97);
     html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
       .then(canvas => {
+        updatePreview();                         // restaura la vista (según la regla estándar)
         const { jsPDF } = window.jspdf;
         const pdf    = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
         const imgData = canvas.toDataURL('image/jpeg', 0.97);
@@ -287,13 +344,14 @@ const SolicitudPago = (() => {
         pdf.save(`Solicitud_Pago_${(_esUnion() ? 'Cortes_unidos_' + Utils.todayISO() : (_corteSelected||Utils.todayISO())).replace(/[\s\/]/g,'_')}.pdf`);
         UI.toast('PDF descargado correctamente', 'ok');
       })
-      .catch(() => UI.toast('Error al generar el PDF', 'err'));
+      .catch(() => { updatePreview(); UI.toast('Error al generar el PDF', 'err'); });
   }
 
   // ------ Print CSS ------
   function _printCSS(){ return `
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;padding:18mm 20mm;color:#334155}
+    @page{size:A4;margin:18mm 20mm}
+    body{font-family:Arial,sans-serif;padding:0;color:#334155}
     .doc-page{max-width:100%}
     .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #e2e8f0;margin-bottom:18px}
     .doc-logo{height:130px}
@@ -320,7 +378,7 @@ const SolicitudPago = (() => {
     .doc-table th.r,.doc-table td.r{text-align:right}
     .doc-table td{padding:7px 11px;border-bottom:1px solid #e2e8f0}
     .doc-table tfoot td{background:#f1f5f9;font-weight:700;border-top:2px solid #cbd5e1}
-    .doc-signatures{display:flex;gap:50px;margin-top:36px}
+    .doc-signatures{display:flex;gap:50px;margin-top:36px;page-break-inside:avoid;break-inside:avoid}
     .doc-sig{flex:1}
     .doc-sig-line{border-bottom:1.5px solid #94a3b8;height:34px;margin-bottom:6px}
     .doc-sig-label{font-size:10px;color:#64748b;text-align:center}
