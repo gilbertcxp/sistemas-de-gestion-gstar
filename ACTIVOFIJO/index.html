@@ -112,6 +112,7 @@ table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
           <button onclick="Reportes.inventario(true)">Solo resultados filtrados</button>
         </div>
       </div>
+      <button class="btn btn-soft" onclick="AsientoAF.abrir()" title="Entrada de diario de la depreciación del período, en TXT para carga masiva">Entrada de diario (TXT)</button>
       <button class="btn btn-soft" onclick="Reportes.abrir()">Reportes</button>
       <button class="btn btn-ghost" onclick="Importador.abrirHistorial()">Historial de importaciones</button>
       <button class="btn btn-accent" data-solo-admin onclick="Ficha.nuevo()">+ Nuevo activo</button>
@@ -231,6 +232,7 @@ table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
       <button class="btn btn-soft" onclick="Reportes.retirados()">Activos retirados (Excel)</button>
       <button class="btn btn-soft" onclick="Reportes.revision()">Activos pendientes de revisión (Excel)</button>
       <button class="btn btn-soft" onclick="UI.closeModal('modalReportes');Reportes.cuentas()">Importes por cuenta contable (pantalla)</button>
+      <button class="btn btn-soft" onclick="UI.closeModal('modalReportes');AsientoAF.abrir()">Entrada de diario de depreciación (TXT / Excel)</button>
     </div>
   </div>
 </div>
@@ -239,6 +241,45 @@ table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
     <div class="modal-head"><h3>Importes agrupados por cuenta contable</h3>
       <div style="display:flex;gap:8px"><button class="btn btn-soft btn-sm" onclick="Reportes.cuentasExcel()">Excel</button><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalCuentas')">✕</button></div></div>
     <div class="modal-body" id="cuentasBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ENTRADA DE DIARIO (TXT / EXCEL) ===================== -->
+<div class="modal-overlay" id="modalAsientoAF">
+  <div class="modal wide" style="max-width:1000px">
+    <div class="modal-head">
+      <div><h3 id="asfTitulo">Entrada de diario</h3><p class="sub" id="asfSub"></p></div>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAsientoAF')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="asfAlertas"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span id="asfEstado"></span></div>
+      <div class="table-wrap" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">
+        <table class="t">
+          <thead><tr><th>Cuenta</th><th>Nombre</th><th>Descripción</th><th class="r">Débito</th><th class="r">Crédito</th><th class="c">IdCentroCosto</th></tr></thead>
+          <tbody id="asfBody"></tbody>
+        </table>
+      </div>
+      <div id="asfExtra"></div>
+      <div class="field-row" style="grid-template-columns:2fr 1fr;margin-top:14px">
+        <div class="field" style="margin:0"><label class="f-label">Descripción de los renglones</label><input type="text" class="input" id="asfDesc" oninput="AsientoAF.render()"></div>
+        <div class="field" style="margin:0"><label class="f-label">IdCentroCosto</label><input type="number" min="1" step="1" class="input" id="asfCentro" oninput="AsientoAF.render()"></div>
+      </div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;margin-top:12px">
+        <div class="field" style="margin:0"><label class="f-label">Separador de columnas del TXT</label>
+          <select class="input" id="asfDelim"><option value="tab">Tabulador (como Excel «Texto delimitado por tabulaciones»)</option><option value="|">Barra vertical ( | )</option><option value=",">Coma ( , )</option><option value=";">Punto y coma ( ; )</option></select></div>
+        <div style="display:flex;flex-direction:column;gap:6px;justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" class="chk" id="asfEnc" checked> Incluir fila de encabezado</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" class="chk" id="asfCalc" onchange="AsientoAF.render()"> Incluir activos con importes calculados (no vienen en el corte)</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:10px">Débito a la cuenta de gasto de depreciación y crédito a su cuenta de depreciación acumulada, con los importes registrados en el corte. El archivo solo se genera al pulsar el botón: el sistema no registra ningún asiento.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalAsientoAF')">Cerrar</button>
+      <button class="btn btn-soft" id="asfBtnXlsx" onclick="AsientoAF.descargarExcel()">Excel (Entrada de diario)</button>
+      <button class="btn btn-primary" id="asfBtnTxt" onclick="AsientoAF.descargarTXT()">Descargar TXT</button>
+    </div>
   </div>
 </div>
 
@@ -297,6 +338,7 @@ table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
 <script src="assets/js/ficha.js"></script>
 <script src="assets/js/importador.js"></script>
 <script src="assets/js/reportes.js"></script>
+<script src="assets/js/asiento.js"></script>
 <script>document.addEventListener('click', function(e){ var d=document.getElementById('ddExportar'); if(d && !d.contains(e.target)) d.classList.remove('open'); });</script>
 </body>
 </html>

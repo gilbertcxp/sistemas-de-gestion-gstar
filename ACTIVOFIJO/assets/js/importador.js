@@ -76,6 +76,7 @@ const Importador = (() => {
     const r = p.resumen;
     const alertas = [];
     if(!_parsed.periodo) alertas.push('<div class="cc-alert warn">El nombre de la hoja no indica un período (MM-AAAA): no se puede importar como corte.</div>');
+    if(_parsed.periodo && _parsed.fechaCorte && _parsed.fechaCorte.slice(0, 7) !== _parsed.periodo) alertas.push('<div class="cc-alert warn">La hoja se llama ' + esc(Datos.etiquetaPeriodo(_parsed.periodo)) + ' pero la fecha de corte que trae el archivo es ' + esc(Utils.fmtDate(_parsed.fechaCorte)) + ' (otro mes). Verifica que sea la hoja correcta antes de importar.</div>');
     if(p.periodoYaImportado) alertas.push('<div class="cc-alert warn">Este período ya fue importado. Al confirmar solo se actualizarán los valores que hayan cambiado; no se duplica ningún activo (' + p.sinCambios + ' sin cambios · ' + p.actualizados + ' con cambios · ' + p.nuevos + ' nuevos).</div>');
     if(r.diferenciasConciliacion) alertas.push('<div class="cc-alert warn">' + r.diferenciasConciliacion + ' total(es) de la fila "TOTALES" del archivo NO coinciden con la suma real de los activos (ver conciliación abajo). Se importan los valores de cada activo; no se ajusta nada para forzar el cuadre.</div>');
 
