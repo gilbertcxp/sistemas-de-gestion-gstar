@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activo Fijo — Gstar Services</title>
+<!-- Cliente de Supabase (datos compartidos entre todos los usuarios) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js"></script>
+<!-- Guard de autenticación -->
+<script src="../auth/auth.js"></script>
+<script>
+if (window.Auth) {
+  Auth.requireAuth();
+  // Usuarios restringidos a otro módulo no entran por URL directa
+  if (Auth.isAuthenticated() && !Auth.hasPermission('activo-fijo')) {
+    location.replace('../index.html');
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+/* ---- Activo Fijo: ajustes propios del módulo (mismo sistema visual) ---- */
+body{ background:var(--canvas); }
+.af-page{ max-width:1500px; margin:0 auto; padding:22px 26px 60px; display:flex; flex-direction:column; gap:18px; }
+.af-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.af-head h1{ font-size:26px; }
+.af-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.af-meta{ font-size:12px; color:var(--ink-soft); text-align:right; line-height:1.35; margin-right:4px; }
+.af-meta b{ color:var(--ink); }
+#afPeriodo{ width:auto; min-width:150px; }
+.af-ksub{ font-size:11px; color:var(--ink-faint); margin-top:4px; line-height:1.3; }
+.grid-kpi.af-k6{ grid-template-columns:repeat(3,1fr); }
+@media (max-width:760px){ .grid-kpi.af-k6{ grid-template-columns:1fr 1fr; } }
+@media (max-width:480px){ .grid-kpi.af-k6{ grid-template-columns:1fr; } }
+
+/* filtros */
+.af-filtros-grid{ display:grid; grid-template-columns:2fr 1.2fr 1.2fr 1.2fr 1.2fr; gap:12px; align-items:end; }
+.af-filtros-grid2{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; align-items:end; margin-top:12px; }
+@media (max-width:1100px){ .af-filtros-grid{ grid-template-columns:1fr 1fr 1fr; } .af-filtros-grid2{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:640px){ .af-filtros-grid, .af-filtros-grid2{ grid-template-columns:1fr 1fr; } }
+
+/* tabla: encabezado fijo al desplazarse */
+.af-wrap{ max-height:68vh; overflow:auto; }
+.af-wrap table.t{ min-width:1100px; }
+.af-wrap thead th{ position:sticky; top:0; background:var(--paper); z-index:3; white-space:nowrap; }
+.af-wrap thead tr.af-filtros th{ top:38px; z-index:2; padding:4px 8px; background:var(--canvas); }
+.af-th{ cursor:pointer; user-select:none; }
+.af-fi{ padding:5px 7px; font-size:12px; min-width:70px; }
+.af-wrap td.r, .af-wrap td.mono{ white-space:nowrap; }
+.af-desc{ display:inline-block; max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
+.af-asig{ color:var(--warn); font-weight:700; cursor:help; }
+tr.row-clickable{ cursor:pointer; }
+table.t tbody tr.row-clickable:hover{ background:var(--canvas); }
+.af-nulo{ color:var(--ink-faint); }
+.cc-alert{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:var(--r-md); font-size:13px; font-weight:600; margin-bottom:10px; }
+.cc-alert.warn{ background:var(--warn-soft); color:var(--warn); }
+.cc-alert.danger{ background:var(--danger-soft); color:var(--danger); }
+
+/* menú desplegable de exportación */
+.af-dd{ position:relative; }
+.af-dd-menu{ display:none; position:absolute; right:0; top:calc(100% + 6px); background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md); box-shadow:var(--shadow-lg); min-width:260px; z-index:30; overflow:hidden; }
+.af-dd.open .af-dd-menu{ display:block; }
+.af-dd-menu button{ display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; font-size:13px; cursor:pointer; color:var(--ink); }
+.af-dd-menu button:hover{ background:var(--canvas); }
+
+/* panel lateral de la ficha */
+#fichaScrim{ position:fixed; inset:0; background:rgba(15,15,22,.45); z-index:90; display:none; }
+#fichaScrim.open{ display:block; }
+#fichaPanel{ position:fixed; top:0; right:0; bottom:0; width:min(600px,100vw); background:var(--paper); z-index:95; box-shadow:var(--shadow-lg); transform:translateX(105%); transition:transform .22s ease; display:flex; flex-direction:column; }
+#fichaPanel.open{ transform:none; }
+.af-fhead{ padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.af-fhead h3{ font-size:17px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#fichaBody{ flex:1; overflow-y:auto; padding:6px 20px 20px; }
+.af-fact{ padding:12px 20px; border-top:1px solid var(--line); background:var(--canvas); display:flex; gap:8px; flex-wrap:wrap; }
+.af-sec{ margin-top:16px; }
+.af-sec h4{ font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--brand-blue); border-bottom:1.5px solid var(--line); padding-bottom:5px; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.af-row{ display:flex; justify-content:space-between; gap:14px; padding:6px 0; border-bottom:1px solid var(--line-soft, #EEF0F6); font-size:13px; }
+.af-row span{ color:var(--ink-soft); }
+.af-row b{ font-weight:600; text-align:right; }
+.af-avisos, .af-hist{ margin:4px 0 0 18px; font-size:12.5px; }
+.af-hist li{ margin-bottom:6px; }
+.hint{ font-size:11.5px; color:var(--ink-faint); margin-top:4px; }
+@media print{ #fichaPanel, #fichaScrim, .af-actions{ display:none !important; } }
+</style>
+<script src="assets/vendor/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="af-page" id="afPage">
+
+  <!-- ===================== ENCABEZADO ===================== -->
+  <header class="af-head">
+    <div>
+      <h1>Activo Fijo</h1>
+      <p class="sub">Control y administración de activos fijos y depreciación.</p>
+    </div>
+    <div class="af-actions">
+      <div class="af-meta">Datos al corte <b id="afCorte">—</b><br>Actualizados: <span id="afActualizado">—</span></div>
+      <select class="input" id="afPeriodo" onchange="Inventario.setPeriodo(this.value)" title="Período consultado"></select>
+      <button class="btn btn-soft" data-solo-admin onclick="Importador.abrir()">Importar corte</button>
+      <div class="af-dd" id="ddExportar">
+        <button class="btn btn-soft" onclick="document.getElementById('ddExportar').classList.toggle('open')">Exportar a Excel ▾</button>
+        <div class="af-dd-menu">
+          <button onclick="Reportes.inventario(false)">Inventario completo</button>
+          <button onclick="Reportes.inventario(true)">Solo resultados filtrados</button>
+        </div>
+      </div>
+      <button class="btn btn-soft" onclick="Reportes.abrir()">Reportes</button>
+      <button class="btn btn-ghost" onclick="Importador.abrirHistorial()">Historial de importaciones</button>
+      <button class="btn btn-accent" data-solo-admin onclick="Ficha.nuevo()">+ Nuevo activo</button>
+    </div>
+  </header>
+
+  <!-- ===================== INDICADORES ===================== -->
+  <section class="grid-kpi af-k6">
+    <div class="kpi blue"><div class="lbl">Total de activos</div><div class="val" id="kTotal">—</div><div class="af-ksub" id="kTotalSub"></div></div>
+    <div class="kpi indigo"><div class="lbl">Costo histórico</div><div class="val" id="kCosto" style="font-size:22px">—</div><div class="af-ksub" id="kCostoSub"></div></div>
+    <div class="kpi"><div class="lbl">Depreciación acumulada</div><div class="val" id="kAcum" style="font-size:22px">—</div><div class="af-ksub" id="kAcumSub"></div></div>
+    <div class="kpi ok"><div class="lbl">Valor pendiente de depreciar</div><div class="val" id="kPend" style="font-size:22px">—</div><div class="af-ksub" id="kPendSub"></div></div>
+    <div class="kpi red"><div class="lbl">Depreciación del período</div><div class="val" id="kGasto" style="font-size:22px">—</div><div class="af-ksub" id="kGastoSub"></div></div>
+    <div class="kpi"><div class="lbl">Activos retirados</div><div class="val" id="kRetirados">—</div><div class="af-ksub" id="kRetiradosSub"></div></div>
+  </section>
+
+  <!-- ===================== FILTROS ===================== -->
+  <section class="card">
+    <div class="card-body">
+      <div class="af-filtros-grid">
+        <div class="field" style="margin:0"><label class="f-label">Búsqueda global</label>
+          <input type="text" class="input" id="fBuscar" placeholder="No. activo, descripción, proveedor, referencia, serial…" oninput="Inventario.setF('q', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Estado</label><select class="input" id="fEstado" onchange="Inventario.setF('estado', this.value)"></select></div>
+        <div class="field" style="margin:0"><label class="f-label">Ubicación</label><select class="input" id="fUbicacion" onchange="Inventario.setF('ubicacion', this.value)"></select></div>
+        <div class="field" style="margin:0"><label class="f-label">Categoría</label><select class="input" id="fCategoria" onchange="Inventario.setF('categoria', this.value)"></select></div>
+        <div class="field" style="margin:0"><label class="f-label">Cuenta contable</label><select class="input" id="fCuenta" onchange="Inventario.setF('cuenta', this.value)"></select></div>
+      </div>
+      <div class="af-filtros-grid2">
+        <div class="field" style="margin:0"><label class="f-label">Adquisición desde</label><input type="date" class="input" id="fAdqDesde" onchange="Inventario.setF('adqDesde', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Adquisición hasta</label><input type="date" class="input" id="fAdqHasta" onchange="Inventario.setF('adqHasta', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Inicio deprec. desde</label><input type="date" class="input" id="fDepDesde" onchange="Inventario.setF('depDesde', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Inicio deprec. hasta</label><input type="date" class="input" id="fDepHasta" onchange="Inventario.setF('depHasta', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Valor adq. mínimo</label><input type="number" class="input" id="fValMin" step="0.01" oninput="Inventario.setF('valMin', this.value)"></div>
+        <div class="field" style="margin:0"><label class="f-label">Valor adq. máximo</label><input type="number" class="input" id="fValMax" step="0.01" oninput="Inventario.setF('valMax', this.value)"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" class="chk" id="fInactivos" onchange="Inventario.setF('inactivos', this.checked)"> Incluir inactivos</label>
+        <button class="btn btn-ghost btn-sm" onclick="Inventario.limpiar()">Limpiar filtros</button>
+        <button class="btn btn-ghost btn-sm" onclick="Inventario.abrirColumnas()">Columnas</button>
+        <span class="sub" id="afCuenta" style="margin-left:auto"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TABLA ===================== -->
+  <section class="card">
+    <div class="card-body pad-0">
+      <div class="table-wrap af-wrap">
+        <table class="t">
+          <thead id="afThead"></thead>
+          <tbody id="afTbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between;flex-wrap:wrap;border-radius:0 0 var(--r-lg) var(--r-lg)">
+      <div id="afPag" style="display:flex;align-items:center"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)">Filas por página
+        <select class="input" id="fPageSize" style="width:auto" onchange="Inventario.setSize(this.value)"><option>25</option><option>50</option><option>100</option></select></div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== FICHA (panel lateral) ===================== -->
+<div id="fichaScrim" onclick="Ficha.cerrar()"></div>
+<aside id="fichaPanel" aria-label="Ficha del activo">
+  <div class="af-fhead">
+    <div><h3 id="fichaTitulo">Activo</h3><p class="sub" id="fichaSub" style="margin-top:3px"></p></div>
+    <button class="btn btn-ghost btn-icon" onclick="Ficha.cerrar()" aria-label="Cerrar">✕</button>
+  </div>
+  <div id="fichaBody"></div>
+  <div class="af-fact" id="fichaAcciones"></div>
+</aside>
+
+<!-- ===================== MODAL: IMPORTAR CORTE ===================== -->
+<div class="modal-overlay" id="modalImportar">
+  <div class="modal wide" style="max-width:1000px">
+    <div class="modal-head"><div><h3>Importar corte de activos fijos</h3><p class="sub">Archivo 02.MOBILIARIO Y EQUIPO.xls · se lee la hoja del mes (por defecto la más reciente, p. ej. 10-2026)</p></div>
+      <button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalImportar')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+        <div class="field" style="margin:0;flex:1;min-width:260px"><label class="f-label">Archivo Excel (.xls / .xlsx)</label><input type="file" class="input" id="impArchivo" accept=".xls,.xlsx" onchange="Importador.elegirArchivo(this)"></div>
+        <div class="field" style="margin:0;min-width:200px;display:none" id="impHojaWrap"><label class="f-label">Hoja a importar</label><select class="input" id="impHoja" onchange="Importador.cambiarHoja(this.value)"></select></div>
+      </div>
+      <div id="impPreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modalImportar')">Cancelar</button>
+      <button class="btn btn-primary" id="impBtnConfirmar" onclick="Importador.confirmar()" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: HISTORIAL DE IMPORTACIONES ===================== -->
+<div class="modal-overlay" id="modalHistorial">
+  <div class="modal wide" style="max-width:980px">
+    <div class="modal-head"><h3>Historial de importaciones</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalHistorial')">✕</button></div>
+    <div class="modal-body"><div class="table-wrap"><table class="t">
+      <thead><tr><th>Período</th><th>Archivo</th><th>Importado</th><th class="r">Activos</th><th class="r">Nuevos</th><th class="r">Actualizados</th><th class="r">Omitidos</th><th class="r">Dif. totales</th><th></th></tr></thead>
+      <tbody id="histBody"></tbody></table></div></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalConciliacion">
+  <div class="modal wide" style="max-width:980px">
+    <div class="modal-head"><h3 id="concTitulo">Conciliación</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalConciliacion')">✕</button></div>
+    <div class="modal-body" id="concBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: REPORTES ===================== -->
+<div class="modal-overlay" id="modalReportes">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><h3>Reportes</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalReportes')">✕</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <p class="sub">Cada reporte indica la fecha de generación, el período consultado y los filtros aplicados.</p>
+      <button class="btn btn-soft" onclick="Reportes.depreciacionPeriodo()">Depreciación por período (Excel)</button>
+      <button class="btn btn-soft" onclick="Reportes.totalmenteDepreciados()">Activos totalmente depreciados (Excel)</button>
+      <button class="btn btn-soft" onclick="Reportes.retirados()">Activos retirados (Excel)</button>
+      <button class="btn btn-soft" onclick="Reportes.revision()">Activos pendientes de revisión (Excel)</button>
+      <button class="btn btn-soft" onclick="UI.closeModal('modalReportes');Reportes.cuentas()">Importes por cuenta contable (pantalla)</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalCuentas">
+  <div class="modal wide" style="max-width:980px">
+    <div class="modal-head"><h3>Importes agrupados por cuenta contable</h3>
+      <div style="display:flex;gap:8px"><button class="btn btn-soft btn-sm" onclick="Reportes.cuentasExcel()">Excel</button><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalCuentas')">✕</button></div></div>
+    <div class="modal-body" id="cuentasBody"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: COLUMNAS ===================== -->
+<div class="modal-overlay" id="modalColumnas">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head"><h3>Columnas visibles</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalColumnas')">✕</button></div>
+    <div class="modal-body" id="colList"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="Inventario.columnasBase()">Restablecer</button><button class="btn btn-primary" onclick="Inventario.aplicarColumnas()">Aplicar</button></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ACCIÓN (editar / retiro / ajuste / inactivar…) ===================== -->
+<div class="modal-overlay" id="modalAccion">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head"><h3 id="accTitulo">Acción</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeModal('modalAccion')">✕</button></div>
+    <div class="modal-body">
+      <p id="accInfo" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px"></p>
+      <div id="accCampos"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="UI.closeModal('modalAccion')">Cancelar</button><button class="btn btn-primary" id="accBtn" onclick="Ficha.accionOk()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: PIN ADMINISTRADOR ===================== -->
+<div class="modal-overlay" id="modalAdminPin" style="z-index:300" onclick="if(event.target===this)UI.closeAdminPin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head"><h3>Verificación de administrador</h3><button class="btn btn-ghost btn-icon" onclick="UI.closeAdminPin()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="f-label">PIN de administrador</label>
+        <input type="password" class="input" id="adminPinInput" placeholder="Ingresa el PIN" onkeydown="if(event.key==='Enter')UI.confirmAdminPin()">
+        <p class="hint">Si nunca lo has cambiado, el PIN por defecto es <b>1234</b></p></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="UI.closeAdminPin()">Cancelar</button><button class="btn btn-danger" onclick="UI.confirmAdminPin()">Confirmar</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalConfirm" style="z-index:300">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="confirmTitle">¿Confirmar acción?</h3></div>
+    <div class="modal-body"><p id="confirmMsg" style="font-size:13.5px;color:var(--ink-soft);"></p></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="UI.closeModal('modalConfirm')">Cancelar</button><button class="btn btn-danger" id="btnConfirmOk">Confirmar</button></div>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/calculo.js"></script>
+<script src="assets/js/parser.js"></script>
+<script src="assets/js/plan.js"></script>
+<script src="assets/js/datos.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/inventario.js"></script>
+<script src="assets/js/ficha.js"></script>
+<script src="assets/js/importador.js"></script>
+<script src="assets/js/reportes.js"></script>
+<script>document.addEventListener('click', function(e){ var d=document.getElementById('ddExportar'); if(d && !d.contains(e.target)) d.classList.remove('open'); });</script>
+</body>
+</html>
