@@ -238,6 +238,8 @@ input[type=checkbox].chk{ width:16px; height:16px; accent-color:var(--brand-red)
   display:none; align-items:flex-start; justify-content:center; padding:5vh 18px; z-index:100; overflow-y:auto;
 }
 .modal-overlay.open{ display:flex; }
+/* PIN y confirmación se abren encima de cualquier otro modal (p. ej. Agregar Pago/Cobro, Duplicados) */
+#modalAdminPin, #modalConfirm{ z-index:200; }
 .modal{
   background:var(--paper); border-radius:var(--r-lg); width:100%; max-width:540px;
   box-shadow:var(--shadow-lg); overflow:hidden; margin-bottom:5vh;

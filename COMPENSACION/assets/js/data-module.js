@@ -306,9 +306,11 @@ const DataModule = (() => {
         // El estado ya no es editable: se alimenta desde el módulo Pagos.
         const estadoCell = _estadoPill(r.estado);
 
+        const manualTag = r.origen === 'manual'
+          ? ` <span class="pill gray" style="font-size:9.5px" title="Agregado a mano${r.creadoPor ? ' por ' + Utils.escapeHtml(r.creadoPor) : ''}">Manual</span>` : '';
         const nombreCell = r._count
           ? `<b>${Utils.escapeHtml(r.consorcio)}</b> <span class="muted" style="font-size:11px">(${r._count} consorcios)</span>`
-          : Utils.escapeHtml(r.consorcio);
+          : Utils.escapeHtml(r.consorcio) + manualTag;
         // Las filas agrupadas (UD) representan varios registros a la vez —
         // no se pueden eliminar una por una desde aquí.
         const accionesCell = r._count
@@ -456,6 +458,153 @@ const DataModule = (() => {
     return [...new Set(Storage.getDataRows()
       .filter(r => r.tipo === 'CXC' && _pendienteEfectivo(r) > 0.001)
       .map(r => r.consorcio).filter(Boolean))].sort();
+  }
+
+  // ------ Agregar un pago (CXP) o cobro (CXC) a mano, de cualquier consorcio ------
+  // Crea un registro más en la Data con la misma forma que los que vienen del
+  // Excel o de la carga semanal; el estado y el pendiente salen de los montos.
+  const _OTRO = '__otro__';
+  const _el = id => document.getElementById(id);
+
+  // Cortes existentes, del más reciente al más antiguo (por la fecha de sus registros)
+  function _cortesRecientes(){
+    const ult = {};
+    _rows.forEach(r => { if(r.corte && (ult[r.corte] === undefined || (r.fecha||'') > ult[r.corte])) ult[r.corte] = r.fecha || ''; });
+    return Object.keys(ult).sort((a,b) => ult[b].localeCompare(ult[a]) || a.localeCompare(b));
+  }
+
+  // Si el nombre escrito coincide (sin tildes ni mayúsculas) con un consorcio que ya existe,
+  // se usa ese, para no partir el historial de un consorcio en dos nombres.
+  function _consorcioElegido(){
+    const sel = _el('arConsorcio').value;
+    if(sel !== _OTRO) return sel;
+    const typed = _el('arConsorcioNuevo').value.trim().replace(/\s+/g, ' ');
+    if(!typed) return '';
+    const key = Utils.normalize(typed);
+    return getConsorcios().find(c => Utils.normalize(c) === key) || typed.toUpperCase();   // la Data guarda los nombres en mayúsculas
+  }
+
+  // Grupo del consorcio: el que ya traen sus registros; si no tiene, UD si está en la lista UD
+  function _grupoDe(nombre){
+    const previo = _rows.find(r => r.consorcio === nombre && r.grupo);
+    if(previo) return previo.grupo;
+    return (typeof Invoices !== 'undefined' && Invoices.isUDName && Invoices.isUDName(nombre)) ? 'UD' : '';
+  }
+
+  function _leerAdd(){
+    return {
+      tipo:      _el('arTipo').value,
+      consorcio: _consorcioElegido(),
+      corte:     _el('arCorte').value.trim().replace(/\s+/g, ' '),
+      fecha:     _el('arFecha').value,
+      monto:     _round2(_el('arMonto').value),
+      pago:      _round2(_el('arPago').value || 0),
+      numero:    _el('arNumero').value.trim()
+    };
+  }
+
+  function _validarAdd(v){
+    if(v.tipo !== 'CXP' && v.tipo !== 'CXC') return 'Selecciona el tipo (pago o cobro)';
+    if(!v.consorcio) return 'Indica el consorcio';
+    if(!v.corte) return 'Indica el corte';
+    const d = Utils.parseISODate(v.fecha);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v.fecha) || !d || isNaN(d)) return 'Indica una fecha válida';
+    if(!(v.monto > 0)) return 'El monto debe ser mayor que cero';
+    if(v.pago < 0) return 'El pago aplicado no puede ser negativo';
+    if(v.pago > v.monto) return 'El pago aplicado no puede ser mayor que el monto';
+    return null;
+  }
+
+  function onAddChange(){
+    const otro = _el('arConsorcio').value === _OTRO;
+    _el('arConsorcioNuevo').style.display = otro ? '' : 'none';
+    const v = _leerAdd();
+    const notas = [];
+    if(v.consorcio){
+      if(otro && !getConsorcios().includes(v.consorcio)) notas.push('Consorcio nuevo: aún no tiene registros en la Data.');
+      if(_grupoDe(v.consorcio) === 'UD') notas.push('Pertenece al Grupo UD: en la tabla se consolida con los demás UD.');
+    }
+    _el('arConsorcioHint').textContent = notas.join(' ');
+    const pend = Math.max(_round2(v.monto - v.pago), 0);
+    _el('arResumen').innerHTML = v.monto > 0
+      ? `Quedará con pendiente <b>${Utils.fmtNum(pend)}</b> · ${_estadoPill(_deriveEstado(v.tipo, v.monto, v.pago, pend))}`
+      : 'Indica el monto para ver cómo quedará el registro.';
+  }
+
+  function showAddModal(){
+    load();
+    const consorcios = getConsorcios();
+    const sel = _el('arConsorcio');
+    sel.innerHTML = consorcios.map(c => `<option value="${Utils.escapeHtml(c)}">${Utils.escapeHtml(c)}</option>`).join('')
+      + `<option value="${_OTRO}">➕ Otro consorcio (escribir nombre)…</option>`;
+    sel.value = (_f.consorcio && consorcios.includes(_f.consorcio)) ? _f.consorcio : (consorcios[0] || _OTRO);
+    _el('arConsorcioNuevo').value = '';
+    _el('arTipo').value = _f.tipo || 'CXP';
+    const cortes = _cortesRecientes();
+    _el('arCortes').innerHTML = cortes.map(c => `<option value="${Utils.escapeHtml(c)}"></option>`).join('');
+    _el('arCorte').value = _f.corte || cortes[0] || '';
+    _el('arFecha').value = Utils.todayISO();
+    _el('arMonto').value = '';
+    _el('arPago').value = '0';
+    _el('arNumero').value = '';
+    onAddChange();
+    UI.openModal('modalAddReg');
+    setTimeout(() => _el('arMonto').focus(), 100);
+  }
+  function closeAddModal(){ UI.closeModal('modalAddReg'); }
+
+  // Valida, avisa si ya hay uno igual y pide el PIN de administrador (como el resto de cambios en Data)
+  function saveManual(){
+    const v = _leerAdd();
+    const err = _validarAdd(v);
+    if(err){ UI.toast(err, 'err'); return; }
+    const seguir = () => UI.requirePin(() => _guardarManual(v));
+    const igual = Storage.getDataRows().filter(r => r.consorcio === v.consorcio && r.corte === v.corte && r.tipo === v.tipo && _round2(r.monto) === v.monto);
+    if(igual.length){
+      UI.confirm('Posible duplicado',
+        `Ya existe un registro de ${v.consorcio} (${v.tipo}, corte ${v.corte}) por ${Utils.fmtNum(v.monto)}. ¿Agregar otro igual de todos modos?`, seguir);
+    } else seguir();
+  }
+
+  function _guardarManual(v){
+    // Se vuelve a validar con los datos más recientes (otro usuario pudo cambiar la Data mientras tanto)
+    const f = Utils.parseISODate(v.fecha);
+    const pendiente = Math.max(_round2(v.monto - v.pago), 0);
+    const u = (window.Auth && Auth.getUser && Auth.getUser()) || {};
+    const row = {
+      id:        Utils.uid('dr'),
+      consorcio: v.consorcio,
+      fecha:     v.fecha,
+      mesLetra:  f.toLocaleDateString('es-DO', { month:'long' }).toUpperCase(),
+      mes:       f.getMonth() + 1,
+      año:       f.getFullYear(),
+      corte:     v.corte,
+      grupo:     _grupoDe(v.consorcio),
+      tipo:      v.tipo,
+      accion:    '',
+      fechaPago: v.pago > 0 ? Utils.todayISO() : '',
+      monto:     v.monto,
+      pago:      v.pago,
+      pendiente,
+      numero:    v.numero,
+      estado:    _deriveEstado(v.tipo, v.monto, v.pago, pendiente),
+      origen:    'manual',
+      creadoPor: u.name || u.email || '',
+      creadoEn:  new Date().toISOString()
+    };
+    if(!Storage.saveDataRows([...Storage.getDataRows(), row])){ UI.toast('No se pudo guardar el registro', 'err'); return; }
+    load();
+    // Si los filtros actuales lo esconderían, se limpian solo esos filtros para que se vea
+    const visible = { consorcio: row.consorcio, tipo: row.tipo, corte: row.corte, año: String(row.año), estado: row.estado };
+    Object.keys(visible).forEach(k => { if(_f[k] && _f[k] !== visible[k]) _f[k] = ''; });
+    ['consorcio:dfConsorcio', 'tipo:dfTipo', 'corte:dfCorte', 'año:dfAño', 'estado:dfEstado'].forEach(p => {
+      const [k, id] = p.split(':'); const el = _el(id); if(el) el.value = _f[k];
+    });
+    _page = 1;
+    closeAddModal();
+    render();
+    UI.toast(`${v.tipo === 'CXP' ? 'Pago' : 'Cobro'} agregado: ${v.consorcio} · ${Utils.fmtNum(v.monto)}`, 'ok');
+    if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
   }
 
   // ------ Eliminar Corte (Admin) ------
@@ -698,6 +847,7 @@ const DataModule = (() => {
            applyCobro, revertCobro, applyPagoTotal, updatePago, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly, corteExists, corteLabelFor, findDuplicates,
+           showAddModal, closeAddModal, onAddChange, saveManual,
            showDeleteCorteModal, closeDeleteCorteModal, confirmDeleteCorte, confirmDeleteRow,
            showDuplicatesModal, closeDuplicatesModal, getEffectivePendiente: _pendienteEfectivo };
 })();

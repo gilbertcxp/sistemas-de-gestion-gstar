@@ -884,12 +884,16 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
           <h1>Data — Historial de Compensación</h1>
           <p class="sub">Base de datos histórica de cuentas por cobrar y pagar</p>
         </div>
-        <div class="topbar-actions">
+        <div class="topbar-actions" style="flex-wrap:wrap;justify-content:flex-end;min-width:0">
           <input type="file" id="dataFileInput" accept=".xlsx,.xls" style="display:none"
             onchange="if(this.files[0]) DataModule.importFile(this.files[0])
               .then(r=>{ UI.toast(r.count.toLocaleString()+' registros importados correctamente','ok'); DataModule.render(); })
               .catch(e=>UI.toast(e.message,'err'))
               .finally(()=>{ this.value=''; })">
+          <button class="btn btn-primary" onclick="DataModule.showAddModal()" title="Agregar un pago (CXP) o un cobro (CXC) de cualquier consorcio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar Pago / Cobro
+          </button>
           <button class="btn btn-ghost" onclick="DataModule.showDuplicatesModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Detectar Duplicados
@@ -1522,6 +1526,63 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="DataModule.closeDeleteCorteModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="DataModule.confirmDeleteCorte()">Eliminar corte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: AGREGAR PAGO / COBRO (registro manual en Data) ===================== -->
+<div class="modal-overlay" id="modalAddReg" onclick="if(event.target===this)DataModule.closeAddModal()">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>Agregar Pago / Cobro</h3>
+      <button class="btn btn-ghost btn-icon" onclick="DataModule.closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+      <p style="font-size:12.5px;color:#64748b;">Registra a mano una cuenta de <b>cualquier consorcio</b>. Queda en la Data como un registro más (Solicitud de Pago, Estado de Cuenta y Pagos lo toman de aquí).</p>
+      <div class="field">
+        <label class="f-label">Tipo *</label>
+        <select class="input" id="arTipo" onchange="DataModule.onAddChange()">
+          <option value="CXP">Pago — por pagar al consorcio (CXP)</option>
+          <option value="CXC">Cobro — por cobrar al consorcio (CXC)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="f-label">Consorcio *</label>
+        <select class="input" id="arConsorcio" onchange="DataModule.onAddChange()"></select>
+        <input type="text" class="input" id="arConsorcioNuevo" placeholder="Nombre del consorcio" style="display:none;margin-top:6px" oninput="DataModule.onAddChange()">
+        <p class="hint" id="arConsorcioHint"></p>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Corte *</label>
+          <input type="text" class="input" id="arCorte" list="arCortes" placeholder="Ej. 26/10/2026 – 01/11/2026" oninput="DataModule.onAddChange()">
+          <datalist id="arCortes"></datalist>
+          <p class="hint">Elige uno existente (para que entre en su Solicitud de Pago) o escribe uno nuevo.</p>
+        </div>
+        <div class="field">
+          <label class="f-label">Fecha *</label>
+          <input type="date" class="input" id="arFecha" onchange="DataModule.onAddChange()">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="f-label">Monto *</label>
+          <input type="number" class="input" id="arMonto" step="0.01" min="0.01" placeholder="0.00" oninput="DataModule.onAddChange()">
+        </div>
+        <div class="field">
+          <label class="f-label">Pago / cobro ya aplicado (opcional)</label>
+          <input type="number" class="input" id="arPago" step="0.01" min="0" value="0" oninput="DataModule.onAddChange()">
+        </div>
+      </div>
+      <div class="field">
+        <label class="f-label">Referencia / No. (opcional)</label>
+        <input type="text" class="input" id="arNumero" placeholder="Ej. número de factura">
+      </div>
+      <div id="arResumen" style="font-size:13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="DataModule.closeAddModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="DataModule.saveManual()">Agregar (PIN)</button>
     </div>
   </div>
 </div>
