@@ -38,23 +38,29 @@ const UI = (() => {
   }
 
   let _pinCallback = null;
-  function requirePin(callback){
+  let _pinCancel = null;            // opcional: se llama solo si se cierra el PIN SIN confirmar
+  function requirePin(callback, onCancel){
     _pinCallback = callback;
+    _pinCancel = onCancel || null;
     const input = document.getElementById('adminPinInput');
     if(input) input.value = '';
     const m = document.getElementById('modalAdminPin');
     if(m){ m.style.display = 'flex'; setTimeout(()=>input&&input.focus(), 100); }
   }
   function closeAdminPin(){
+    const cancel = _pinCancel;
     _pinCallback = null;
+    _pinCancel = null;
     const m = document.getElementById('modalAdminPin');
     if(m) m.style.display = 'none';
+    if(cancel) cancel();
   }
   function confirmAdminPin(){
     const pin      = (document.getElementById('adminPinInput')?.value || '').trim();
     const adminPin = String(Storage.getSettings().adminPin || '1234');
     if(pin !== adminPin){ toast('PIN incorrecto', 'err'); return; }
     const cb = _pinCallback;        // capturar antes de cerrar (closeAdminPin pone null)
+    _pinCancel = null;              // PIN correcto: no es una cancelación
     closeAdminPin();
     if(cb) cb();
   }

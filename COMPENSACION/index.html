@@ -1587,6 +1587,30 @@ table.ag-aging tfoot td.tot-ft{background:#17306d;border-left:2px solid rgba(255
   </div>
 </div>
 
+<!-- ===================== MODAL: EDITAR PENDIENTE (fila agrupada Grupo UD) ===================== -->
+<div class="modal-overlay" id="modalEditPend" onclick="if(event.target===this)DataModule.closeEditPendModal()">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="epTitulo">Editar pendiente</h3>
+      <button class="btn btn-ghost btn-icon" onclick="DataModule.closeEditPendModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+      <p style="font-size:12.5px;color:#64748b;">Cada corte del grupo tiene su propio pendiente (es el que toma la Solicitud de Pago). Cambia el que necesites: va de <b>0</b> al monto de ese registro. Al guardar, el <b>Pago</b> pasa a ser Monto − Pendiente y el estado se recalcula.</p>
+      <div class="table-wrap" style="max-height:50vh;overflow:auto;">
+        <table class="t">
+          <thead><tr><th>Consorcio</th><th>Corte</th><th>Fecha</th><th class="r">Monto</th><th class="r">Pagado</th><th class="r">Pendiente</th></tr></thead>
+          <tbody id="epBody"></tbody>
+        </table>
+      </div>
+      <div id="epResumen" style="font-size:13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="DataModule.closeEditPendModal()">Cancelar</button>
+      <button class="btn btn-primary" id="epBtnGuardar" onclick="DataModule.saveEditPend()">Guardar (PIN)</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== MODAL: DETECTAR DUPLICADOS ===================== -->
 <div class="modal-overlay" id="modalDuplicados" onclick="if(event.target===this)DataModule.closeDuplicatesModal()">
   <div class="modal wide">

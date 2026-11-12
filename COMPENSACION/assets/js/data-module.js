@@ -8,6 +8,7 @@ const DataModule = (() => {
   let _page = 1;
   const PER_PAGE = 50;
   let _f = { consorcio:'', tipo:'', corte:'', año:'', estado:'' };
+  let _grupoIds = {};      // ids de los registros que componen cada fila agrupada UD, por tipo
 
   // ------ helpers ------
   function _round2(n){ return Math.round((Number(n)||0)*100)/100; }
@@ -255,9 +256,11 @@ const DataModule = (() => {
     if(udRows.length === 0) return rows;
 
     const agg = [];
+    _grupoIds = {};
     ['CXC','CXP'].forEach(tipo => {
       const sub = udRows.filter(r => r.tipo === tipo);
       if(sub.length === 0) return;
+      _grupoIds[tipo] = sub.map(r => r.id);     // para "Editar pendiente" de la fila agrupada
       agg.push({
         id:        sub.length === 1 ? sub[0].id : 'ud-' + tipo + '-group',
         consorcio: 'Grupo UD',
@@ -274,9 +277,8 @@ const DataModule = (() => {
         pago:      sub.reduce((s,r) => s + r.pago,  0),
         pendiente: sub.reduce((s,r) => s + r.pendiente, 0),
         numero:    '',
-        estado:    tipo === 'CXC'
-          ? (sub.some(r => r.estado === 'Por Cobrar') ? 'Por Cobrar' : 'Cobrada')
-          : (sub.some(r => r.estado === 'Pendiente')  ? 'Pendiente'  : 'Pagada'),
+        // Estado del grupo según sus totales (un corte con pago parcial no lo deja como "Pagada")
+        estado:    _deriveEstado(tipo, sub.reduce((s,r) => s + r.monto, 0), sub.reduce((s,r) => s + r.pago, 0), _round2(sub.reduce((s,r) => s + r.pendiente, 0))),
         _count:    sub.length
       });
     });
@@ -326,6 +328,18 @@ const DataModule = (() => {
           : `<input type="number" class="input" step="0.01" min="0" max="${r.monto}" value="${r.pago}"
                style="width:110px;padding:5px 7px;font-size:12.5px;text-align:right"
                onchange="DataModule.updatePago('${r.id}', this.value, this)">`;
+        // El Pendiente también es editable: en una fila normal directo en la celda; en la fila
+        // agrupada UD se abre el detalle por corte (cada corte tiene su propio pendiente).
+        // Al cambiarlo, el Pago pasa a ser Monto − Pendiente y el Estado se recalcula.
+        const pendCell = r._count
+          ? `<b>${Utils.fmtNum(r.pendiente)}</b>
+             <button class="btn btn-ghost btn-icon btn-sm" title="Editar el pendiente de cada corte de este grupo" onclick="DataModule.showEditPendModal('${r.tipo}')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+             </button>`
+          : `<input type="number" class="input" step="0.01" min="0" max="${r.monto}" value="${r.pendiente}"
+               title="Editar el monto que queda pendiente"
+               style="width:110px;padding:5px 7px;font-size:12.5px;font-weight:700;text-align:right"
+               onchange="DataModule.updatePendiente('${r.id}', this.value, this)">`;
         return `<tr>
           <td>${nombreCell}</td>
           <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
@@ -336,7 +350,7 @@ const DataModule = (() => {
           <td>${estadoCell}</td>
           <td class="r num">${Utils.fmtNum(r.monto)}</td>
           <td class="r num">${pagoCell}</td>
-          <td class="r num"><b>${Utils.fmtNum(r.pendiente)}</b></td>
+          <td class="r num">${pendCell}</td>
           <td class="c">${accionesCell}</td>
         </tr>`;
       }).join('');
@@ -420,6 +434,132 @@ const DataModule = (() => {
       load();
       render();
       UI.toast('Pago actualizado', 'ok');
+      if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+    });
+  }
+
+  // ------ Edición manual del PENDIENTE ------
+  // El pendiente solo puede ir de 0 al monto de la factura. Al fijarlo, el Pago pasa a ser
+  // Monto − Pendiente (así ambas fuentes coinciden, ver _pendienteEfectivo) y el Estado se
+  // recalcula: Pendiente = monto → Pendiente/Por Cobrar; entre 0 y monto → Parcial; 0 → Pagada/Cobrada.
+  function _patchPendiente(r, pend){
+    const monto = Number(r.monto) || 0;
+    const p     = _round2(Math.min(Math.max(Number(pend) || 0, 0), monto));
+    const pago  = _round2(monto - p);
+    return {
+      pago, pendiente: p,
+      estado:    _deriveEstado(r.tipo, monto, pago, p),
+      fechaPago: pago > 0.001 ? (r.fechaPago || Utils.todayISO()) : ''
+    };
+  }
+  function _quien(){
+    const u = (window.Auth && Auth.getUser && Auth.getUser()) || {};
+    return u.name || u.email || '';
+  }
+  // Huella de la última edición manual del pendiente (para poder rastrearla)
+  const _huellaPend = antes => ({ pendEditado: { antes, por: _quien(), en: new Date().toISOString() } });
+
+  function updatePendiente(id, rawValue, inputEl){
+    const r = Storage.getDataRows().find(x => x.id === id);
+    if(!r) return;
+    const actual = _pendienteEfectivo(r);
+    const monto  = Number(r.monto) || 0;
+    const restaurar = () => { if(inputEl) inputEl.value = actual; };
+    const v = (rawValue === '' || rawValue === null) ? NaN : Number(rawValue);
+    if(!isFinite(v) || v < 0){ UI.toast('El pendiente debe ser un número mayor o igual a cero', 'err'); restaurar(); return; }
+    if(v > monto + 0.001){ UI.toast(`El pendiente no puede ser mayor que el monto de la factura (${Utils.fmtNum(monto)})`, 'err'); restaurar(); return; }
+    const nuevo = _round2(v);
+    if(Math.abs(nuevo - actual) < 0.005){ restaurar(); return; }          // sin cambios
+    UI.requirePin(() => {
+      const fresco = Storage.getDataRows().find(x => x.id === id);          // versión más reciente
+      if(!fresco){ UI.toast('Ese registro ya no existe', 'err'); render(); return; }
+      Storage.updateDataRow(id, { ..._patchPendiente(fresco, nuevo), ..._huellaPend(_pendienteEfectivo(fresco)) });
+      load();
+      render();
+      UI.toast('Pendiente actualizado', 'ok');
+      if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
+    }, restaurar);
+  }
+
+  // Detalle por corte de una fila agrupada UD: cada registro tiene su propio pendiente
+  // (y es el que toma Solicitud de Pago), así que se edita registro por registro.
+  let _editTipo = '';
+  const _epInputs = () => [...document.querySelectorAll('#epBody .epPend')];
+
+  function showEditPendModal(tipo){
+    const ids = _grupoIds[tipo] || [];
+    const porId = new Map(Storage.getDataRows().map(r => [r.id, r]));
+    const filas = ids.map(id => porId.get(id)).filter(Boolean)
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.corte || '').localeCompare(b.corte || ''));
+    if(!filas.length) return;
+    _editTipo = tipo;
+    document.getElementById('epTitulo').textContent = `Editar pendiente — Grupo UD · ${tipo}`;
+    document.getElementById('epBody').innerHTML = filas.map(r => {
+      const pend = _pendienteEfectivo(r);
+      return `<tr>
+        <td>${Utils.escapeHtml(r.consorcio)}</td>
+        <td class="corte-cell" title="${Utils.escapeHtml(r.corte)}">${Utils.escapeHtml(r.corte)}</td>
+        <td style="white-space:nowrap">${r.fecha ? Utils.fmtDate(r.fecha) : '—'}</td>
+        <td class="r num">${Utils.fmtNum(r.monto)}</td>
+        <td class="r num">${Utils.fmtNum(_round2(r.monto - pend))}</td>
+        <td class="r num"><input type="number" class="input epPend" data-id="${r.id}" data-actual="${pend}" data-monto="${r.monto}"
+              step="0.01" min="0" max="${r.monto}" value="${pend}"
+              style="width:120px;padding:5px 7px;font-size:12.5px;font-weight:700;text-align:right" oninput="DataModule.onEditPendChange()"></td>
+      </tr>`;
+    }).join('');
+    onEditPendChange();
+    UI.openModal('modalEditPend');
+  }
+  function closeEditPendModal(){ UI.closeModal('modalEditPend'); }
+
+  // Lee los campos: devuelve { cambios:[{id,pend}], invalido, totalActual, totalNuevo }
+  function _leerEditPend(){
+    let totalActual = 0, totalNuevo = 0, invalido = false;
+    const cambios = [];
+    _epInputs().forEach(inp => {
+      const actual = Number(inp.dataset.actual), monto = Number(inp.dataset.monto);
+      const v = inp.value === '' ? NaN : Number(inp.value);
+      const ok = isFinite(v) && v >= 0 && v <= monto + 0.001;
+      inp.style.borderColor = ok ? '' : '#dc2626';
+      totalActual += actual;
+      if(!ok){ invalido = true; totalNuevo += actual; return; }
+      const nuevo = _round2(v);
+      totalNuevo += nuevo;
+      if(Math.abs(nuevo - actual) >= 0.005) cambios.push({ id: inp.dataset.id, pend: nuevo });
+    });
+    return { cambios, invalido, totalActual: _round2(totalActual), totalNuevo: _round2(totalNuevo) };
+  }
+
+  function onEditPendChange(){
+    const s = _leerEditPend();
+    const dif = _round2(s.totalNuevo - s.totalActual);
+    document.getElementById('epResumen').innerHTML =
+      `Pendiente total: <b>${Utils.fmtNum(s.totalActual)}</b> → <b>${Utils.fmtNum(s.totalNuevo)}</b>`
+      + (dif ? ` <span style="color:${dif < 0 ? '#15875a' : '#b91c1c'}">(${dif > 0 ? '+' : ''}${Utils.fmtNum(dif)})</span>` : '')
+      + ` · ${s.cambios.length} registro(s) con cambios`
+      + (s.invalido ? ' <span style="color:#dc2626">· Hay valores inválidos (entre 0 y el monto de cada registro)</span>' : '');
+    document.getElementById('epBtnGuardar').disabled = s.invalido || s.cambios.length === 0;
+  }
+
+  function saveEditPend(){
+    const s = _leerEditPend();
+    if(s.invalido){ UI.toast('Hay valores inválidos: cada pendiente va de 0 al monto de su registro', 'err'); return; }
+    if(!s.cambios.length){ UI.toast('No hay cambios que guardar', 'err'); return; }
+    UI.requirePin(() => {
+      // Una sola escritura con la versión más reciente de los registros
+      const todas = Storage.getDataRows();
+      const porId = new Map(todas.map(r => [r.id, r]));
+      let n = 0;
+      s.cambios.forEach(c => {
+        const r = porId.get(c.id);
+        if(r){ Object.assign(r, _patchPendiente(r, c.pend), _huellaPend(_pendienteEfectivo(r))); n++; }
+      });
+      if(!n){ UI.toast('Esos registros ya no existen', 'err'); closeEditPendModal(); render(); return; }
+      Storage.saveDataRows(todas);
+      load();
+      closeEditPendModal();
+      render();
+      UI.toast(`Pendiente actualizado en ${n} registro(s)`, 'ok');
       if(typeof Dashboard !== 'undefined' && Dashboard.renderKPIs) Dashboard.renderKPIs();
     });
   }
@@ -844,7 +984,8 @@ const DataModule = (() => {
   }
 
   return { render, importFile, load, goPage, setFilter,
-           applyCobro, revertCobro, applyPagoTotal, updatePago, refresh, getCXCByConsorcio, getConsorciosConCXC,
+           applyCobro, revertCobro, applyPagoTotal, updatePago, updatePendiente,
+           showEditPendModal, closeEditPendModal, onEditPendChange, saveEditPend, refresh, getCXCByConsorcio, getConsorciosConCXC,
            getCortes, getConsorcios, getCXPByCorte, getByConsorcio, getRows,
            importFromWeekly, corteExists, corteLabelFor, findDuplicates,
            showAddModal, closeAddModal, onAddChange, saveManual,
