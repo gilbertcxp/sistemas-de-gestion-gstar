@@ -265,6 +265,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </button>
     <div class="submenu" id="sub-facturacion">
       <button class="sub-btn" data-page="juegos-virtuales"><span class="dot"></span> Juegos Virtuales</button>
+      <button class="sub-btn" data-page="integracion-orkapi"><span class="dot"></span> Integración ORKAPI</button>
     </div>
 
     <button class="nav-btn" data-page="activo-fijo">
@@ -411,6 +412,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
           <div class="mc-desc">Carga de ventas ORKAPI y generación de facturas por consorcio.</div>
           <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
         </button>
+        <button class="mod-card" data-page="integracion-orkapi">
+          <div class="mc-top"><div class="mc-icon g"><i class="bi bi-diagram-3"></i></div></div>
+          <div class="mc-title">Facturación · Integración ORKAPI</div>
+          <div class="mc-desc">Carga de los cuatro reportes semanales, comisiones, consolidados y saldos a favor.</div>
+          <span class="mc-status ok"><i class="bi bi-circle-fill" style="font-size:7px"></i> Activo</span>
+        </button>
         <button class="mod-card" data-page="activo-fijo">
           <div class="mc-top"><div class="mc-icon g"><i class="bi bi-box-seam"></i></div></div>
           <div class="mc-title">Activo Fijo</div>
@@ -530,6 +537,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-app);color
     </div>
   </section>
 
+  <!-- ======= FACTURACIÓN · INTEGRACIÓN ORKAPI (app integrada) ======= -->
+  <section class="page" id="page-integracion-orkapi">
+    <div class="embed-wrap">
+      <iframe class="embed-frame" id="frame-integracion-orkapi"
+              data-src="INTEGRACIONORKAPI/index.html"
+              title="Integración ORKAPI"></iframe>
+    </div>
+  </section>
+
   <!-- ======= ACTIVO FIJO (app integrada) ======= -->
   <section class="page" id="page-activo-fijo">
     <div class="embed-wrap">
@@ -611,6 +627,7 @@ const PAGES = {
   'cxp-reporte':     {title:'Reporte de CXP',             crumb:'Cuentas por Pagar › Reporte de CXP',        sub:'cxp'},
   'cxp-carta':       {title:'Carta de Retención',         crumb:'Cuentas por Pagar › Carta de Retención',    sub:'cxp'},
   'juegos-virtuales':{title:'Juegos Virtuales',           crumb:'Facturación › Juegos Virtuales',            sub:'facturacion'},
+  'integracion-orkapi':{title:'Integración ORKAPI',          crumb:'Facturación › Integración ORKAPI',          sub:'facturacion'},
   'activo-fijo':     {title:'Activo Fijo',                 crumb:'Activo Fijo',                                sub:false},
   'er':              {title:'Estado de Resultados',       crumb:'Reportes › Estado de Resultados',            sub:'reportes'},
   'bg':              {title:'Balance General',            crumb:'Reportes › Balance General',                 sub:'reportes'},
@@ -716,6 +733,11 @@ function lazyLoadFrame(page){
   // Facturación · Juegos Virtuales
   if(page==='juegos-virtuales'){
     const f=document.getElementById('frame-juegos-virtuales');
+    if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
+  }
+  // Facturación · Integración ORKAPI
+  if(page==='integracion-orkapi'){
+    const f=document.getElementById('frame-integracion-orkapi');
     if(f && !f.src && f.dataset.src){ f.src=f.dataset.src; }
   }
   // Activo Fijo

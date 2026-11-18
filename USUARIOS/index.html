@@ -157,6 +157,7 @@ table.t tbody tr:nth-child(even){background:var(--bg-soft)}
             <option value="cajachica">Solo Caja Chica</option>
             <option value="juegos-virtuales">Solo Juegos Virtuales</option>
             <option value="activo-fijo">Solo Activo Fijo</option>
+            <option value="integracion-orkapi">Solo Integración ORKAPI</option>
           </select>
         </div>
         <div class="ffield" id="nuCajaWrap" style="display:none"><label>Caja Chica asignada</label>
@@ -256,6 +257,7 @@ async function loadUsuarios(){
                 <option value="cajachica" ${u.modulos_permitidos==='cajachica'?'selected':''}>Solo Caja Chica</option>
                 <option value="juegos-virtuales" ${u.modulos_permitidos==='juegos-virtuales'?'selected':''}>Solo Juegos Virtuales</option>
                 <option value="activo-fijo" ${u.modulos_permitidos==='activo-fijo'?'selected':''}>Solo Activo Fijo</option>
+                <option value="integracion-orkapi" ${u.modulos_permitidos==='integracion-orkapi'?'selected':''}>Solo Integración ORKAPI</option>
               </select>
               <select class="fi" style="min-width:110px;display:${u.modulos_permitidos==='cajachica'?'':'none'}" id="cajaSel_${esc(u.id)}">
                 <option value="sto_dgo" ${u.caja_chica_id==='sto_dgo'?'selected':''}>Sto. Dgo</option>
