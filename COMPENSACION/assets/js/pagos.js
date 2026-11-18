@@ -48,6 +48,7 @@ const Pagos = (() => {
 
   function onConsorcioChange(val){
     _consorcioSelected = val;
+    const ult = document.getElementById('pagosUltimoRecibo'); if(ult) ult.innerHTML = '';
     _cxcRows = val ? DataModule.getCXCByConsorcio(val) : [];
     _renderRecibo();
   }
@@ -101,8 +102,13 @@ const Pagos = (() => {
     inputs.forEach(inp => {
       const abono = parseFloat(inp.value)||0;
       if(abono > 0.001){
-        DataModule.applyCobro(inp.dataset.rowid, abono);
-        items.push({ rowId: inp.dataset.rowid, abono });
+        const fila = _cxcRows.find(r => r.id === inp.dataset.rowid);
+        const res = DataModule.applyCobro(inp.dataset.rowid, abono);
+        // Además de rowId+abono (lo que usa "revertir"), se guarda una foto de la factura y su
+        // saldo justo después de este pago: así el recibo en PDF no depende de cambios posteriores.
+        items.push({ rowId: inp.dataset.rowid, abono,
+          corte: fila ? fila.corte : '', fechaFactura: fila ? fila.fecha : '', monto: fila ? Number(fila.monto)||0 : null,
+          saldo: res ? res.pendiente : null });
         total += abono;
         applied++;
       }
@@ -126,6 +132,21 @@ const Pagos = (() => {
     DataModule.load();
     _cxcRows = DataModule.getCXCByConsorcio(_consorcioSelected);
     _renderRecibo();
+    _mostrarUltimoRecibo(numero, total);
+  }
+
+  // Tras guardar: acceso directo al PDF del recibo para el cliente (también está en Reportes → Historial)
+  function _mostrarUltimoRecibo(numero, total){
+    const el = document.getElementById('pagosUltimoRecibo');
+    if(!el) return;
+    el.innerHTML = `
+      <div style="padding-top:12px;border-top:1px solid var(--brd);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:12.5px;color:#15875a;font-weight:600;">✓ Recibo No. ${numero} guardado · ${Utils.fmtMoney(total)}</div>
+        <button class="btn btn-ghost" style="width:100%;" onclick="ReciboPDF.descargar(${numero})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M12 11v6m0 0-2.5-2.5M12 17l2.5-2.5"/></svg>
+          Descargar recibo PDF
+        </button>
+      </div>`;
   }
 
   // ------ Revertir un Recibo de Pago ya guardado ------

@@ -453,7 +453,10 @@ const App = (() => {
           <td>${Utils.fmtDate(p.fecha)}</td>
           <td class="r num"><b>${Utils.fmtMoney(p.total||0)}</b></td>
           <td class="c">${p.registros||0}</td>
-          <td class="c">
+          <td class="c" style="white-space:nowrap">
+            <button class="btn btn-ghost btn-icon btn-sm" title="Descargar recibo en PDF para el cliente" onclick="ReciboPDF.descargar(${p.numero})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M12 11v6m0 0-2.5-2.5M12 17l2.5-2.5"/></svg>
+            </button>
             ${canRevert
               ? `<button class="btn btn-ghost btn-icon btn-sm" title="Revertir recibo" onclick="App.confirmRevertirRecibo(${p.numero})">
                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
