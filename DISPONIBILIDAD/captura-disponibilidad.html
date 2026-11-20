@@ -263,7 +263,7 @@ table.t tbody tr:hover{background:var(--blue-lt)}
   <!-- ============ TAB: CHEQUES Y TRANSFERENCIAS ============ -->
   <div class="tab-panel" id="tab-cheques">
     <div class="card">
-      <div class="card-hd"><div class="ico"><i class="bi bi-plus-circle-fill"></i></div><div><div class="ttl">Registrar Cheque / Transferencia Bancaria</div><div class="sub">Montos pendientes de aplicar — alimentan "Cheques y Transf. en Tránsito"</div></div></div>
+      <div class="card-hd"><div class="ico"><i class="bi bi-plus-circle-fill"></i></div><div><div class="ttl">Registrar Cheque / Transferencia Bancaria</div><div class="sub">Montos pendientes de aplicar — alimentan "Cheque, Transf/Provisión"</div></div></div>
       <div class="card-bd">
         <div class="frow">
           <div class="ffield"><label>Fecha</label><input type="date" class="fi" id="chFecha"></div>
@@ -1439,7 +1439,7 @@ function renderResumen(){
       <div class="res-hd"><div class="rn">${ACCOUNT_LABEL[acc]}</div><div class="rr">${ACCOUNT_REF[acc]}</div></div>
       <div class="res-bd">
         <div class="res-row"><span class="l">Balance en Cuenta</span><span class="v mono">RD$ ${fnum(r.balance)}</span></div>
-        <div class="res-row"><span class="l">Cheques / Transf. en Tránsito</span><span class="v mono">${moneyCell(r.transito)}</span></div>
+        <div class="res-row"><span class="l">Cheque, Transf/Provisión</span><span class="v mono">${moneyCell(r.transito)}</span></div>
         <div class="res-row"><span class="l">Transferencias entre Cuentas</span><span class="v mono">${moneyCell(r.transfer)}</span></div>
         <div class="res-row"><span class="l">Pagos de la Semana</span><span class="v mono">${moneyCell(r.pagos)}</span></div>
       </div>

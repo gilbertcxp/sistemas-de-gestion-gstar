@@ -568,7 +568,7 @@ function renderBancos(){
   const cols = [
     {key:'cuenta',  label:'Cuentas Bancarias e Inversiones', note:'', txt:true},
     {key:'balance', label:cfg.balanceLabel},
-    {key:'transito',label:'Cheque y Transf.', note:'en tránsito (−)'},
+    {key:'transito',label:'Cheque, Transf/Provisión', note:'(−)'},
     {key:'transfer',label:'Transferencias', note:'entre cuenta / devol. (+)'},
     {key:'pagos',   label:'Pagos de la semana', note:'y provisión (−)'},
     {key:'pagoComp',label:'Pago de Compensación', note:'(−)'},
@@ -700,7 +700,7 @@ function renderKPIs(totBancos, totCert){
   const disponible = totBancos + totCert;
 
   const cards = [
-    {color:'c-red', ico:'bi-arrow-down-up', label:'Cheques y Transf. en Tránsito', val:transito,
+    {color:'c-red', ico:'bi-arrow-down-up', label:'Cheque, Transf/Provisión', val:transito,
       foot:'Pendiente de aplicar'},
     {color:'c-slate', ico:'bi-arrow-up-right-circle', label:'Pagos de la Semana y Provisión', val:pagos,
       foot:'Compromisos de la semana'},
@@ -764,7 +764,7 @@ function renderResumen(totBancos,totCert){
       </div>
       <div class="exc-body">
         ${excRow('Balance de la cuenta', r.balance, 'neutral')}
-        ${excRow('Cheque en Tránsito', r.transito)}
+        ${excRow('Cheque, Transf/Provisión', r.transito)}
         ${excRow('Transferencias entre cuentas', r.transfer)}
         ${excRow('Pagos pendientes de aprobación', r.pagos)}
         ${excRow('Pago de Compensación', r.pagoComp)}
@@ -1085,7 +1085,7 @@ function exportExcel(){
     ['Al corte de: '+DATA.reportDateLabel],
     ['Generado: '+new Date().toLocaleString('es-DO')],
     [],
-    ['CUENTAS BANCARIAS E INVERSIONES',DATA.bancos.balanceLabel,'Cheque y Transf. en Tránsito (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Pago de Compensación (-)','Balance Actualizado'],
+    ['CUENTAS BANCARIAS E INVERSIONES',DATA.bancos.balanceLabel,'Cheque, Transf/Provisión (-)','Transferencias entre Cuenta / Devol. (+)','Pagos de la Semana y Provisión (-)','Pago de Compensación (-)','Balance Actualizado'],
     ...DATA.bancos.rows.map(r=>[r.cuenta+' '+r.ref, r.balance, r.transito, r.transfer, r.pagos, (r.pagoComp||0), bancoUpd(r)]),
     ['TOTAL CUENTAS BANCARIAS',
       DATA.bancos.rows.reduce((s,r)=>s+r.balance,0),
@@ -1137,7 +1137,7 @@ function exportPDF(){
 
     doc.autoTable({
       startY:31,
-      head:[['Cuentas Bancarias e Inversiones',DATA.bancos.balanceLabel,'Cheque/Transf. Tránsito (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Pago de Compensación (-)','Balance Actualizado']],
+      head:[['Cuentas Bancarias e Inversiones',DATA.bancos.balanceLabel,'Cheque, Transf/Provisión (-)','Transfer. / Devol. (+)','Pagos Semana / Prov. (-)','Pago de Compensación (-)','Balance Actualizado']],
       body:[
         ...DATA.bancos.rows.map(r=>[r.cuenta+'  '+r.ref, money(r.balance), money(r.transito), money(r.transfer), money(r.pagos), money(r.pagoComp||0), money(bancoUpd(r))]),
         ['TOTAL CUENTAS BANCARIAS',money(DATA.bancos.rows.reduce((s,r)=>s+r.balance,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transito,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.transfer,0)),money(DATA.bancos.rows.reduce((s,r)=>s+r.pagos,0)),money(DATA.bancos.rows.reduce((s,r)=>s+(r.pagoComp||0),0)),money(tb)]
